@@ -1,0 +1,24 @@
+/* CSS Variables or Resets if needed */
+
+/* Custom Scrollbar for that chunky feel */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #fff;
+    border-left: 3px solid #000;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #000;
+    border: 2px solid #fff;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #22c55e;
+}
+
+body {
+    font-family: 'Space Grotesk', sans-serif;
+}
