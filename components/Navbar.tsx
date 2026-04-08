@@ -16,7 +16,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, setPage }) => {
     { page: Page.TRACKER, label: 'Tracker', icon: Target },
     { page: Page.MISSIONS, label: 'Missions', icon: Target },
     { page: Page.EDUCATION, label: 'Learn', icon: BookOpen },
-    { page: Page.COMMUNITY, label: 'Community', icon: Users },
+    { page: Page.COMMUNITY, label: 'Community', icon: Users },     
     { page: Page.ASSISTANT, label: 'AI Helper', icon: MessageSquare },
   ];
 
