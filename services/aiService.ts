@@ -64,7 +64,7 @@ export const getAiResponse = async (
         ];
 
         const completion = await client.chat.completions.create({
-            model: "arcee-ai/trinity-large-preview:free", // Default model, can be changed
+            model: "qwen/qwen3-coder:free", // Default model, can be changed
             messages: messages as any,
         });
 
