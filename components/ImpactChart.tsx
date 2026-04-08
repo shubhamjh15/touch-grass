@@ -5,7 +5,7 @@ import { ActionLog } from '../types';
 interface ImpactChartProps {
   logs: ActionLog[];
 }
-
+    
 const COLORS = ['#00C853', '#2962FF', '#FFD600', '#FF1744', '#AA00FF', '#00E5FF'];
 
 export const ImpactChart: React.FC<ImpactChartProps> = ({ logs }) => {
