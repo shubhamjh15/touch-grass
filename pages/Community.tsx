@@ -16,7 +16,6 @@ export const Community: React.FC = () => {
         <h2 className="text-4xl font-extrabold">Community Zone</h2>
         <NeoButton>+ New Post</NeoButton>              
       </div>
-
       <div className="space-y-6">
         {posts.map((post) => (
           <NeoCard key={post.id} className={`${post.color} animate-fade-in-up`}>
