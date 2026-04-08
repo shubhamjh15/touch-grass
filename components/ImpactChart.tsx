@@ -11,7 +11,7 @@ const COLORS = ['#00C853', '#2962FF', '#FFD600', '#FF1744', '#AA00FF', '#00E5FF'
 export const ImpactChart: React.FC<ImpactChartProps> = ({ logs }) => {
   // Aggregate data by action type
   const dataMap = logs.reduce((acc, log) => {
-    acc[log.type] = (acc[log.type] || 0) + log.co2Impact;
+    acc[log.type] = (acc[log.type] || 0) + log.co2Impact;           
     return acc;
   }, {} as Record<string, number>);
 
