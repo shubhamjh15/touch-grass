@@ -14,7 +14,7 @@ export const Community: React.FC = () => {
     <div className="max-w-3xl mx-auto pb-12">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-4xl font-extrabold">Community Zone</h2>
-        <NeoButton>+ New Post</NeoButton>
+        <NeoButton>+ New Post</NeoButton>              
       </div>
 
       <div className="space-y-6">
