@@ -4,9 +4,38 @@ import { NeoButton } from '../components/ui/NeoButton';
 import { Heart, MessageCircle, Share2 } from 'lucide-react';
 
 const posts = [
-  { id: 1, user: 'EcoWarrior22', content: 'Just started my zero-waste journey! Swapped plastic bags for totes today. 🌿', likes: 24, comments: 5, color: 'bg-green-100' },
-  { id: 2, user: 'SolarFanatic', content: 'Did you know switching to LED bulbs saves 75% energy? Small change, big impact!', likes: 45, comments: 12, color: 'bg-yellow-100' },
-  { id: 3, user: 'CityBiker', content: 'Organizing a community cleanup this Saturday at Central Park. Who is in? 🚮', likes: 89, comments: 34, color: 'bg-blue-100' },
+  { 
+    id: 1, 
+    user: 'EcoWarrior22', 
+    content: 'Just successfully completed a zero-waste audit of my kitchen! 🌿 I realized that 40% of my trash was just single-use packaging from vegetables. Today I took my own reusable mesh bags to the farmers market instead of the supermarket. Not only is it package-free, but I ended up saving $15 and supporting local farmers! Anyone else have good tips for zero-waste grocery shopping?', 
+    likes: 124, 
+    comments: 28, 
+    color: 'bg-green-100' 
+  },
+  { 
+    id: 2, 
+    user: 'SolarFanatic', 
+    content: '🚨 Mind-blowing fact of the day: Did you know that phantom power (electronics plugged in but turned off) can account for up to 10% of your home energy use?! I just installed smart power strips across my entire apartment that automatically cut power when devices go to standby. Highly recommend looking into this if you want an easy way to cut your footprint and your electric bill! ⚡🌍', 
+    likes: 345, 
+    comments: 56, 
+    color: 'bg-yellow-100' 
+  },
+  { 
+    id: 3, 
+    user: 'CityBiker', 
+    content: 'We did it! 🚲✨ Our community cleanup at Central Park was a massive success. Over 40 volunteers showed up, and together we collected over 200 lbs of trash, including countless microplastics near the duck pond. It\'s incredible what a small group of dedicated people can achieve in just a few hours. Check out the before/after pictures below! Let\'s keep this momentum going! 🚮💚', 
+    likes: 589, 
+    comments: 92, 
+    color: 'bg-blue-100' 
+  },
+  { 
+    id: 4, 
+    user: 'VeganVibes', 
+    content: 'Tried making a 100% plant-based lasagna for my skeptical meat-eating family tonight... and they LOVED it! 🌱 Replacing the beef with a mix of lentils and mushrooms not only tastes amazing but cuts the carbon footprint of the meal by nearly 80%. Small dietary swaps really do add up on a global scale. Who wants the recipe? 🍝', 
+    likes: 210, 
+    comments: 45, 
+    color: 'bg-pink-100' 
+  },
 ];
 
 export const Community: React.FC = () => {
