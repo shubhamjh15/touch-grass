@@ -7,12 +7,12 @@ export const INITIAL_USER_STATS: UserStats = {
   streak: 12,
   badges: ['Eco Starter', 'Plastic Free', 'Bike Rider']
 };
-
+  
 export const RECENT_LOGS: ActionLog[] = [
   { id: '1', type: 'Recycled Glass', co2Impact: 0.5, xpReward: 50, date: 'Today', icon: '♻️' },
   { id: '2', type: 'Biked to Work', co2Impact: 2.1, xpReward: 100, date: 'Yesterday', icon: '🚲' },
   { id: '3', type: 'Meat-free Meal', co2Impact: 1.5, xpReward: 75, date: 'Yesterday', icon: '🥗' },
-];
+]:
 
 export const MISSIONS: Mission[] = [
   { id: 'm1', title: 'Plastic-Free Week', description: 'Avoid single-use plastics for 7 days.', rewardXP: 500, completed: false, type: 'weekly' },
