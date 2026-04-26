@@ -120,7 +120,7 @@ export const Home: React.FC<HomeProps> = ({ setPage }) => {
             whileHover={{ y: -10, scale: 1.02 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <NeoCard color={feature.color as any} className={\`h-full \${feature.rotate} hover:rotate-0 transition-all duration-300 border-4\`}>
+            <NeoCard color={feature.color as any} className={`h-full ${feature.rotate} hover:rotate-0 transition-all duration-300 border-4`}>
               <div className="bg-white w-16 h-16 rounded-xl border-4 border-neo-black flex items-center justify-center mb-6 shadow-neo-sm transform transition-transform group-hover:scale-110">
                 {feature.icon}
               </div>
