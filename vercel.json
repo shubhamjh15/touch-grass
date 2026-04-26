@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    {
+      "source": "/ollama-1/:match*",
+      "destination": "http://108.181.196.208:11434/:match*"
+    },
+    {
+      "source": "/ollama-2/:match*",
+      "destination": "http://172.236.213.60:11434/:match*"
+    },
+    {
+      "source": "/ollama-3/:match*",
+      "destination": "http://5.149.249.212:11434/:match*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
