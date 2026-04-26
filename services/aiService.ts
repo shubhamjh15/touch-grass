@@ -78,14 +78,26 @@ export const getAiResponse = async (
             { role: "user", content: message }
         ];
 
-        const completion = await client.chat.completions.create({
-            model: "arcee-ai/trinity-large-preview:free", // Default model, can be changed
-            messages: messages as any,
-        });
+        // Try each server endpoint with fallback
+        let lastError: Error | null = null;
+        for (const endpoint of OLLAMA_ENDPOINTS) {
+            try {
+                console.log(`Trying Ollama server: ${endpoint}...`);
+                const result = await callOllamaServer(endpoint, messages);
+                if (result) {
+                    console.log(`Success with ${endpoint}`);
+                    return result;
+                }
+            } catch (err: any) {
+                console.warn(`Server ${endpoint} failed:`, err.message);
+                lastError = err;
+                // Continue to next server
+            }
+        }
 
-        return completion.choices[0]?.message?.content || "I apologize, but I couldn't generate a response at this time. Please try again.";
-    } catch (error) {
-        console.error("OpenRouter API Error:", error);
-        throw new Error("Service temporarily unavailable. Please try again later.");
+        throw lastError || new Error("All servers unavailable");
+    } catch (error: any) {
+        console.error("Ollama API Error:", error);
+        throw new Error(error.message || "Service temporarily unavailable. Please try again later.");
     }
 };
