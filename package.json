@@ -11,7 +11,6 @@
   "dependencies": {
     "framer-motion": "^12.33.0",
     "lucide-react": "^0.562.0",
-    "openai": "^6.18.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-markdown": "^10.1.0",

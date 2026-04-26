@@ -1,24 +1,34 @@
-import OpenAI from 'openai';
 import { UserStats } from "../types";
 
-const apiKey = process.env.OPENROUTER_API_KEY || '';
+// Free Ollama server proxies (via ollamafreeapi community servers)
+// Proxied through Vite dev server to avoid CORS
+const OLLAMA_ENDPOINTS = ['/ollama-1', '/ollama-2', '/ollama-3'];
+const MODEL = 'llama3.2:3b';
 
-// Initialize OpenAI client pointing to OpenRouter
-const client = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: apiKey,
-    dangerouslyAllowBrowser: true, // Required for client-side usage
-});
+async function callOllamaServer(endpoint: string, messages: any[]): Promise<string> {
+    const response = await fetch(`${endpoint}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            model: MODEL,
+            messages: messages,
+            stream: false,
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Server ${endpoint} returned ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.message?.content || '';
+}
 
 export const getAiResponse = async (
     history: { role: string; text: string }[],
     message: string,
     userStats?: UserStats
 ): Promise<string> => {
-    if (!apiKey) {
-        throw new Error("OpenRouter API Key is missing. Please configure the environment variables.");
-    }
-
     try {
         // Construct user context string
         let userContext = "";
@@ -34,37 +44,42 @@ export const getAiResponse = async (
         }
 
         const systemPrompt = `
-    You are a **Sustainability Consultant** for "Sustain-a-thon", but with a twist: you are **witty, intellectually stimulating, and engaged**.
+    You are a **Senior Sustainability Consultant** for "Sustain-a-thon", providing **highly detailed, professional, and interactive** advice.
 
     **YOUR ROLE:**
-    - Provide expert, data-backed advice on sustainable living.
-    - Be a **smart, friendly guide**. Think of yourself as a knowledgeable peer who loves this stuff, not a stiff lecturer.
-    - Use **clever analogies** and **engaging language**. Make sustainability feel like an exciting challenge or a life hack.
+    - Deliver comprehensive, data-backed strategies on sustainable living and environmental impact reduction.
+    - Maintain a highly professional, expert, yet engaging and interactive tone.
+    - Ask clarifying questions to better tailor your advice and engage the user in a meaningful dialogue.
+    - Explain the scientific or economic reasoning behind your recommendations.
 
     **USER CONTEXT:**
     ${userContext}
 
     **GUIDELINES:**
-    1.  **Be Witty & Sharp:** A little humor or a clever turn of phrase is great. Avoid being "cringe" (no forced slang like "fam" or "cap").
-    2.  **Structured & clear:** Use Markdown headers (\`###\`), bullet points, and **bold text** for readability.
-    3.  **Actionable & Impactful:** Don't just say "save water". Give a specific, surprising tip (e.g., "Put a brick in your toilet tank? Yes, really.").
-    4.  **No Fluff:** avoid generic pleasantries. Start with a hook or the answer.
-    5.  **Error Handling:** If you cannot answer, clear the air with a joke about your specialized knowledge base before redirecting.
+    1.  **Detailed & Analytical:** Go beyond surface-level tips. Provide in-depth analysis, citing potential metrics (e.g., specific CO2 reduction estimates, ROI for sustainable investments).
+    2.  **Structured & Professional:** Use Markdown headers (\`###\`), bullet points, and **bold text** to organize complex information clearly. Ensure a formal and respectful tone.
+    3.  **Actionable & Interactive:** End your responses with 1-2 relevant follow-up questions to encourage the user to think critically about their specific situation or to guide the next step in their sustainability journey.
+    4.  **Comprehensive Coverage:** Address the environmental, social, and economic aspects of sustainability where applicable (the triple bottom line).
+    5.  **Error Handling:** If a query falls outside your expertise, politely state your limitations as a sustainability AI and offer to focus on related environmental topics.
 
     **FORMATTING:**
-    - Use clean Markdown.
-    - For lists, use standard bullet points.
-    - Highlight key metrics or terms in **bold**.
+    - Use clean, well-organized Markdown.
+    - Utilize tables or step-by-step lists for complex strategies if appropriate.
+    - Highlight key metrics, scientific terms, or financial estimates in **bold**.
+    - **Use LOTS of emojis!** 🌍🌱 💡 Integrate them heavily throughout the response to make it visually engaging. ♻️📊
     `;
 
         const messages = [
             { role: "system", content: systemPrompt },
-            ...history.map(h => ({ role: h.role === 'model' ? 'assistant' : 'user', content: h.text })),
+            ...history.map(h => ({
+                role: h.role === 'model' ? 'assistant' : 'user',
+                content: h.text
+            })),
             { role: "user", content: message }
         ];
 
         const completion = await client.chat.completions.create({
-            model: "qwen/qwen3-coder:free", // Default model, can be changed
+            model: "arcee-ai/trinity-large-preview:free", // Default model, can be changed
             messages: messages as any,
         });
 
