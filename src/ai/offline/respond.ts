@@ -358,7 +358,7 @@ const enableLive: Reply = () =>
   "The live coach switches on when whoever hosts this app adds an AI key on the server. Until then you've got me: the built-in coach, with fewer words and the same facts. I'm written answers, not an AI model, and I'll say so when I don't know.";
 
 const whoAreYou: Reply = () =>
-  "I'm the built-in coach inside EcoQuest: a set of hand-written answers, not an AI model. When a live AI is connected it takes over the chat; until then I cover easy wins, your numbers, food, travel, home energy, stuff, quests and how the app works.";
+  "I'm the built-in coach inside Touch Grass: a set of hand-written answers, not an AI model. When a live AI is connected it takes over the chat; until then I cover easy wins, your numbers, food, travel, home energy, stuff, quests and how the app works.";
 
 const greeting: Reply = (context, seed) => {
   const name = context.displayName?.trim();
@@ -386,7 +386,7 @@ const howAreYou: Reply = () =>
 const joke: Reply = (_context, seed) => pick(JOKES, seed);
 
 const offTopic: Reply = () =>
-  "That's outside what I can help with. I stick to sustainability, your habits and how EcoQuest works, and I can't give medical, legal or financial advice. Want one easy win instead?";
+  "That's outside what I can help with. I stick to sustainability, your habits and how Touch Grass works, and I can't give medical, legal or financial advice. Want one easy win instead?";
 
 const unknown: Reply = () =>
   "I'm the built-in coach, so I only know a few topics: easy wins, your numbers, food, travel, home energy, stuff and waste, quests, and how the app works. I'd rather say that than guess. Try one of the suggestions.";

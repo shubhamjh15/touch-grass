@@ -123,7 +123,7 @@ const PROVIDERS: Readonly<Record<Exclude<ProviderId, 'custom'>, ProviderDef>> = 
     ],
     maxTokensField: 'max_tokens',
     systemRole: 'system',
-    headers: { 'X-OpenRouter-Title': 'EcoQuest' },
+    headers: { 'X-OpenRouter-Title': 'Touch Grass' },
     jsonMode: () => 'json_object',
     extraBody: none,
   },

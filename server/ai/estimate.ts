@@ -66,7 +66,7 @@ export const DEFAULT_ESTIMATE_OPTIONS: EstimateOptions = {
 
 const MAX_BODY_BYTES = 8 * 1024;
 
-export const ESTIMATE_SYSTEM_PROMPT = `You estimate the climate impact of ONE everyday action for EcoQuest, a habit-tracking app. Reply with a single JSON object and nothing else: no prose, no code fence.
+export const ESTIMATE_SYSTEM_PROMPT = `You estimate the climate impact of ONE everyday action for Touch Grass, a habit-tracking app. Reply with a single JSON object and nothing else: no prose, no code fence.
 
 Fields:
 - isClimateAction (boolean): false if the text is not a climate-friendly action.

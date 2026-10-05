@@ -245,7 +245,7 @@ const INTENTS: readonly { id: Exclude<IntentId, 'unknown'>; patterns: Pattern[] 
     id: 'how_it_works',
     patterns: [
       p(
-        /\b(how (does|do) (this|it|the app|ecoquest) work|how do i (use|log|earn|level|get started|play)|how to use|what is ecoquest|how it works|what is (xp|a ring|the point))\b/,
+        /\b(how (does|do) (this|it|the app|touch grass) work|how do i (use|log|earn|level|get started|play)|how to use|what is touch grass|how it works|what is (xp|a ring|the point))\b/,
         6,
       ),
       p(/\b(xp|levels?|points|rings?|badges?|help)\b/, 3),
