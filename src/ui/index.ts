@@ -143,6 +143,7 @@ export {
   ConfirmDialog,
   Prose,
   SkipLink,
+  StreamCaret,
   type ConfirmDialogProps,
   type ProseProps,
   type SkipLinkProps,

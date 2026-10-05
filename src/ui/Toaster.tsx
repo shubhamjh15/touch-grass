@@ -1,11 +1,24 @@
 'use client';
 
-import { useSyncExternalStore, type CSSProperties } from 'react';
+import { useEffect, useId, useSyncExternalStore, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { Toaster as SonnerToaster } from 'sonner';
 import { useBreakpoint } from '@/lib/hooks';
 
-const noop = () => () => undefined;
+// Every mounted <Toaster/>, oldest first. Only the first one renders, so a page that mounts its
+// own outlet next to the shell's never prints each toast twice.
+let mounted: string[] = [];
+const listeners = new Set<() => void>();
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function setMounted(next: string[]): void {
+  mounted = next;
+  for (const listener of listeners) listener();
+}
 
 /**
  * The toast outlet. Mount once in the shell. Mobile: top-centre under the safe area, never over the
@@ -15,13 +28,20 @@ const noop = () => () => undefined;
  * scrim) wherever the shell happens to mount it.
  */
 export function Toaster() {
+  const id = useId();
   const desktop = useBreakpoint('lg');
-  const mounted = useSyncExternalStore(
-    noop,
-    () => true,
-    () => false,
+  const primary = useSyncExternalStore(
+    subscribe,
+    () => mounted[0] ?? null,
+    () => null,
   );
-  if (!mounted) return null;
+
+  useEffect(() => {
+    setMounted([...mounted, id]);
+    return () => setMounted(mounted.filter((entry) => entry !== id));
+  }, [id]);
+
+  if (primary !== id) return null;
 
   return createPortal(
     <SonnerToaster

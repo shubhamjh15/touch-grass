@@ -36,6 +36,20 @@ export function Prose({ compact = false, className, ...rest }: ProseProps) {
   return <div className={cn('prose-eco prose', compact && 'prose-compact', className)} {...rest} />;
 }
 
+/** The block caret at the end of a message that is still streaming. Decorative. */
+export function StreamCaret({ className, ...rest }: Omit<ComponentProps<'span'>, 'children'>) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'ml-0.5 inline-block h-[1em] w-[0.55em] animate-caret bg-ink align-[-0.12em]',
+        className,
+      )}
+      {...rest}
+    />
+  );
+}
+
 export interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

@@ -237,6 +237,21 @@ describe('toast', () => {
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
   });
 
+  it('prints each toast once even when two outlets are mounted', async () => {
+    render(
+      <>
+        <Toaster />
+        <Toaster />
+      </>,
+    );
+
+    act(() => {
+      toast({ title: 'Fireflies arrived.' });
+    });
+
+    expect(await screen.findAllByText('Fireflies arrived.')).toHaveLength(1);
+  });
+
   it('replaces a toast that reuses an id', async () => {
     render(<Toaster />);
 

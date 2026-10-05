@@ -23,7 +23,7 @@ import { Field } from '../Field';
 import { IconButton } from '../IconButton';
 import { Input } from '../Input';
 import { Kbd } from '../Kbd';
-import { ConfirmDialog } from '../misc';
+import { ConfirmDialog, StreamCaret } from '../misc';
 import { Modal } from '../Modal';
 import { Popover } from '../Popover';
 import { Sheet } from '../Sheet';
@@ -231,6 +231,7 @@ export function OverlaysSection({ index }: { index: number }) {
             <p className="type-slug text-ink-3">Moss · 14:32</p>
             <p className="mt-1.5 text-body">
               Two short rides this week already. Want an easy third?
+              <StreamCaret />
             </p>
           </div>
         </Sheet>
