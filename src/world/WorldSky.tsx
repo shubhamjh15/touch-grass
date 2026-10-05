@@ -221,7 +221,7 @@ export function WorldSky({ ref }: { ref: Ref<HTMLDivElement> }) {
       <Hanging left="7%" drop="30%" period={5} className="w-[18%] max-w-32 min-w-12">
         <Cloud />
       </Hanging>
-      <Hanging left="78%" drop="42%" period={6.2} className="w-[14%] max-w-24 min-w-10">
+      <Hanging left="66%" drop="47%" period={6.2} className="w-[14%] max-w-24 min-w-10">
         <Cloud />
       </Hanging>
       <Hanging
