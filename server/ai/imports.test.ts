@@ -46,7 +46,7 @@ describe('server-side files', () => {
     const text = readFileSync(join(root, file), 'utf8');
     for (const match of text.matchAll(IMPORT)) {
       const target = match[1] ?? '';
-      if (/(^|\/)src\//.test(target)) expect(target).toMatch(/src\/ai\/contract\.js$/);
+      if (/(^|\/)src\//.test(target)) expect(target).toMatch(/src\/ai\/contract$/);
     }
   });
 
