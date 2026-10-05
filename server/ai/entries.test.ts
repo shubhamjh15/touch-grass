@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import chat, { config as chatConfig } from '../../api/chat';
-import estimate from '../../api/estimate';
-import status from '../../api/status';
+import * as chat from '../../app/api/chat/route';
+import * as estimate from '../../app/api/estimate/route';
+import * as status from '../../app/api/status/route';
 
 const origin = 'https://eco.test';
 
-describe('function entry files', () => {
-  it('export the web-handler shape Vercel and vite/devApi.ts both serve', () => {
-    for (const entry of [chat, estimate, status]) {
-      expect(typeof entry.fetch).toBe('function');
+describe('API route files', () => {
+  it('export Next.js route handlers on the Node runtime', () => {
+    for (const route of [chat, estimate, status]) {
+      expect(typeof route.GET).toBe('function');
+      expect(typeof route.POST).toBe('function');
+      expect(route.runtime).toBe('nodejs');
     }
-    expect(chatConfig).toMatchObject({ runtime: 'nodejs' });
-    expect(chatConfig.maxDuration).toBeGreaterThanOrEqual(30);
+    expect(chat.maxDuration).toBeGreaterThanOrEqual(30);
   });
 
   it('answer with the documented not-configured shape when no key is set', async () => {
@@ -25,9 +26,9 @@ describe('function entry files', () => {
         delete process.env[key];
     }
     try {
-      const health = await status.fetch(new Request(`${origin}/api/status`));
+      const health = await status.GET(new Request(`${origin}/api/status`));
       expect(await health.json()).toEqual({ configured: false, provider: null, model: null });
-      const response = await chat.fetch(
+      const response = await chat.POST(
         new Request(`${origin}/api/chat`, {
           method: 'POST',
           headers: { 'content-type': 'application/json', origin },
@@ -36,7 +37,7 @@ describe('function entry files', () => {
       );
       expect(response.status).toBe(503);
       expect(await response.json()).toMatchObject({ error: { code: 'not_configured' } });
-      const est = await estimate.fetch(
+      const est = await estimate.POST(
         new Request(`${origin}/api/estimate`, {
           method: 'POST',
           headers: { 'content-type': 'application/json', origin },

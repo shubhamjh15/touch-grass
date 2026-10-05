@@ -3,10 +3,10 @@
  * down after a failure, what to tell the client when all of them failed, and
  * what to log (provider, model, status: never content and never keys).
  */
-import type { Clock } from './http.js';
-import { errorResponse, SAFE_MESSAGES } from './http.js';
-import type { ChainEntry } from './providers.js';
-import type { UpstreamFailure } from './upstream.js';
+import type { Clock } from './http';
+import { errorResponse, SAFE_MESSAGES } from './http';
+import type { ChainEntry } from './providers';
+import type { UpstreamFailure } from './upstream';
 
 export interface Cooldowns {
   isCooling(entry: ChainEntry): boolean;

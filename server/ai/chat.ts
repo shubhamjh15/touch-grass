@@ -12,9 +12,9 @@
  * The browser never chooses a model, a base URL or a system prompt, and never
  * sees a key, an upstream URL or an upstream error body.
  */
-import type { StreamEvent } from '../../src/ai/contract.js';
-import { AI_LIMITS } from '../../src/ai/contract.js';
-import { createCooldowns, failureResponse, logFailure, orderCandidates } from './failover.js';
+import type { StreamEvent } from '../../src/ai/contract';
+import { AI_LIMITS } from '../../src/ai/contract';
+import { createCooldowns, failureResponse, logFailure, orderCandidates } from './failover';
 import {
   clientKey,
   errorResponse,
@@ -25,11 +25,11 @@ import {
   SAFE_MESSAGES,
   sleep,
   type Clock,
-} from './http.js';
-import type { RateLimiter } from './limits.js';
-import { buildSystemPrompt, sanitizeContext } from './prompt.js';
-import { resolveChain, type ChainEntry, type Env } from './providers.js';
-import { defaultEnv, defaultLimiter } from './runtime.js';
+} from './http';
+import type { RateLimiter } from './limits';
+import { buildSystemPrompt, sanitizeContext } from './prompt';
+import { resolveChain, type ChainEntry, type Env } from './providers';
+import { defaultEnv, defaultLimiter } from './runtime';
 import {
   chatRequestBody,
   classifyHttpFailure,
@@ -40,8 +40,8 @@ import {
   upstreamUrl,
   type UpstreamFailure,
   type UpstreamReader,
-} from './upstream.js';
-import { prepareHistory, validateChatBody } from './validate.js';
+} from './upstream';
+import { prepareHistory, validateChatBody } from './validate';
 
 export interface ChatOptions {
   maxTokens: number;

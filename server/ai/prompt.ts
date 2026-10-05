@@ -4,7 +4,7 @@
  * supply data (stats, recent actions) but never instructions, a model name, a
  * base URL or a system prompt.
  */
-import type { CoachContext, PartOfDay } from '../../src/ai/contract.js';
+import type { CoachContext, PartOfDay } from '../../src/ai/contract';
 
 /**
  * Static part first and identical for every user: Groq caches identical prefixes on

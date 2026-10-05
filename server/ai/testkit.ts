@@ -3,7 +3,7 @@
  * helpers to read the SSE the handler produces. Used by the *.test.ts files
  * only; nothing in the functions imports it.
  */
-import type { Clock } from './http.js';
+import type { Clock } from './http';
 
 export class ManualClock implements Clock {
   private time = 0;

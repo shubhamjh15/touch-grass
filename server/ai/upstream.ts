@@ -4,7 +4,7 @@
  * item stream. Provider text (error bodies, reasoning) never leaves this
  * module as anything but a coarse classification.
  */
-import type { ChainEntry } from './providers.js';
+import type { ChainEntry } from './providers';
 
 export interface UpstreamMessage {
   role: 'system' | 'developer' | 'user' | 'assistant';

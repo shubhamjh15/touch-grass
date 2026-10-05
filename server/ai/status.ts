@@ -2,10 +2,10 @@
  * GET /api/status: tells the browser whether a provider key is configured and
  * which provider and model would answer. Never contains a secret.
  */
-import type { AiStatus } from '../../src/ai/contract.js';
-import { defaultEnv } from './runtime.js';
-import { errorResponse, jsonResponse, SAFE_MESSAGES } from './http.js';
-import { describeChain, type Env } from './providers.js';
+import type { AiStatus } from '../../src/ai/contract';
+import { defaultEnv } from './runtime';
+import { errorResponse, jsonResponse, SAFE_MESSAGES } from './http';
+import { describeChain, type Env } from './providers';
 
 export interface StatusDeps {
   env?: () => Env;

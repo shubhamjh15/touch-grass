@@ -11,9 +11,9 @@ import {
   type ActionEstimate,
   type EstimateCatalogueEntry,
   type EstimateCategory,
-} from '../../src/ai/contract.js';
-import { defaultEnv, defaultLimiter } from './runtime.js';
-import { createCooldowns, logFailure, orderCandidates } from './failover.js';
+} from '../../src/ai/contract';
+import { defaultEnv, defaultLimiter } from './runtime';
+import { createCooldowns, logFailure, orderCandidates } from './failover';
 import {
   clientKey,
   errorResponse,
@@ -23,10 +23,10 @@ import {
   realClock,
   SAFE_MESSAGES,
   type Clock,
-} from './http.js';
-import type { RateLimiter } from './limits.js';
-import { cleanId, cleanText } from './prompt.js';
-import { resolveChain, type ChainEntry, type Env } from './providers.js';
+} from './http';
+import type { RateLimiter } from './limits';
+import { cleanId, cleanText } from './prompt';
+import { resolveChain, type ChainEntry, type Env } from './providers';
 import {
   chatRequestBody,
   classifyHttpFailure,
@@ -36,8 +36,8 @@ import {
   upstreamHeaders,
   upstreamUrl,
   type UpstreamFailure,
-} from './upstream.js';
-import { cleanMessageText, type Validation } from './validate.js';
+} from './upstream';
+import { cleanMessageText, type Validation } from './validate';
 
 export interface EstimateOptions {
   maxTokens: number;

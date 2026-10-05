@@ -1,7 +1,7 @@
 /** Defaults that read the real process: the only place the functions touch `process`. */
-import { readNumber, type Clock } from './http.js';
-import { createRateLimiter, type RateLimiter } from './limits.js';
-import type { Env } from './providers.js';
+import { readNumber, type Clock } from './http';
+import { createRateLimiter, type RateLimiter } from './limits';
+import type { Env } from './providers';
 
 export function defaultEnv(): Env {
   return (globalThis as { process?: { env?: Env } }).process?.env ?? {};

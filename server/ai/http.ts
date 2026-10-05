@@ -3,8 +3,8 @@
  * the same-origin check, client identification and a size-capped JSON reader.
  * Everything here uses the platform (Request, Response, TextDecoder) only.
  */
-import type { AiErrorBody, AiErrorCode } from '../../src/ai/contract.js';
-import type { Env } from './providers.js';
+import type { AiErrorBody, AiErrorCode } from '../../src/ai/contract';
+import type { Env } from './providers';
 
 /** Injectable time source, so tests control heartbeats, timeouts and rate limits. */
 export interface Clock {

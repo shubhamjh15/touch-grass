@@ -8,7 +8,7 @@
  * abuse of a free-tier key; it is not a quota system. A shared store (Redis,
  * Vercel KV) is the upgrade path once the app has a real backend.
  */
-import type { Clock } from './http.js';
+import type { Clock } from './http';
 
 export interface LimiterOptions {
   /** Requests a client may burst. */

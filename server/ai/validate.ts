@@ -3,7 +3,7 @@
  * is available on the function runtime), plus history trimming that keeps each
  * request small enough for tight free-tier tokens-per-minute limits.
  */
-import { AI_LIMITS, type ChatMessage } from '../../src/ai/contract.js';
+import { AI_LIMITS, type ChatMessage } from '../../src/ai/contract';
 
 export type Validation<T> = { ok: true; value: T } | { ok: false; message: string };
 

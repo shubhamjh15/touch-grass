@@ -3,10 +3,10 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Files under api/ and server/ run on Vercel's Node ESM runtime, not in Vite:
- * relative imports need explicit ".js" extensions, the "@/" alias does not
- * exist there, and the only thing allowed to come from src/ is the
- * dependency-free AI contract. These checks guard every deployed file.
+ * Route handlers under app/api and the code in server/ run on the server, never
+ * in the browser. They stay self-contained: plain relative imports (the bundler
+ * resolves them), no "@/" alias, and the only thing allowed to come from src/ is
+ * the dependency-free AI contract. These checks guard every server file.
  */
 const root = process.cwd();
 
@@ -20,25 +20,25 @@ function sources(dir: string): string[] {
   });
 }
 
-const files = [...sources('api'), ...sources('server')];
+const files = [...sources('app/api'), ...sources('server')];
 const IMPORT = /(?:^|\n)\s*(?:import|export)\s[^;]*?from\s+['"]([^'"]+)['"]/g;
 
-describe('deployed function files', () => {
+describe('server-side files', () => {
   it('finds the files it is meant to guard', () => {
     expect(files.length).toBeGreaterThan(10);
   });
 
-  it('keeps api/ to the three endpoints, so nothing else is deployed as a function', () => {
-    expect(readdirSync(join(root, 'api')).sort()).toEqual(['chat.ts', 'estimate.ts', 'status.ts']);
+  it('keeps app/api to the three endpoints, so nothing else is exposed as a route', () => {
+    expect(readdirSync(join(root, 'app/api')).sort()).toEqual(['chat', 'estimate', 'status']);
   });
 
-  it.each(files)('%s uses only explicit .js relative imports and no alias', (file) => {
+  it.each(files)('%s uses plain relative imports and no alias', (file) => {
     const text = readFileSync(join(root, file), 'utf8');
     for (const match of text.matchAll(IMPORT)) {
       const target = match[1] ?? '';
       expect(target.startsWith('@/'), `${file} imports ${target}`).toBe(false);
       if (target.startsWith('.'))
-        expect(target.endsWith('.js'), `${file} imports ${target}`).toBe(true);
+        expect(/\.(js|ts)$/.test(target), `${file} imports ${target}`).toBe(false);
     }
   });
 
