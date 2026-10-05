@@ -1,4 +1,4 @@
-import '@fontsource-variable/space-grotesk';
+import './styles/fonts';
 import './styles/index.css';
 
 import { StrictMode } from 'react';
