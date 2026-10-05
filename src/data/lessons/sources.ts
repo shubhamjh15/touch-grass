@@ -61,12 +61,6 @@ const INPUT = {
     url: 'https://ourworldindata.org/grapher/consumption-co2-per-capita',
     year: 2025,
   },
-  gcb2025: {
-    title: 'Global Carbon Budget 2025. Earth System Science Data 18:3211-3288',
-    publisher: 'Friedlingstein et al.',
-    url: 'https://essd.copernicus.org/articles/18/3211/2026/',
-    year: 2026,
-  },
   gcb2024: {
     title: 'Global Carbon Budget 2024. Earth System Science Data 17:965-1039',
     publisher: 'Friedlingstein et al.',

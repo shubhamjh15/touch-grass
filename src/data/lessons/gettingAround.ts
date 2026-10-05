@@ -7,7 +7,7 @@ export const GETTING_AROUND: Lesson = {
   summary: 'Compare ways of travelling and spot the trip changes that matter most.',
   category: 'move',
   focus: ['move'],
-  readingMinutes: 3,
+  readingMinutes: 2,
   sections: [
     {
       id: 'share',

@@ -25,7 +25,7 @@ export const POWER_AT_HOME: Lesson = {
         },
         {
           kind: 'p',
-          text: 'In hot climates, cooling plays the same starring role. Either way, the habits that matter are about heat.',
+          text: 'In hot climates, cooling plays the same starring role. Either way, the habits that matter are about heat. In hot places that means the cooling equivalents: a slightly higher air-conditioning setting, and blinds closed against the afternoon sun.',
         },
       ],
     },
@@ -33,6 +33,10 @@ export const POWER_AT_HOME: Lesson = {
       id: 'heat-habits',
       heading: 'The heat habits',
       blocks: [
+        {
+          kind: 'p',
+          text: 'Most of these cost nothing, and they trim your bills as well as your footprint. They also stack: heating is the biggest piece of home energy, so even a small cut in it is a real slice of the whole.',
+        },
         {
           kind: 'list',
           items: [
@@ -59,7 +63,7 @@ export const POWER_AT_HOME: Lesson = {
       blocks: [
         {
           kind: 'p',
-          text: 'Insulate and draught-proof first. Then think about a heat pump, which is three to five times more efficient than a gas boiler. Renters can still ask a landlord, and everyone can ask a council or an employer.',
+          text: 'Insulate and draught-proof first. Then think about a heat pump, which is three to five times more efficient than a gas boiler. Heat pumps work best in well-insulated homes, which is why insulation comes first. Renters can still ask a landlord, and everyone can ask a council or an employer.',
         },
       ],
     },

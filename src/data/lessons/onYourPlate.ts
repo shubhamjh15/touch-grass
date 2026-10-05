@@ -7,7 +7,7 @@ export const ON_YOUR_PLATE: Lesson = {
   summary: 'Which food choices change your footprint most, and which ones barely matter.',
   category: 'eat',
   focus: ['eat'],
-  readingMinutes: 3,
+  readingMinutes: 2,
   sections: [
     {
       id: 'big-slice',

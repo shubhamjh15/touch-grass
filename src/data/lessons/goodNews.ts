@@ -25,7 +25,7 @@ export const GOOD_NEWS: Lesson = {
       blocks: [
         {
           kind: 'p',
-          text: "The average cost of electricity from new solar farms has fallen by about 90% since 2010, according to IRENA. In 2025, renewables generated more of the world's electricity than coal: about 34% against 33%, in Ember's data.",
+          text: "The average cost of electricity from new solar farms has fallen by about 90% since 2010, according to IRENA. In 2025, renewables generated more of the world's electricity than coal: about 34% against 33%, in Ember's data. Wind and solar together made 17.3% of the world's electricity in 2025, up from 4.5% ten years earlier.",
         },
         {
           kind: 'fact',
@@ -46,6 +46,16 @@ export const GOOD_NEWS: Lesson = {
         {
           kind: 'p',
           text: 'There is no cliff after which effort stops mattering. Every increment of warming avoided means less harm, says the IPCC.',
+        },
+      ],
+    },
+    {
+      id: 'ozone',
+      heading: 'A problem the world fixed',
+      blocks: [
+        {
+          kind: 'p',
+          text: 'In the 1980s the ozone layer was thinning because of man-made chemicals. Countries agreed to stop making them. The latest assessment projects the layer will return to 1980 levels around 2040 over most of the world, around 2045 over the Arctic and around 2066 over Antarctica. It is proof that people can solve a shared problem when they decide to.',
         },
       ],
     },
@@ -123,6 +133,7 @@ export const GOOD_NEWS: Lesson = {
     'ieaOwidEv',
     'unepEgr2025',
     'ipccAR6wg1',
+    'wmoOzone2022',
     'andre2024',
   ),
   claims: [
@@ -194,6 +205,43 @@ export const GOOD_NEWS: Lesson = {
       statement:
         "89% demanded intensified political action; people systematically underestimate others' willingness to act.",
       source: 'andre2024',
+      basis: 'web',
+    },
+    {
+      id: 'good-wind-solar',
+      figure: '17.3%',
+      statement: 'Wind and solar produced 17.31% of world electricity in 2025.',
+      source: 'ember2026',
+      basis: 'dataset',
+      note: 'electricity_mix_world, 2025.',
+    },
+    {
+      id: 'good-wind-solar-2015',
+      figure: '4.5%',
+      statement: 'Wind and solar produced 4.53% of world electricity in 2015.',
+      source: 'ember2026',
+      basis: 'dataset',
+    },
+    {
+      id: 'good-ozone-2040',
+      figure: '1980 levels around 2040',
+      statement:
+        'The ozone layer is projected to return to 1980 levels around 2040 outside the polar regions.',
+      source: 'wmoOzone2022',
+      basis: 'web',
+    },
+    {
+      id: 'good-ozone-2045',
+      figure: 'around 2045',
+      statement: 'Projected return to 1980 levels over the Arctic.',
+      source: 'wmoOzone2022',
+      basis: 'web',
+    },
+    {
+      id: 'good-ozone-2066',
+      figure: 'around 2066',
+      statement: 'Projected return to 1980 levels over Antarctica.',
+      source: 'wmoOzone2022',
       basis: 'web',
     },
   ],

@@ -31,7 +31,7 @@ export const FOOD_WE_NEVER_EAT: Lesson = {
       blocks: [
         {
           kind: 'p',
-          text: 'Food loss and waste cause an estimated 8 to 10% of global greenhouse gas emissions. There are two reasons. Every emission from growing, chilling and carrying that food was for nothing. And food rotting in landfill, without oxygen, makes methane.',
+          text: 'Food loss and waste cause an estimated 8 to 10% of global greenhouse gas emissions. There are two reasons. Every emission from growing, chilling and carrying that food was for nothing. And food rotting in landfill, without oxygen, makes methane, a gas that traps about 80 times more heat than CO2 over 20 years.',
         },
       ],
     },
@@ -51,6 +51,20 @@ export const FOOD_WE_NEVER_EAT: Lesson = {
             'Cook one "use-it-up" meal a week.',
             'Serve a little less, and save the rest for tomorrow.',
           ],
+        },
+      ],
+    },
+    {
+      id: 'in-the-kitchen',
+      heading: 'What it looks like in a kitchen',
+      blocks: [
+        {
+          kind: 'p',
+          text: 'Most waste is not dramatic. It is the half bag of salad, the heel of the loaf, the portion that was a bit too big. Shop with a list, and put older food at the front of the fridge so it gets eaten first. Freeze bread, ripe bananas and spare portions in labelled containers.',
+        },
+        {
+          kind: 'p',
+          text: 'Wasting less food also means throwing away less money. That makes this one of the few climate habits that pays you back right away.',
         },
       ],
     },
@@ -111,7 +125,7 @@ export const FOOD_WE_NEVER_EAT: Lesson = {
       explanation: '"Use by" is the safety date. Look, smell and taste for the rest.',
     },
   ],
-  sources: sourcesFor('unepFwi2024', 'foodGovUk', 'warmOrganics'),
+  sources: sourcesFor('unepFwi2024', 'foodGovUk', 'warmOrganics', 'ipccAR6wg1ch7'),
   claims: [
     {
       id: 'waste-total',
@@ -149,6 +163,21 @@ export const FOOD_WE_NEVER_EAT: Lesson = {
       figure: '2022',
       statement: 'Reference year of the Food Waste Index 2024.',
       source: 'unepFwi2024',
+      basis: 'web',
+    },
+    {
+      id: 'waste-gwp20',
+      figure: '80 times',
+      statement: 'GWP-20 of methane is roughly 80 (79.7 non-fossil, 82.5 fossil).',
+      source: 'ipccAR6wg1ch7',
+      basis: 'web',
+      note: 'From IPCC AR6 WG1 Table 7.15; the 20-year column was not re-fetched on 2026-10-06.',
+    },
+    {
+      id: 'waste-20yr',
+      figure: '20 years',
+      statement: 'The shorter time horizon at which methane is about 80 times CO2.',
+      source: 'ipccAR6wg1ch7',
       basis: 'web',
     },
   ],

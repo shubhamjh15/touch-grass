@@ -8,7 +8,7 @@ export const STUFF: Lesson = {
     'Most of a product’s footprint is made before you own it, so using things longer is the win.',
   category: 'stuff',
   focus: ['stuff'],
-  readingMinutes: 3,
+  readingMinutes: 2,
   sections: [
     {
       id: 'made-before',

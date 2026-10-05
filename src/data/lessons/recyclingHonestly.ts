@@ -7,7 +7,7 @@ export const RECYCLING_HONESTLY: Lesson = {
   summary: 'Recycle well, know its limits, and put it in the right place in the hierarchy.',
   category: 'waste',
   focus: ['waste'],
-  readingMinutes: 3,
+  readingMinutes: 2,
   sections: [
     {
       id: 'worth-doing',
@@ -31,7 +31,7 @@ export const RECYCLING_HONESTLY: Lesson = {
       blocks: [
         {
           kind: 'p',
-          text: 'Aluminium can be recycled again and again, and it saves about 95% of the energy needed to make it from ore. Glass, steel, paper and cardboard also recycle well.',
+          text: 'Aluminium can be recycled again and again, and it saves about 95% of the energy needed to make it from ore. Glass, steel, paper and cardboard also recycle well. Per kilo, using recycled rather than virgin material cuts CO2e by about 89% for aluminium, about 41% for glass and about 22% for paper.',
         },
         {
           kind: 'p',
@@ -118,6 +118,7 @@ export const RECYCLING_HONESTLY: Lesson = {
   sources: sourcesFor(
     'oecdPlastics2022',
     'iaiRecycling',
+    'desnz2026',
     'wynes2017',
     'epaBatteries',
     'warmOrganics',
@@ -154,6 +155,29 @@ export const RECYCLING_HONESTLY: Lesson = {
       statement: 'Quiz wording for the same figure.',
       source: 'oecdPlastics2022',
       basis: 'web',
+    },
+    {
+      id: 'recycle-al-co2e',
+      figure: '89%',
+      statement:
+        'UK 2026 material-use factors: aluminium cans and foil 9.114 kg CO2e per kg from primary material against 0.994 from recycled (closed loop), 89% less.',
+      source: 'desnz2026',
+      basis: 'evidence-base',
+      note: 'Cradle-to-gate factors per kilogram of material. Derived by us from two published factors.',
+    },
+    {
+      id: 'recycle-glass-co2e',
+      figure: '41%',
+      statement: 'Glass: 1.403 kg CO2e per kg primary against 0.823 recycled, 41% less.',
+      source: 'desnz2026',
+      basis: 'evidence-base',
+    },
+    {
+      id: 'recycle-paper-co2e',
+      figure: '22%',
+      statement: 'Paper: 1.344 kg CO2e per kg primary against 1.049 recycled, 22% less.',
+      source: 'desnz2026',
+      basis: 'evidence-base',
     },
   ],
   reviewBy: '2027-10-06',

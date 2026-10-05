@@ -8,7 +8,7 @@ export const BIG_LEVERS: Lesson = {
     'Everyday actions differ in impact by a factor of ten or more. Here is how to spend your effort well.',
   category: 'action',
   focus: ['move', 'eat', 'power'],
-  readingMinutes: 3,
+  readingMinutes: 2,
   sections: [
     {
       id: 'ten-times',
