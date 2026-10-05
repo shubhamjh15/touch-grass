@@ -391,7 +391,7 @@ export const BADGES: readonly BadgeDef[] = [
     'legacy-import',
     1,
     'imports',
-    'Brought real logs over from the old EcoQuest',
+    'Brought real logs over from the earlier version of the app',
     'For those who were here before.',
   ),
 ];
