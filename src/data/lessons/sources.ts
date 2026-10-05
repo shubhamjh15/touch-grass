@@ -322,6 +322,13 @@ const INPUT = {
     year: 2011,
   },
 
+  doeTree1998: {
+    title: 'Method for Calculating Carbon Sequestration by Trees in Urban and Suburban Settings',
+    publisher: 'US Department of Energy and US EPA',
+    url: 'https://www3.epa.gov/climatechange/Downloads/method-calculating-carbon-sequestration-trees-urban-and-suburban-settings.pdf',
+    year: 1998,
+  },
+
   // Progress and people
   irenaCosts2024: {
     title: 'Renewable Power Generation Costs in 2024',
