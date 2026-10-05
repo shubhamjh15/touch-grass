@@ -1,33 +1,33 @@
-import path from 'path';
-import { defineConfig } from 'vite';
+/// <reference types="vitest/config" />
+import { fileURLToPath, URL } from 'node:url';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+import { devApi } from './vite/devApi';
 
 export default defineConfig({
-  server: {
-    port: 3000,
-    host: '0.0.0.0',
-    proxy: {
-      '/ollama-1': {
-        target: 'http://108.181.196.208:11434',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/ollama-1/, '')
-      },
-      '/ollama-2': {
-        target: 'http://172.236.213.60:11434',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/ollama-2/, '')
-      },
-      '/ollama-3': {
-        target: 'http://5.149.249.212:11434',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/ollama-3/, '')
-      }
-    }
-  },
-  plugins: [react()],
+  plugins: [react(), tailwindcss(), devApi()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, '.'),
-    }
-  }
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  server: {
+    port: 5173,
+    strictPort: true,
+  },
+  preview: {
+    port: 4173,
+    strictPort: true,
+  },
+  build: {
+    target: 'es2022',
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    include: ['src/**/*.test.{ts,tsx}', 'server/**/*.test.ts', 'api/**/*.test.ts'],
+    css: false,
+    restoreMocks: true,
+  },
 });
