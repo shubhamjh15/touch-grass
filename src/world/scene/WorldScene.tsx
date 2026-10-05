@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { OrthographicCamera } from 'three';
 import { QUALITY } from '../config';
 import type { WorldQuality } from '../contract';
-import { useWorldStore, worldStats } from '../store';
+import { onTap } from '../interaction';
+import { onPulse, stickingPoint, useWorldStore, worldStats } from '../store';
 import { onWorldFrame, popWorld } from '../tracker';
 import { GroveRig } from './GroveRig';
 
@@ -53,8 +54,22 @@ function Grove({ onFail }: { onFail: () => void }) {
     canvas.addEventListener('webglcontextlost', onLost);
     canvas.addEventListener('webglcontextrestored', onRestored);
 
+    // Pulses and taps are queued by time: the scheduler plays them from the next frame on.
+    let clock = 0;
+    const size = { width: 1, height: 1 };
+    const origin = { x: 0, y: 0 };
+    const stopPulses = onPulse((pulse) => rig.life.pulse(pulse, clock));
+    const stopTaps = onTap((clientX, clientY) => {
+      rig.life.tap(clientX - origin.x, clientY - origin.y, size);
+    });
+
     const stop = onWorldFrame((frame) => {
       if (lost) return;
+      clock = frame.time;
+      size.width = frame.canvas.width;
+      size.height = frame.canvas.height;
+      origin.x = frame.originX;
+      origin.y = frame.originY;
       const { quality, preference } = useWorldStore.getState();
       const dirty = rig.update(frame, camera as OrthographicCamera, quality);
       // Reduced motion renders on demand: nothing moves by itself, so identical frames are skipped.
@@ -64,6 +79,9 @@ function Grove({ onFail }: { onFail: () => void }) {
         rendered += 1;
         worldStats.drawCalls = gl.info.render.calls;
         worldStats.triangles = gl.info.render.triangles;
+        worldStats.geometries = gl.info.memory.geometries;
+        worldStats.textures = gl.info.memory.textures;
+        worldStats.programs = gl.info.programs?.length ?? 0;
         worldStats.frames += 1;
         if (frame.dt > 0) {
           worldStats.frameMs += (frame.dt * 1000 - worldStats.frameMs) * 0.1;
@@ -80,6 +98,11 @@ function Grove({ onFail }: { onFail: () => void }) {
           }
         }
       }
+      // Where a logged action sticks, for the page's peel-and-stick flight (viewport px).
+      const sticking = rig.life.sticking;
+      stickingPoint.valid = sticking.valid && frame.locked;
+      stickingPoint.x = frame.originX + sticking.x;
+      stickingPoint.y = frame.originY + sticking.y;
       worldStats.dpr = gl.getPixelRatio();
       worldStats.growth = rig.shown.growth;
       worldStats.scale = rig.placement?.scale ?? 0;
@@ -93,6 +116,9 @@ function Grove({ onFail }: { onFail: () => void }) {
 
     return () => {
       stop();
+      stopPulses();
+      stopTaps();
+      stickingPoint.valid = false;
       window.clearTimeout(lostTimer);
       canvas.removeEventListener('webglcontextlost', onLost);
       canvas.removeEventListener('webglcontextrestored', onRestored);

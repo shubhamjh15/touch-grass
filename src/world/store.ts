@@ -150,6 +150,19 @@ export function onPulse(listener: PulseListener): () => void {
   };
 }
 
+// --- The sticking point: where a logged action lands on the tree (bible 5.7, 7.4). ---
+
+/** Mutated in place by whoever draws the tree (the scene, or the illustrated fallback). */
+export const stickingPoint = { x: 0, y: 0, valid: false };
+
+/**
+ * The point on the crown, top-left of centre, that the "peel and stick" flight of a
+ * logged action ends on, in viewport coordinates. `null` while no tree is on screen.
+ */
+export function getStickingPoint(): { x: number; y: number } | null {
+  return stickingPoint.valid ? { x: stickingPoint.x, y: stickingPoint.y } : null;
+}
+
 // --- Capture: lets the app export a picture of the world (share cards). ---
 
 export interface CaptureOptions {
@@ -182,6 +195,12 @@ export interface WorldStats {
   frameMs: number;
   /** Device pixel ratio the canvas is actually rendering at. */
   dpr: number;
+  /** Share of the tier's DPR cap in use: below 1 once `auto` has stepped the resolution down. */
+  dprScale: number;
+  /** GPU objects alive (`renderer.info.memory`, programs): flat numbers mean no leak. */
+  geometries: number;
+  textures: number;
+  programs: number;
   /** Growth currently on screen (the snapshot value, eased). */
   growth: number;
   /** CSS pixels per world unit of the last placement. */
@@ -196,6 +215,10 @@ export const worldStats: WorldStats = {
   fps: 0,
   frameMs: 0,
   dpr: 1,
+  dprScale: 1,
+  geometries: 0,
+  textures: 0,
+  programs: 0,
   growth: 0,
   scale: 0,
   frames: 0,

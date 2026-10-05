@@ -26,6 +26,7 @@ import {
   writeWood,
   type WoodMesh,
 } from './geometry';
+import { GroveLife } from './GroveLife';
 import {
   ORDER,
   PASS_ORDER,
@@ -91,7 +92,19 @@ export class GroveRig {
     yaw: 0,
   };
 
+  /** Pulses, loose bits, creatures, props and landmark objects. */
+  readonly life = new GroveLife(this);
+  /** Centre of the ring medallion (the Impact landmark), in island space. */
+  emblemAt: [number, number, number] = [0, 0, ISLAND.radius];
+
   private readonly tones = createToneTable();
+  private plaque: Solid | null = null;
+  private pebbles: Solid | null = null;
+  private seedIndex = -1;
+  private readonly seedMatrix = new Float32Array(16);
+  private seedShown = true;
+  private glassLit: boolean | null = null;
+  private regrowing = false;
   private islandSolids: Solid[] = [];
   private treeSolids: Solid[] = [];
   private casts: THREE.Mesh[] = [];
@@ -111,8 +124,17 @@ export class GroveRig {
   private posed = { growth: -1, vitality: -1, pop: -1, age: -1 };
   private toned = { vitality: -1, growth: -1 };
   private lit = Number.NaN;
-  private weighed = { ink: -1, margin: -1, shadow: -1, lift: -1 };
-  private last = { x: Number.NaN, y: Number.NaN, scale: Number.NaN, width: 0, height: 0, yaw: 0 };
+  private weighed = { ink: -1, margin: -1, shadow: -1, lift: -1, cast: 1 };
+  private last = {
+    x: Number.NaN,
+    y: Number.NaN,
+    scale: Number.NaN,
+    width: 0,
+    height: 0,
+    yaw: 0,
+    pitch: 0,
+    squash: 0,
+  };
 
   constructor() {
     this.root.add(this.tilt);
@@ -164,12 +186,24 @@ export class GroveRig {
     };
   }
 
-  private removeSolids(solids: Solid[]): void {
-    for (const solid of solids) {
-      for (const mesh of solid.meshes) mesh.removeFromParent();
-      solid.geometry.dispose();
-      disposeLayer(solid.layer);
+  /** Removes a solid from the scene and frees its GPU resources. */
+  removeSolid(solid: Solid): void {
+    for (const mesh of solid.meshes) {
+      mesh.removeFromParent();
+      // An instanced mesh keeps GPU-side bookkeeping beyond its geometry and material.
+      if (mesh instanceof THREE.InstancedMesh) mesh.dispose();
     }
+    solid.geometry.dispose();
+    disposeLayer(solid.layer);
+  }
+
+  /** The next frame re-applies the line weights of the sticker to every solid. */
+  requestWeigh(): void {
+    this.weighed.ink = -1;
+  }
+
+  private removeSolids(solids: Solid[]): void {
+    for (const solid of solids) this.removeSolid(solid);
     solids.length = 0;
   }
 
@@ -219,13 +253,6 @@ export class GroveRig {
         sticker: false,
         fillOrder: ORDER.ticks,
       }),
-      // Small things get no margin of their own: they sit inside the island's.
-      this.scatterSolid(rockGeometry(), [...model.rocks, model.seed], {
-        shade: 'facet',
-        halftone,
-        ink: 0.75,
-        sticker: false,
-      }),
       this.scatterSolid(tuftGeometry(), model.tufts, {
         shade: 'facet',
         halftone: false,
@@ -234,7 +261,26 @@ export class GroveRig {
       }),
     );
 
+    // Small things get no margin of their own: they sit inside the margin of the island.
+    const pebbles = this.scatterSolid(rockGeometry(), [...model.rocks, model.seed], {
+      shade: 'facet',
+      halftone,
+      ink: 0.75,
+      sticker: false,
+    });
+    this.islandSolids.push(pebbles);
+    this.pebbles = pebbles;
+    this.seedIndex = model.rocks.length;
+    this.seedMatrix.set(
+      (pebbles.matrices?.array as Float32Array).subarray(
+        this.seedIndex * 16,
+        this.seedIndex * 16 + 16,
+      ),
+    );
+    this.seedShown = true;
+
     const { emblem } = model;
+    this.emblemAt = [emblem.position[0], emblem.position[1], emblem.position[2] + emblem.depth];
     const plaque = this.addSolid(
       this.island,
       emblemGeometry(emblem.width, emblem.height, emblem.depth, TONE.plaque),
@@ -243,6 +289,18 @@ export class GroveRig {
     for (const mesh of plaque.meshes) mesh.position.set(...emblem.position);
     u.uEmblem.value.set(0, 0, emblem.width, emblem.height);
     this.islandSolids.push(plaque);
+    this.plaque = plaque;
+  }
+
+  /** The half-buried seed gives way to the one that falls during the planting ceremony. */
+  private showSeed(shown: boolean): void {
+    const matrices = this.pebbles?.matrices;
+    if (!matrices || this.seedIndex < 0 || shown === this.seedShown) return;
+    const data = matrices.array as Float32Array;
+    if (shown) data.set(this.seedMatrix, this.seedIndex * 16);
+    else data.fill(0, this.seedIndex * 16, this.seedIndex * 16 + 16);
+    matrices.needsUpdate = true;
+    this.seedShown = shown;
   }
 
   /** The sundial shadow of a tree solid: the same geometry, projected onto the lawn. */
@@ -437,6 +495,9 @@ export class GroveRig {
     const { snapshot, dt } = frame;
     const still = frame.reducedMotion;
     let dirty = !still;
+    // Pulses first: their channels shape the transforms of this frame.
+    if (this.life.step(frame, quality)) dirty = true;
+    const fx = this.life.scheduler.channels;
 
     // The camera is orthographic in CSS-pixel units: one world unit of the camera is
     // one CSS pixel of the canvas, measured this frame.
@@ -457,8 +518,11 @@ export class GroveRig {
     const swapped = snapshot.species !== this.species;
     if (rebuilt || swapped) {
       this.buildTree(snapshot.seed, snapshot.species, quality);
-      // A new species regrows from the ground instead of morphing.
-      if (swapped && this.started && !still) this.shown.growth = 0;
+      // A new species regrows from the ground instead of morphing, and does so quickly.
+      if (swapped && this.started && !still) {
+        this.shown.growth = 0;
+        this.regrowing = true;
+      }
       dirty = true;
     }
     this.quality = quality;
@@ -466,10 +530,13 @@ export class GroveRig {
     this.species = snapshot.species;
 
     // Ease what is shown towards the snapshot. The very first frame snaps.
-    const growthTarget = clamp01(snapshot.growth);
+    // The planting ceremony holds the tree at zero until the seed has landed.
+    const growthTarget = fx.gate > 0 ? 0 : clamp01(snapshot.growth);
+    if (fx.gate > 0) this.shown.growth = 0;
     const vitalityTarget = clamp01(snapshot.vitality);
     const hourTarget = wrapHour(snapshot.hour);
     const pitchTarget = CAMERA.pitchByMode[frame.mode];
+    this.showSeed(fx.seed < 0);
     const shown = this.shown;
     const before = shown.growth;
     if (!this.started || still) {
@@ -479,8 +546,12 @@ export class GroveRig {
       shown.pitch = pitchTarget;
       shown.pop = 0;
     } else {
-      shown.growth = damp(shown.growth, growthTarget, MOTION.growthLambda, dt);
-      if (Math.abs(growthTarget - shown.growth) < 2e-4) shown.growth = growthTarget;
+      const lambda = MOTION.growthLambda * (this.regrowing ? MOTION.regrowBoost : 1);
+      shown.growth = damp(shown.growth, growthTarget, lambda, dt);
+      if (Math.abs(growthTarget - shown.growth) < 2e-4) {
+        shown.growth = growthTarget;
+        this.regrowing = false;
+      }
       shown.vitality = damp(shown.vitality, vitalityTarget, MOTION.vitalityLambda, dt);
       if (Math.abs(vitalityTarget - shown.vitality) < 1e-3) shown.vitality = vitalityTarget;
       const turn = hourDelta(shown.hour, hourTarget);
@@ -516,6 +587,7 @@ export class GroveRig {
     const u = this.uniforms;
     if (this.toned.vitality !== shown.vitality || this.toned.growth !== shown.growth) {
       resolveTones(this.tones, snapshot.species, shown.vitality, shown.growth);
+      this.glassLit = null;
       u.uBase.value = this.tones.lit;
       u.uShade.value = this.tones.shade;
       u.uHighlight.value = this.tones.highlight;
@@ -538,6 +610,21 @@ export class GroveRig {
       u.uRings.value = rings;
       dirty = true;
     }
+    u.uFlash.value = fx.flash;
+    // A new ring lands on the medallion like a rubber stamp.
+    if (this.plaque) {
+      for (const mesh of this.plaque.meshes) mesh.scale.setScalar(1 + fx.stamp);
+    }
+    // The glass of the lantern is plain yellow by day and a pane of light from dusk on.
+    const lit = this.life.lit;
+    if (lit !== this.glassLit) {
+      const from = (lit ? TONE.glow : TONE.yellow) * 3;
+      for (const table of [this.tones.lit, this.tones.shade, this.tones.highlight]) {
+        table.copyWithin(TONE.glass * 3, from, from + 3);
+      }
+      this.glassLit = lit;
+      dirty = true;
+    }
 
     // Placement: an eased virtual frame fitted into the box the tracker hands over.
     const metrics = this.skeleton?.metrics;
@@ -554,33 +641,54 @@ export class GroveRig {
     this.placement = placement;
     const time = still ? STILL_TIME : frame.time;
     const lift = frame.lift;
-    const scale = placement.scale * frame.appear * (1 + MOTION.carriedScale * lift);
+    const scale = placement.scale * frame.appear * (1 + MOTION.carriedScale * lift) * (1 + fx.push);
     const bob = still ? 0 : Math.sin((time * TAU) / CAMERA.bobPeriod) * CAMERA.bob * scale;
-    const idle = CAMERA.idle[frame.mode];
-    const idleYaw = still
-      ? 0
-      : (idle.turn > 0 ? (time * TAU) / idle.turn : 0) +
-        idle.drift * Math.sin((time * TAU) / idle.period);
-    // The idle turn belongs to the mode; easing it keeps a stage change from snapping the island.
-    shown.yaw = this.started && dt > 0 && !still ? damp(shown.yaw, idleYaw, 4, dt) : idleYaw;
+    // Idle motion, drag, keys and hover all arrive as one yaw from the tracker.
+    shown.yaw = frame.yaw;
     const yaw = CAMERA.yaw + this.orbit + shown.yaw;
-    this.root.position.set(placement.x, placement.y + bob, 0);
+    const pitch = shown.pitch + frame.tilt;
+    // Hops and dips move the island; a stamp presses the whole sticker into the page.
+    const lifted = (fx.hop - fx.dip) * scale;
+    this.root.position.set(placement.x + fx.press, placement.y + bob + lifted - fx.press, 0);
     this.root.rotation.z = MOTION.carriedTilt * lift;
     this.root.scale.setScalar(scale);
-    this.tilt.rotation.x = shown.pitch;
+    this.tilt.rotation.x = pitch;
     this.spin.rotation.y = yaw;
+    // Squash and stretch, plus a breath of half a percent, about the foot of the trunk.
+    const squash = fx.squash + this.life.boopSquash;
+    const breath = still ? 0 : 0.006 * Math.sin(time * TAU * 0.2);
+    this.tree.scale.set(1 + squash * 0.5 + breath, 1 - squash + breath, 1 + squash * 0.5 + breath);
     if (
-      this.last.x !== placement.x ||
-      this.last.y !== placement.y ||
+      this.last.x !== this.root.position.x ||
+      this.last.y !== this.root.position.y ||
       this.last.scale !== scale ||
-      this.last.yaw !== yaw
+      this.last.yaw !== yaw ||
+      this.last.pitch !== pitch ||
+      this.last.squash !== squash
     ) {
-      this.last.x = placement.x;
-      this.last.y = placement.y;
+      this.last.x = this.root.position.x;
+      this.last.y = this.root.position.y;
       this.last.scale = scale;
       this.last.yaw = yaw;
+      this.last.pitch = pitch;
+      this.last.squash = squash;
       dirty = true;
     }
+
+    u.uTime.value = time;
+    u.uWind.value.w = (still ? 0.5 : 1) * swayFor(shown.vitality) * (1 + this.life.rustle * 1.8);
+    u.uGroveScale.value = scale;
+    u.uGroveOrigin.value.copy(this.root.position);
+
+    // Loose bits, creatures and props, now that the island is placed for this frame.
+    this.life.place(frame, {
+      yaw,
+      pitch,
+      x: this.root.position.x,
+      y: this.root.position.y,
+      scale,
+    });
+    if (this.life.busy) dirty = true;
 
     const { sticker } = placement;
     const weighed = this.weighed;
@@ -588,23 +696,22 @@ export class GroveRig {
       weighed.ink !== sticker.ink ||
       weighed.margin !== sticker.margin ||
       weighed.shadow !== sticker.shadow ||
-      weighed.lift !== lift
+      weighed.lift !== lift ||
+      weighed.cast !== fx.shadow
     ) {
-      for (const solid of this.islandSolids) weighLayer(solid.layer, sticker, lift);
-      for (const solid of this.treeSolids) weighLayer(solid.layer, sticker, lift);
+      for (const solid of this.islandSolids) weighLayer(solid.layer, sticker, lift, fx.shadow);
+      for (const solid of this.treeSolids) weighLayer(solid.layer, sticker, lift, fx.shadow);
+      for (const solid of this.life.solids) weighLayer(solid.layer, sticker, lift, fx.shadow);
       weighed.ink = sticker.ink;
       weighed.margin = sticker.margin;
       weighed.shadow = sticker.shadow;
       weighed.lift = lift;
+      weighed.cast = fx.shadow;
+      dirty = true;
       // Halftone dots follow the line weight: finer on a thumbnail, 7 px at full size.
       const full = STICKER.steps[STICKER.steps.length - 1]?.ink ?? sticker.ink;
       u.uDotPitch.value = SHADING.dotPitchPx * Math.max(0.6, sticker.ink / full);
     }
-
-    u.uTime.value = time;
-    u.uWind.value.w = (still ? 0.5 : 1) * swayFor(shown.vitality);
-    u.uGroveScale.value = scale;
-    u.uGroveOrigin.value.copy(this.root.position);
 
     // Low tier: a flat patch under the crown, pushed where the sundial shadow would fall.
     const reach = Math.max(0.3, (this.pose?.stats.halfWidth ?? 0) * 0.74);
@@ -621,6 +728,11 @@ export class GroveRig {
 
   /** Frees GPU resources. The rig can be updated again afterwards: it rebuilds itself. */
   dispose(): void {
+    this.life.dispose();
+    this.plaque = null;
+    this.pebbles = null;
+    this.seedIndex = -1;
+    this.glassLit = null;
     this.removeSolids(this.islandSolids);
     this.removeSolids(this.treeSolids);
     for (const material of this.castMaterials) material.dispose();

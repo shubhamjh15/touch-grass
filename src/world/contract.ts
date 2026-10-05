@@ -101,6 +101,8 @@ export interface WorldStageProps {
   /** Show landmark hotspots as focusable buttons tracked to the island. Default: false. */
   landmarks?: boolean;
   onLandmark?: (id: LandmarkId) => void;
+  /** Short status shown after a landmark's label, e.g. `{ quests: '1/3', impact: '12 rings' }`. */
+  landmarkMeta?: Partial<Record<LandmarkId, string>>;
   /**
    * Share (0..1) of the stage width the island's lawn takes; the tree is always kept
    * inside the box as well. Default by mode: hero 0.86, hub 0.74, companion 0.86, ceremony 0.62.
