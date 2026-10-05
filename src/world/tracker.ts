@@ -2,6 +2,7 @@ import type { StageMode, WorldSnapshot } from './contract';
 import { MOTION } from './config';
 import { applySkyVars, skyAt } from './daylight';
 import { boxesIntersect, stepSpring, type Box, type Spring } from './framing';
+import { orbit } from './interaction';
 import { useWorldStore, type StageRecord } from './store';
 
 /**
@@ -24,6 +25,9 @@ export interface WorldFrame {
   dt: number;
   /** CSS size of the canvas, measured this frame (not `window.innerHeight`). */
   canvas: { width: number; height: number };
+  /** Top-left corner of the canvas in viewport coordinates. */
+  originX: number;
+  originY: number;
   /** Box the world occupies, relative to the canvas. Mid-flight it is between two stages. */
   box: Box;
   fit: number;
@@ -46,6 +50,13 @@ export interface WorldFrame {
   /** The live snapshot with the active stage's `preview` applied. */
   snapshot: WorldSnapshot;
   stage: StageRecord | null;
+  /** Yaw of the island (idle motion, drag, keys, hover) and extra camera elevation, radians. */
+  yaw: number;
+  tilt: number;
+  /** True while the user is turning the island or it is still coasting. */
+  interacting: boolean;
+  /** True when the box is exactly the active stage's rectangle (not flying, not fading). */
+  locked: boolean;
 }
 
 type FrameListener = (frame: WorldFrame) => void;
@@ -101,6 +112,8 @@ export function startTracker(layers: TrackerLayers): () => void {
   /** 0..1: short hops are carried flat, long flights lift off and arc. */
   let carry = 0;
   let skyHour = Number.NaN;
+  /** True when the loop has stopped itself because nothing is on screen. */
+  let asleep = false;
   let cachedSnapshot: WorldSnapshot | null = null;
   let cachedPreview: Partial<WorldSnapshot> | null = null;
   let merged: WorldSnapshot = useWorldStore.getState().snapshot;
@@ -117,6 +130,8 @@ export function startTracker(layers: TrackerLayers): () => void {
     time: 0,
     dt: 0,
     canvas: { width: 1, height: 1 },
+    originX: 0,
+    originY: 0,
     box: { x: 0, y: 0, width: 1, height: 1 },
     fit: 0.86,
     anchor: 1,
@@ -131,6 +146,10 @@ export function startTracker(layers: TrackerLayers): () => void {
     render: false,
     snapshot: merged,
     stage: null,
+    yaw: 0,
+    tilt: 0,
+    interacting: false,
+    locked: false,
   };
 
   const schedule = () => {
@@ -170,6 +189,8 @@ export function startTracker(layers: TrackerLayers): () => void {
     const canvasRect = layers.backdrop.getBoundingClientRect();
     frame.canvas.width = Math.max(1, canvasRect.width);
     frame.canvas.height = Math.max(1, canvasRect.height);
+    frame.originX = canvasRect.left;
+    frame.originY = canvasRect.top;
     let target: Box | null = null;
     if (stage) {
       const rect = stage.el.getBoundingClientRect();
@@ -226,6 +247,7 @@ export function startTracker(layers: TrackerLayers): () => void {
         if (radius !== written.radius) layers.sky.style.borderRadius = written.radius = radius;
         // A companion stage with a sky is a printed plate; the others bleed to the edges.
         layers.sky.dataset.frame = options.mode === 'companion' ? 'plate' : 'bleed';
+        layers.sky.dataset.mode = options.mode;
       }
 
       // While the stage stays the same every offset is at rest, so the box IS the
@@ -294,6 +316,14 @@ export function startTracker(layers: TrackerLayers): () => void {
       applySkyVars(layers.backdrop, sky);
     }
 
+    // 4. TURN. The island's yaw belongs to the frame, like its box.
+    const interactive = Boolean(stage && target && stage.options.interactive);
+    orbit.step(dt, stage ? stage.options.mode : frame.mode, reduced, interactive);
+    frame.yaw = orbit.yaw;
+    frame.tilt = orbit.pitch;
+    frame.interacting = orbit.moving;
+    frame.locked = Boolean(stage && target) && !frame.flying && dip === null && presence >= 1;
+
     const opacity = presence * dipOpacity;
     frame.time = (now - started) / 1000;
     frame.dt = dt;
@@ -307,16 +337,30 @@ export function startTracker(layers: TrackerLayers): () => void {
     frame.render = placed && opacity > 0.002 && boxesIntersect(box, frame.canvas, 96);
     writeLayers(opacity, shown.sky);
 
-    // 4. RENDER, in the same task as the reads.
+    // 5. RENDER, in the same task as the reads.
     listeners.forEach((listener) => listener(frame));
 
-    // Keep ticking while there is something to follow or to fade.
-    if (Object.keys(state.stages).length > 0 || presence > 0) schedule();
+    // Keep ticking only while something can be seen or is still settling. A world whose
+    // every stage has scrolled away requests no frames at all: a scroll, a resize or any
+    // store change (a stage becoming visible, a new snapshot) wakes it again.
+    let watched = false;
+    for (const id in state.stages) {
+      if ((state.stages[id] as StageRecord).visible > 0) watched = true;
+    }
+    const settling = frame.flying || dip !== null || (presence > 0 && presence < 1);
+    const fading = !stage && presence > 0;
+    if (watched || settling || fading || frame.render) schedule();
+    else asleep = true;
   }
 
   const wake = () => {
     if (!raf) last = 0;
+    asleep = false;
     schedule();
+  };
+  // Scrolling can bring a stage back before its IntersectionObserver reports it.
+  const onScroll = () => {
+    if (asleep) wake();
   };
   wakeTracker = wake;
   const pop = () => {
@@ -329,6 +373,7 @@ export function startTracker(layers: TrackerLayers): () => void {
   const unsubscribe = useWorldStore.subscribe(wake);
   document.addEventListener('visibilitychange', wake);
   window.addEventListener('resize', wake);
+  window.addEventListener('scroll', onScroll, { capture: true, passive: true });
   wake();
 
   return () => {
@@ -339,5 +384,6 @@ export function startTracker(layers: TrackerLayers): () => void {
     unsubscribe();
     document.removeEventListener('visibilitychange', wake);
     window.removeEventListener('resize', wake);
+    window.removeEventListener('scroll', onScroll, { capture: true });
   };
 }
