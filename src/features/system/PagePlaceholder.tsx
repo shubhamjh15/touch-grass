@@ -1,3 +1,5 @@
+'use client';
+
 import { WorldStage } from '@/world';
 
 /** Temporary stand-in used until a route's real page lands. */

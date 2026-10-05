@@ -1,10 +1,8 @@
-import { Outlet } from 'react-router';
+'use client';
+
+import type { ReactNode } from 'react';
 
 /** Shell for public pages: landing, methodology, privacy. */
-export function MarketingLayout() {
-  return (
-    <div className="min-h-dvh">
-      <Outlet />
-    </div>
-  );
+export function MarketingLayout({ children }: { children: ReactNode }) {
+  return <div className="min-h-dvh">{children}</div>;
 }
