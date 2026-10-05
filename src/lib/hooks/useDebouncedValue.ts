@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 
 /** The value, `delay` ms after it last changed. For search-as-you-type result counts and announcements. */

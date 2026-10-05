@@ -1,3 +1,5 @@
+'use client';
+
 import { useSyncExternalStore } from 'react';
 
 /** Settings → Motion. `system` follows the OS, `reduced` forces calm, `full` overrides the OS. */

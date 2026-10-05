@@ -1,3 +1,5 @@
+'use client';
+
 import { useCallback, useSyncExternalStore } from 'react';
 
 /** The bible's breakpoints (section 3.1), as min-width media queries. */
