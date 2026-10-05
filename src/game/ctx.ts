@@ -113,12 +113,34 @@ export function writeActivity(ctx: Ctx, kind: string, text: string): void {
   );
 }
 
-/** Queues a one-time message. A notice id that was already shown or queued is ignored. */
+/** Unread notices kept at most; older ones give way to newer ones. */
+const MAX_PENDING_NOTICES = 12;
+
+/** Notice kinds whose numbers add up: an unread one absorbs the next instead of stacking. */
+const SUMMED_NOTICES: Partial<Record<NoticeKind, readonly string[]>> = {
+  'auto-claimed': ['count', 'xp'],
+};
+
+/**
+ * Queues a one-time message. A notice id that was already shown or queued is ignored,
+ * unread summaries of the same kind are merged, and only the newest few are kept, so
+ * someone who never dismisses anything does not come back to a wall of messages.
+ */
 export function queueNotice(ctx: Ctx, kind: NoticeKind, key: string, data: Notice['data']): void {
   if (ctx.options.notices === false) return;
   const id = `${kind}:${key}`;
   if (ctx.s.seen.messages.includes(id) || ctx.s.notices.some((notice) => notice.id === id)) return;
-  const notice: Notice = { id, kind, ts: ctx.now, day: ctx.today, data };
-  ctx.s.notices = [...ctx.s.notices, notice];
+  const summed = SUMMED_NOTICES[kind];
+  const pending = summed ? ctx.s.notices.find((notice) => notice.kind === kind) : undefined;
+  const merged = { ...data };
+  if (pending && summed) {
+    for (const field of summed) {
+      merged[field] = Number(pending.data[field] ?? 0) + Number(data[field] ?? 0);
+    }
+  }
+  const notice: Notice = { id, kind, ts: ctx.now, day: ctx.today, data: merged };
+  ctx.s.notices = [...ctx.s.notices.filter((item) => item !== pending), notice].slice(
+    -MAX_PENDING_NOTICES,
+  );
   ctx.events.push({ type: 'notice', notice });
 }

@@ -30,6 +30,7 @@ import { completeLesson } from './lessons';
 import { levelOf } from './levels';
 import { logAction, removeLog } from './logging';
 import { gpEarnedOn, quietWeekCopy, recapToShow, recapWeeks, weekRecap } from './recap';
+import { validateState } from './schema';
 import { checkInvariants, createInitialState, isOnboarded } from './state';
 import { GameSession, TEST_SEED, localTime, plantedSession } from './testkit';
 import { finishBreak, signalBreak, startBreak } from './touchGrass';
@@ -151,6 +152,9 @@ describe('transactions', () => {
       }
       expect(checkInvariants(session.state), `day ${offset}`).toEqual([]);
     }
+    // Whatever a year of play produces must still be a save the app accepts.
+    expect(validateState(JSON.parse(JSON.stringify(session.state)))).toMatchObject({ ok: true });
+    expect(session.state.notices.length).toBeLessThanOrEqual(12);
     expect(session.state.xp).toBeGreaterThan(5000);
     expect(session.state.logs.length).toBeGreaterThan(500);
     for (const entry of Object.keys(session.state.days)) {
@@ -370,6 +374,28 @@ describe('notices and recap', () => {
     expect(session.state.seen.messages).toContain(notice?.id);
     session.at(noon(2) + 2000, (ctx) => dismissNotice(ctx, 'never-existed'));
     expect(session.state.seen.messages).toHaveLength(1);
+  });
+
+  it('merges unread auto-claim summaries instead of stacking them', () => {
+    const session = plantedSession(noon(0));
+    for (let offset = 0; offset < 30; offset += 1) {
+      session.at(noon(offset) + 1000, (ctx) =>
+        logAction(ctx, { actionId: 'plant-based-meal', qty: 3 }),
+      );
+      session.at(noon(offset) + 5000, (ctx) =>
+        logAction(ctx, { actionId: 'bus-instead-of-car', qty: 5 }),
+      );
+    }
+    session.tick(noon(30));
+    const summaries = session.state.notices.filter((notice) => notice.kind === 'auto-claimed');
+    expect(summaries).toHaveLength(1);
+    const autoClaims = session.state.quests.claims.filter((claim) => claim.auto);
+    expect(autoClaims.length).toBeGreaterThan(10);
+    expect(summaries[0]?.data).toEqual({
+      count: autoClaims.length,
+      xp: autoClaims.reduce((sum, claim) => sum + claim.xp, 0),
+    });
+    expect(session.state.notices.length).toBeLessThanOrEqual(12);
   });
 
   it('summarises a week from stored events', () => {

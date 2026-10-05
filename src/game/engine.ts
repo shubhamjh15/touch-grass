@@ -362,7 +362,9 @@ export function updateSettings(ctx: Ctx, patch: SettingsPatch): void {
     settings.celebrations = patch.celebrations;
   }
   if (Array.isArray(patch.hiddenActions)) {
-    const hidden = [...new Set(patch.hiddenActions.filter((id) => typeof id === 'string'))];
+    const hidden = [
+      ...new Set(patch.hiddenActions.filter((id) => typeof id === 'string' && id.length <= 80)),
+    ].slice(0, 200);
     if (hidden.join() !== settings.hiddenActions.join()) settings.hiddenActions = hidden;
   }
   if (Array.isArray(patch.restDays)) {

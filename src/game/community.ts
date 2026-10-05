@@ -211,7 +211,7 @@ export function toggleReaction(ctx: Ctx, targetId: string, reaction: string): bo
   if (!target || !kind) return false;
   const current = ctx.s.reactions[target] ?? [];
   const has = current.includes(kind);
-  const next = has ? current.filter((item) => item !== kind) : [...current, kind];
+  const next = has ? current.filter((item) => item !== kind) : [...current, kind].slice(-20);
   const reactions = { ...ctx.s.reactions };
   if (next.length === 0) delete reactions[target];
   else reactions[target] = next;
