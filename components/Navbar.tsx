@@ -35,7 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, setPage }) => {
           <div className="bg-neo-green p-2 border-2 border-neo-black rounded-lg">
             <Leaf size={24} className="text-neo-black" />
           </div>
-          <span className="text-xl font-bold tracking-tight hidden sm:block">Sustain-a-thon</span>
+          <span className="text-xl font-bold tracking-tight hidden sm:block">EcoQuest</span>
         </div>
 
         {/* Desktop Nav */}

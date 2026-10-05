@@ -21,10 +21,10 @@ export const Tracker: React.FC<TrackerProps> = ({ stats, logs, onLogAction }) =>
   const progressPercentage = (currentLevelProgress / 1000) * 100;
 
   const handleShare = () => {
-    const text = `I just reached Level ${stats.level} on Sustain-a-thon! 🌍 Saved ${stats.co2Saved.toFixed(1)}kg of CO2. #FixTheFuture`;
+    const text = `I just reached Level ${stats.level} on EcoQuest! 🌍 Saved ${stats.co2Saved.toFixed(1)}kg of CO2. #FixTheFuture`;
     if (navigator.share) {
       navigator.share({
-        title: 'Sustain-a-thon Progress',
+        title: 'EcoQuest Progress',
         text: text,
         url: window.location.href
       }).catch(console.error);

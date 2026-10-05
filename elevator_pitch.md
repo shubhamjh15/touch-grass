@@ -2,14 +2,14 @@
 In a world grappling with the "climate crisis," a parallel epidemic has emerged: **Eco-Anxiety**. Millions of people feel paralyzed by the sheer magnitude of the problem, leading to inaction and despair. We realized that the traditional narrative—fear, guilt, and austerity—was failing to motivate the digital generation. We asked ourselves: *What if saving the planet felt less like a chore and more like a massive multiplayer online game (MMO)?*
 
 ## What it does
-**Sustain-a-thon** is a gamified sustainability platform that transforms eco-conscious living into a high-dopamine, rewarding sport.
+**EcoQuest** is a gamified sustainability platform that transforms eco-conscious living into a high-dopamine, rewarding sport.
 1.  **AI-Powered Coaching:** Meets users with **EcoBot**, a context-aware AI driven by Google's Gemini model. Unlike generic chatbots, EcoBot analyzes user stats (XP, streak, badges) to provide hyper-personalized, optimistic encouragement.
 2.  **Visualized Impact:** Replaces abstract CO2 numbers with interactive, real-time data visualizations, making "invisible" contributions tangible.
 3.  **Gamification Engine:** A comprehensive system of XP, leveling curves, and unlocking badges (e.g., "10kg Club") to drive long-term user retention and habit formation.
 4.  **Micro-Learning:** Deconstructs complex climate science (Ocean Acidification, Grid Storage) into digestible, interactive modules.
 
 ## How we built it
-We architected **Sustain-a-thon** as a high-performance Single Page Application (SPA), leveraging the bleeding edge of the modern web ecosystem:
+We architected **EcoQuest** as a high-performance Single Page Application (SPA), leveraging the bleeding edge of the modern web ecosystem:
 
 *   **Core Architecture:** Built on **React 19** and **Vite**, utilizing a modular component-based architecture. We employed TypeScript for strict type safety across our data models (`UserStats`, `ActionLogs`), ensuring a robust and maintainable codebase.
 *   **Generative AI Integration:** We engineered a seamless integration with **Google's Gemini 1.5 Flash API**. By implementing **dynamic prompt injection**, we feed real-time application state—user level, recent activities, and unlocked achievements—into the system context. This allows the LLM to generate responses that are not just accurate, but contextually aware and emotionally resonant.
@@ -32,7 +32,7 @@ We architected **Sustain-a-thon** as a high-performance Single Page Application 
 *   **Gamification Psychology:** Small UI feedbacks—like a progress bar filling up or a badge unlocking—have a disproportionate impact on user motivation.
 *   **Sustainable Web Design:** Just as we track carbon, we optimized our asset delivery and code splitting to ensure the website itself has a low digital carbon footprint.
 
-## What's next for Sustain-a-thon
+## What's next for EcoQuest
 *   **Backend Migration:** Migrating our persistence layer to **Supabase (PostgreSQL)** to enable social features and real-time multiplayer leaderboards.
 *   **Mobile Native:** Porting the React code to **React Native** (Expo) for iOS/Android deployment.
 *   **IoT Integration:** Connecting to smart home APIs to automatically log energy savings.

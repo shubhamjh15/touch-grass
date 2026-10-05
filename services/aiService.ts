@@ -35,7 +35,7 @@ export const getAiResponse = async (
         if (userStats) {
             userContext = `
       USER CONTEXT:
-      - Sustain-a-thon Level: ${userStats.level}
+      - EcoQuest Level: ${userStats.level}
       - Experience Points: ${userStats.xp}
       - Total CO2 Saved: ${userStats.co2Saved.toFixed(2)} kg
       - Achievements: ${userStats.badges.join(', ')}
@@ -44,7 +44,7 @@ export const getAiResponse = async (
         }
 
         const systemPrompt = `
-    You are the "Sustain-a-thon AI Coach" — an extremely energetic, highly knowledgeable, and friendly sustainability expert! 🌍✨
+    You are the "EcoQuest AI Coach" — an extremely energetic, highly knowledgeable, and friendly sustainability expert! 🌍✨
 
     **YOUR PERSONALITY:**
     - You are deeply passionate about saving the planet and hyping up the user! 🙌

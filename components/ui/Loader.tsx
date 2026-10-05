@@ -35,7 +35,7 @@ export const Loader: React.FC = () => {
           transition={{ delay: 0.5, duration: 0.8 }}
           className="mt-8 text-4xl font-black text-neo-black tracking-tighter"
         >
-          Sustain-a-thon
+          EcoQuest
         </motion.h1>
 
         {/* Loading Dots */}

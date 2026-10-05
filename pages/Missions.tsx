@@ -43,7 +43,7 @@ export const Missions: React.FC<MissionsProps> = ({ onCompleteMission }) => {
   };
 
   const handleShare = (missionTitle: string) => {
-     const text = `I just completed the Epic "${missionTitle}" mission on Sustain-a-thon! 🌿 I'm leveling up my eco-impact. #FixTheFuture`;
+     const text = `I just completed the Epic "${missionTitle}" mission on EcoQuest! 🌿 I'm leveling up my eco-impact. #FixTheFuture`;
     if (navigator.share) {
       navigator.share({
         title: 'Mission Accomplished!',
