@@ -22,3 +22,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Tooling output
+coverage
+playwright-report
+test-results
+dev-dist
+.vercel
+*.tsbuildinfo
