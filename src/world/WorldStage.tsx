@@ -18,6 +18,7 @@ export function WorldStage({
   fit = 0.86,
   anchor = 'bottom',
   priority = 0,
+  sky,
   label,
   className,
   children,
@@ -30,6 +31,7 @@ export function WorldStage({
   // `preview` is usually an inline object; key it by value so effects stay quiet.
   const previewKey = preview ? JSON.stringify(preview) : '';
   const canInteract = interactive ?? (mode === 'hero' || mode === 'hub');
+  const showSky = sky ?? mode !== 'companion';
 
   const onLandmarkRef = useRef(onLandmark);
   useEffect(() => {
@@ -46,8 +48,9 @@ export function WorldStage({
       fit,
       anchor,
       priority,
+      sky: showSky,
     }),
-    [mode, previewKey, canInteract, landmarks, fit, anchor, priority],
+    [mode, previewKey, canInteract, landmarks, fit, anchor, priority, showSky],
   );
 
   const latestOptions = useRef(options);
