@@ -1,22 +1,31 @@
 import * as THREE from 'three';
 import { hexToRgb } from '../color';
-import { INK, PAPER, SHADING, STICKER, TONE, TONE_COUNT } from '../config';
+import {
+  INK,
+  ISLAND,
+  PAPER,
+  SHADING,
+  STICKER,
+  TONE,
+  TONE_COUNT,
+  type StickerSpec,
+} from '../config';
 
 /**
  * The paint system of the Grove: one small shader family that makes a 3D model read
- * as a printed, die-cut sticker.
+ * as a printed, die-cut sticker (design bible 5.2).
  *
  * Every solid is drawn in up to five ordered passes ("layers of paper"):
  *
- *   shadow   the silhouette swollen by ink + die-cut margin + keyline, shifted down-right, ink
- *   keyline  the same swollen silhouette, unshifted, ink (a hairline around the white)
- *   white    the silhouette swollen by ink + die-cut margin, paper white
- *   fill     the surface itself: flat tones, a halftone band, a glossy highlight
+ *   shadow   the silhouette swollen by ink + margin + kiss-cut line, shifted down-right, ink
+ *   keyline  the same swollen silhouette, unshifted, ink (the kiss-cut hairline)
+ *   white    the silhouette swollen by ink + margin, sticker white, never graded
+ *   fill     the surface itself: base tone, a halftone band, shade tone, one oval of gloss
  *   ink      the silhouette swollen by the ink width, back faces only, depth-tested
  *
  * The first three ignore depth and are drawn first, for all solids, so they add up to
- * one union: a single white border and a single hard shadow around tree + island,
- * exactly like three stacked SVG copies of a silhouette. "Swollen" is an offset surface:
+ * one union: a single white margin and a single hard shadow around tree + island that
+ * re-cut themselves every frame as the crown sways. "Swollen" is an offset surface:
  * each vertex moves along its hull vector in view space. The camera is orthographic in
  * CSS-pixel units, so the offset is a constant number of pixels at any scale, and under
  * an orthographic projection the outline of an offset surface is exactly the outline
@@ -24,7 +33,8 @@ import { INK, PAPER, SHADING, STICKER, TONE, TONE_COUNT } from '../config';
  * and no extra render target is needed.
  *
  * Colours are sRGB-encoded and written straight to the canvas (no tone mapping, no
- * colour-space pass), so an ungraded fill equals its CSS hex to the bit.
+ * colour-space pass, no light maths on colours), so an ungraded fill equals its CSS
+ * hex to the bit.
  */
 
 const VERTEX = /* glsl */ `
@@ -37,8 +47,11 @@ uniform float uFlatten;
 uniform float uDepthBias;
 uniform float uGroveScale;
 uniform vec3 uGroveOrigin;
+uniform vec3 uSun;
+uniform vec4 uCastPlane;
 
 attribute vec3 aHull;
+attribute vec3 aNormal;
 attribute vec3 aSway;
 attribute vec3 aTone;
 attribute float aPart;
@@ -62,28 +75,43 @@ vec3 groveSway(vec3 sw) {
     cos(uTime * 1.9 + phase * 0.7)
   ) * (0.045 * sw.y);
   o *= uWind.w * gust;
-  o.y -= uDroop * (0.4 * sw.y * sw.y + 0.05 * sw.x);
+  // Thirst: the tips hang (about 14 degrees at the outermost twig) and the crown sinks a little.
+  o.y -= uDroop * (0.42 * sw.y * sw.y + 0.07 * sw.x);
   return o;
 }
 
 void main() {
   vec3 p = position;
   vec3 hull = aHull;
+  vec3 shading = aHull;
+  #ifdef USE_NORMAL
+    shading = aNormal;
+  #endif
   float alive = 1.0;
   vec3 sway = groveSway(aSway);
 
   #ifdef USE_INSTANCING
     mat3 basis = mat3(instanceMatrix);
-    vec3 scale2 = vec3(dot(basis[0], basis[0]), dot(basis[1], basis[1]), dot(basis[2], basis[2]));
+    vec3 scale2 = max(vec3(dot(basis[0], basis[0]), dot(basis[1], basis[1]), dot(basis[2], basis[2])), vec3(1e-8));
     // A part that is just popping in grows its outline with it instead of starting as a dot.
     alive = clamp(sqrt(scale2.x) * uGroveScale / 7.0, 0.0, 1.0);
     // Normals of a non-uniformly scaled instance need the inverse transpose.
-    hull = basis * (hull / max(scale2, vec3(1e-8)));
+    hull = basis * (hull / scale2);
+    shading = basis * (shading / scale2);
     p = (instanceMatrix * vec4(p, 1.0)).xyz;
     vec3 centre = instanceMatrix[3].xyz + sway;
   #endif
 
   p += sway;
+
+  #ifdef CAST
+    // Planar projection along the sun onto the lawn: a hard, flat sundial shadow.
+    p += uCastPlane.xyz;
+    float t = max(p.y - uCastPlane.w, 0.0) / uSun.y;
+    p -= uSun * t;
+    p.y = uCastPlane.w;
+  #endif
+
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
 
   vec3 hullView = mat3(modelViewMatrix) * hull;
@@ -92,7 +120,7 @@ void main() {
   mv.xyz += hullView * (length(aHull) * uExpand * alive);
   mv.xy += uShift;
 
-  #ifdef USE_INSTANCING
+  #if defined(USE_INSTANCING) && !defined(CAST)
     // Squash each instance towards the depth of its centre: clumps then overlap like
     // stacked paper discs (each keeps its whole outline) instead of intersecting spheres.
     float centreZ = (modelViewMatrix * vec4(centre, 1.0)).z;
@@ -102,10 +130,28 @@ void main() {
 
   gl_Position = projectionMatrix * mv;
   vView = mv.xyz;
-  vNormal = hullView;
+  vNormal = mat3(modelViewMatrix) * shading;
   vTone = vec3(aTone.xy + aPart, aTone.z);
-  vSticker = (mv.xy - uGroveOrigin.xy) / uGroveScale;
+  vSticker = mv.xy - uGroveOrigin.xy;
   vLocal = p;
+}
+`;
+
+const DOTS = /* glsl */ `
+uniform float uDotPitch;
+uniform vec2 uDotTurn;
+varying vec2 vSticker;
+
+// Printed dots, 1 inside a dot. The screen is anchored to the sticker, so it travels
+// with the subject instead of swimming over it; its pitch is constant in pixels.
+float printedDots(float radius) {
+  vec2 q = vec2(
+    uDotTurn.x * vSticker.x - uDotTurn.y * vSticker.y,
+    uDotTurn.y * vSticker.x + uDotTurn.x * vSticker.y
+  ) / uDotPitch;
+  float d = length(fract(q) - 0.5);
+  float soft = length(fwidth(q)) * 0.6 + 1e-4;
+  return 1.0 - smoothstep(radius - soft, radius + soft, d);
 }
 `;
 
@@ -116,107 +162,114 @@ void main() {
 }
 `;
 
+const DOT_RADIUS = (SHADING.dotRadiusPx / SHADING.dotPitchPx).toFixed(4);
+
 const FILL_FRAGMENT = /* glsl */ `
-uniform vec3 uLit[${TONE_COUNT}];
+uniform vec3 uBase[${TONE_COUNT}];
 uniform vec3 uShade[${TONE_COUNT}];
 uniform vec3 uHighlight[${TONE_COUNT}];
-uniform vec3 uGradeLit;
-uniform vec3 uGradeShade;
+uniform vec3 uGrade;
 uniform vec3 uLight;
 uniform vec2 uLight2;
-uniform vec2 uBands;
-uniform float uDotPitch;
-uniform vec2 uDotTurn;
 uniform float uGloss;
 uniform vec4 uDecal;
-
+${DOTS}
 varying vec3 vView;
 varying vec3 vNormal;
 varying vec3 vTone;
-varying vec2 vSticker;
 varying vec3 vLocal;
-
-// Printed dots: 1 where the lit tone shows, 0 where the shade tone shows.
-// The screen is fixed to the sticker, so it scales and travels with the subject.
-float halftone(float amount) {
-  if (amount >= 1.0) return 1.0;
-  if (amount <= 0.0) return 0.0;
-  vec2 q = vec2(
-    uDotTurn.x * vSticker.x - uDotTurn.y * vSticker.y,
-    uDotTurn.y * vSticker.x + uDotTurn.x * vSticker.y
-  ) / uDotPitch;
-  float d = length(fract(q) - 0.5);
-  float radius = 0.76 * sqrt(1.0 - amount);
-  float soft = length(fwidth(q)) * 0.6 + 1e-4;
-  return smoothstep(radius - soft, radius + soft, d);
-}
 
 void main() {
   int toneA = int(vTone.x + 0.5);
   int toneB = int(vTone.y + 0.5);
-  vec3 lit = mix(uLit[toneA], uLit[toneB], vTone.z);
+  vec3 base = mix(uBase[toneA], uBase[toneB], vTone.z);
   vec3 shade = mix(uShade[toneA], uShade[toneB], vTone.z);
-  float amount;
-  float gloss = 0.0;
 
-  #if defined(SHADE_CRESCENT)
-    // The mockup's bubble: a lit disc pushed towards the light, a dotted rim, a bean of gloss.
-    vec3 n = normalize(vNormal);
-    float full = length(n.xy - uLight2 * ${SHADING.crescentShade.toFixed(3)}) - 1.0;
-    float band = length(n.xy - uLight2 * ${SHADING.crescentBand.toFixed(3)}) - 1.0;
-    amount = band <= 0.0 ? 1.0 : (full >= 0.0 ? 0.0 : -full / (band - full));
-    vec2 g = n.xy - uLight2 * ${SHADING.glossAt.toFixed(3)};
-    float along = dot(g, vec2(-uLight2.y, uLight2.x));
-    float across = dot(g, uLight2) + ${SHADING.glossBend.toFixed(3)} * along * along;
-    float bean = along * along / ${(SHADING.glossLength ** 2).toFixed(5)}
-      + across * across / ${(SHADING.glossWidth ** 2).toFixed(5)};
-    float edge = fwidth(bean) + 1e-4;
-    gloss = (1.0 - smoothstep(1.0 - edge, 1.0 + edge, bean)) * uGloss * step(0.0, n.z);
-  #elif defined(SHADE_SMOOTH)
-    amount = clamp((dot(normalize(vNormal), uLight) - uBands.x) / (uBands.y - uBands.x), 0.0, 1.0);
+  #ifdef SHADE_FACET
+    // Loose bits keep flat facets: the face normal from screen-space derivatives.
+    vec3 n = normalize(cross(dFdx(vView), dFdy(vView)));
   #else
-    // Flat facets: the face normal from screen-space derivatives, so low-poly stays low-poly.
-    vec3 face = normalize(cross(dFdx(vView), dFdy(vView)));
-    amount = clamp((dot(face, uLight) - uBands.x) / (uBands.y - uBands.x), 0.0, 1.0);
+    vec3 n = normalize(vNormal);
   #endif
 
-  vec3 color = mix(shade * uGradeShade, lit * uGradeLit, halftone(amount));
+  // Four printed steps, one lamp: base, a band of shade-coloured dots, shade, gloss.
+  float ndl = dot(n, uLight);
+  float edge = fwidth(ndl) * 0.7 + 1e-4;
+  #ifdef USE_HALFTONE
+    float lit = smoothstep(${SHADING.base.toFixed(3)} - edge, ${SHADING.base.toFixed(3)} + edge, ndl);
+    float banded = smoothstep(${SHADING.shade.toFixed(3)} - edge, ${SHADING.shade.toFixed(3)} + edge, ndl);
+    float paint = mix(banded * (1.0 - printedDots(${DOT_RADIUS})), 1.0, lit);
+  #else
+    float paint = smoothstep(${SHADING.hardEdge.toFixed(3)} - edge, ${SHADING.hardEdge.toFixed(3)} + edge, ndl);
+  #endif
+  vec3 color = mix(shade, base, paint);
 
   #ifdef USE_DECAL
-    // Hard-edged contact shadow of the crown, printed on the grass only.
+    // Low tier stand-in for the sundial shadow: a flat patch of the lawn's shade tone.
     if (toneA == ${TONE.grassPatch} || toneA == ${TONE.grassTop}) {
       float d = length(vLocal.xz - uDecal.xy);
       float soft = fwidth(d) + 1e-4;
-      float inside = 1.0 - smoothstep(uDecal.z - soft, uDecal.z + soft, d);
-      color = mix(color, shade * uGradeLit, inside * uDecal.w);
+      color = mix(color, shade, (1.0 - smoothstep(uDecal.z - soft, uDecal.z + soft, d)) * uDecal.w);
     }
   #endif
 
-  color = mix(color, mix(uHighlight[toneA], uHighlight[toneB], vTone.z) * uGradeLit, gloss);
-  gl_FragColor = vec4(color, 1.0);
+  #ifdef USE_GLOSS
+    // One hard oval towards the lamp, bent round the bubble like a real reflection.
+    vec2 g = n.xy - uLight2 * ${SHADING.glossAt.toFixed(3)};
+    float along = dot(g, vec2(-uLight2.y, uLight2.x));
+    float across = dot(g, uLight2) + ${SHADING.glossBend.toFixed(3)} * along * along;
+    float oval = along * along / ${(SHADING.glossLength ** 2).toFixed(5)}
+      + across * across / ${(SHADING.glossWidth ** 2).toFixed(5)};
+    float rim = fwidth(oval) + 1e-4;
+    float gloss = (1.0 - smoothstep(1.0 - rim, 1.0 + rim, oval)) * uGloss * step(0.0, n.z);
+    color = mix(color, mix(uHighlight[toneA], uHighlight[toneB], vTone.z), gloss);
+  #endif
+
+  gl_FragColor = vec4(color * uGrade, 1.0);
 }
 `;
 
 const EMBLEM_FRAGMENT = /* glsl */ `
-uniform vec3 uLit[${TONE_COUNT}];
+uniform vec3 uBase[${TONE_COUNT}];
 uniform vec3 uShade[${TONE_COUNT}];
-uniform vec3 uGradeLit;
+uniform vec3 uGrade;
 uniform float uRings;
+uniform vec4 uEmblem;
 varying vec3 vLocal;
 varying vec3 vTone;
-uniform vec4 uEmblem;
 
 void main() {
-  // Growth rings: one more for every stretch of days the user has shown up.
+  // Growth rings: 1 to 5 concentric ink rings on a paper oval, one per milestone of days.
   vec2 p = (vLocal.xy - uEmblem.xy) / uEmblem.zw;
-  float r = length(p);
-  float wave = abs(fract(r * uRings - 0.25) - 0.5);
-  float soft = fwidth(r * uRings) + 1e-4;
-  float line = 1.0 - smoothstep(0.2 - soft, 0.2 + soft, wave);
-  float core = 1.0 - smoothstep(0.14, 0.14 + fwidth(r) + 1e-4, r);
+  float r = length(p) / 0.84;
+  float t = r * (uRings + 0.4);
+  float soft = fwidth(t) + 1e-4;
+  float ring = 1.0 - smoothstep(0.17 - soft, 0.17 + soft, abs(fract(t + 0.5) - 0.5));
+  ring *= step(0.5, t) * step(t, uRings + 0.3);
+  float dot = fwidth(r) + 1e-4;
+  float core = 1.0 - smoothstep(0.13 - dot, 0.13 + dot, r);
   int tone = int(vTone.x + 0.5);
-  vec3 color = mix(uLit[tone], uShade[tone], max(line * step(r, 0.82), core));
-  gl_FragColor = vec4(color * uGradeLit, 1.0);
+  gl_FragColor = vec4(mix(uBase[tone], uShade[tone], max(ring, core)) * uGrade, 1.0);
+}
+`;
+
+const CAST_FRAGMENT = /* glsl */ `
+uniform vec3 uShade[${TONE_COUNT}];
+uniform vec3 uGrade;
+uniform vec4 uCoast;
+uniform float uCast;
+${DOTS}
+varying vec3 vLocal;
+
+void main() {
+  // Clipped to the lawn: the shadow never spills onto the die-cut margin.
+  float angle = atan(vLocal.z, vLocal.x);
+  float rim = ${ISLAND.radius.toFixed(2)} * (1.0 + uCoast.x * sin(2.0 * angle + uCoast.y)
+    + uCoast.z * sin(3.0 * angle + uCoast.w)) - 0.12;
+  if (length(vLocal.xz) > rim) discard;
+  // At dusk the shadow is not faded, it is printed away: dots shrink until none are left.
+  if (uCast < 0.999 && printedDots(0.72 * sqrt(uCast)) < 0.5) discard;
+  gl_FragColor = vec4(uShade[${TONE.grassTop}] * uGrade, 1.0);
 }
 `;
 
@@ -230,70 +283,88 @@ export interface SharedUniforms {
   uDroop: Uniform<number>;
   uGroveScale: Uniform<number>;
   uGroveOrigin: Uniform<THREE.Vector3>;
-  uLit: Uniform<Float32Array>;
+  uBase: Uniform<Float32Array>;
   uShade: Uniform<Float32Array>;
   uHighlight: Uniform<Float32Array>;
-  uGradeLit: Uniform<THREE.Vector3>;
-  uGradeShade: Uniform<THREE.Vector3>;
+  uGrade: Uniform<THREE.Vector3>;
   uLight: Uniform<THREE.Vector3>;
   uLight2: Uniform<THREE.Vector2>;
-  uBands: Uniform<THREE.Vector2>;
   uDotPitch: Uniform<number>;
   uDotTurn: Uniform<THREE.Vector2>;
   uGloss: Uniform<number>;
   uDecal: Uniform<THREE.Vector4>;
   uRings: Uniform<number>;
   uEmblem: Uniform<THREE.Vector4>;
+  /** Towards the sun, in the island's rest frame. */
+  uSun: Uniform<THREE.Vector3>;
+  /** xyz: offset from tree space to island space; w: height of the lawn plane. */
+  uCastPlane: Uniform<THREE.Vector4>;
+  /** Rim of the lawn: a1, p1, a2, p2 of the island model. */
+  uCoast: Uniform<THREE.Vector4>;
+  uCast: Uniform<number>;
 }
 
 export function createSharedUniforms(): SharedUniforms {
+  const lamp = new THREE.Vector3(...SHADING.lamp).normalize();
   return {
     uTime: { value: 0 },
     uWind: { value: new THREE.Vector4(0.8, 0, 0.6, 1) },
     uDroop: { value: 0 },
     uGroveScale: { value: 1 },
     uGroveOrigin: { value: new THREE.Vector3() },
-    uLit: { value: new Float32Array(TONE_COUNT * 3) },
+    uBase: { value: new Float32Array(TONE_COUNT * 3) },
     uShade: { value: new Float32Array(TONE_COUNT * 3) },
     uHighlight: { value: new Float32Array(TONE_COUNT * 3) },
-    uGradeLit: { value: new THREE.Vector3(1, 1, 1) },
-    uGradeShade: { value: new THREE.Vector3(1, 1, 1) },
-    uLight: { value: new THREE.Vector3(-0.5, 0.6, 0.6).normalize() },
-    uLight2: { value: new THREE.Vector2(-0.64, 0.77) },
-    uBands: { value: new THREE.Vector2(SHADING.shade, SHADING.lit) },
-    uDotPitch: { value: SHADING.dotPitch },
+    uGrade: { value: new THREE.Vector3(1, 1, 1) },
+    uLight: { value: lamp },
+    uLight2: { value: new THREE.Vector2(lamp.x, lamp.y).normalize() },
+    uDotPitch: { value: SHADING.dotPitchPx },
     uDotTurn: { value: new THREE.Vector2(Math.cos(SHADING.dotAngle), Math.sin(SHADING.dotAngle)) },
     uGloss: { value: 1 },
     uDecal: { value: new THREE.Vector4(0, 0, 0, 0) },
-    uRings: { value: 2 },
+    uRings: { value: 1 },
     uEmblem: { value: new THREE.Vector4(0, 0, 1, 1) },
+    uSun: { value: new THREE.Vector3(0, 1, 0) },
+    uCastPlane: { value: new THREE.Vector4(0, 0, 0, 0.03) },
+    uCoast: { value: new THREE.Vector4(0, 0, 0, 0) },
+    uCast: { value: 1 },
   };
 }
 
-export type ShadeMode = 'facet' | 'crescent' | 'smooth' | 'emblem';
+export type ShadeMode = 'smooth' | 'facet' | 'emblem';
 
 export interface LayerOptions {
   shade: ShadeMode;
+  /** The geometry carries its own shading normals (`aNormal`) instead of using the hull. */
+  normals?: boolean;
+  gloss?: boolean;
+  halftone?: boolean;
   /** 1 keeps real depth; below 1 squashes instances towards their centre depth. */
   flatten?: number;
-  /** Share of the full ink width this solid's outline gets (small parts are finer). */
+  /** Share of the full ink width this solid's outline gets (props 0.75, loose bits finer). 0 = none. */
   ink?: number;
-  /** Whether the solid joins the union passes (white margin, keyline, shadow). */
+  /** Whether the solid joins the union passes (white margin and shadow). */
   sticker?: boolean;
+  /** Kiss-cut hairline around the margin (off on the low tier). */
+  keyline?: boolean;
   decal?: boolean;
+  /** Draw order of the fill among fills. The lawn goes first so the sundial shadow can land on it. */
+  fillOrder?: number;
 }
 
 /** The pass materials of one solid, in draw order. */
 export interface Layer {
   options: Required<LayerOptions>;
   fill: THREE.ShaderMaterial;
-  ink: THREE.ShaderMaterial;
+  ink: THREE.ShaderMaterial | null;
   shadow: THREE.ShaderMaterial | null;
   keyline: THREE.ShaderMaterial | null;
   white: THREE.ShaderMaterial | null;
 }
 
 export const PASS_ORDER = { shadow: -30, keyline: -20, white: -10, fill: 0, ink: 1 } as const;
+/** Between the lawn's fill and every other fill. */
+export const ORDER = { lawn: -1, cast: -0.5, ticks: -0.25 } as const;
 export type PassName = keyof typeof PASS_ORDER;
 
 const inkColor = new THREE.Vector3(...hexToRgb(INK));
@@ -312,15 +383,22 @@ function passUniforms(shared: SharedUniforms, flatten: number, flat?: THREE.Vect
 
 export function createLayer(shared: SharedUniforms, input: LayerOptions): Layer {
   const options: Required<LayerOptions> = {
+    normals: false,
+    gloss: false,
+    halftone: true,
     flatten: 1,
     ink: 1,
     sticker: true,
+    keyline: true,
     decal: false,
+    fillOrder: PASS_ORDER.fill,
     ...input,
   };
   const defines: Record<string, string> = {};
-  if (options.shade === 'crescent') defines.SHADE_CRESCENT = '';
-  if (options.shade === 'smooth') defines.SHADE_SMOOTH = '';
+  if (options.shade === 'facet') defines.SHADE_FACET = '';
+  if (options.normals) defines.USE_NORMAL = '';
+  if (options.gloss) defines.USE_GLOSS = '';
+  if (options.halftone) defines.USE_HALFTONE = '';
   if (options.decal) defines.USE_DECAL = '';
 
   const fill = new THREE.ShaderMaterial({
@@ -343,34 +421,51 @@ export function createLayer(shared: SharedUniforms, input: LayerOptions): Layer 
       depthWrite: !union,
     });
 
-  const ink = flat(inkColor, false);
+  const ink = options.ink > 0 ? flat(inkColor, false) : null;
   // Keeps a solid's own outline from z-fighting its fill where the two nearly touch.
-  (ink.uniforms.uDepthBias as Uniform<number>).value = 0.6;
+  if (ink) (ink.uniforms.uDepthBias as Uniform<number>).value = 0.6;
 
   return {
     options,
     fill,
     ink,
     shadow: options.sticker ? flat(inkColor, true) : null,
-    keyline: options.sticker ? flat(inkColor, true) : null,
+    keyline: options.sticker && options.keyline ? flat(inkColor, true) : null,
     white: options.sticker ? flat(paperColor, true) : null,
   };
 }
 
-/** Sets the pixel widths of a layer's passes for the current sticker weight (0..1). */
-export function weighLayer(layer: Layer, weight: number): void {
+/** The sundial shadow of a tree solid: its geometry, flattened onto the lawn along the sun. */
+export function createCastMaterial(shared: SharedUniforms): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    vertexShader: VERTEX,
+    fragmentShader: CAST_FRAGMENT,
+    uniforms: passUniforms(shared, 1),
+    defines: { CAST: '' },
+    toneMapped: false,
+    side: THREE.DoubleSide,
+    depthTest: false,
+    depthWrite: false,
+  });
+}
+
+/**
+ * Sets the pixel widths of a layer's passes. `lift` (0..1) is how far the sticker is
+ * peeled off the page while it is carried between stages: the shadow lengthens.
+ */
+export function weighLayer(layer: Layer, spec: StickerSpec, lift = 0): void {
   const set = (material: THREE.ShaderMaterial | null, expand: number, shift = 0) => {
     if (!material) return;
     (material.uniforms.uExpand as Uniform<number>).value = expand;
     (material.uniforms.uShift as Uniform<THREE.Vector2>).value.set(shift, -shift);
   };
-  const ink = STICKER.inkPx * layer.options.ink * weight;
-  const margin = ink + STICKER.borderPx * weight;
-  const outer = margin + STICKER.keylinePx * Math.max(weight, 0.7);
+  const ink = spec.ink * layer.options.ink;
+  const margin = ink + spec.margin;
+  const outer = margin + spec.keyline;
   set(layer.ink, ink);
   set(layer.white, margin);
   set(layer.keyline, outer);
-  set(layer.shadow, outer, STICKER.shadowPx * weight);
+  set(layer.shadow, outer, spec.shadow * (1 + (STICKER.carriedShadow - 1) * lift));
 }
 
 export function disposeLayer(layer: Layer): void {

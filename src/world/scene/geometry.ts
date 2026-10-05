@@ -130,6 +130,7 @@ export function soupGeometry(
   maxMiter: number,
   tones?: ArrayLike<number>,
   parts?: ArrayLike<number>,
+  normals?: ArrayLike<number>,
 ): THREE.BufferGeometry {
   const geometry = new THREE.BufferGeometry();
   const count = positions.length / 3;
@@ -144,6 +145,9 @@ export function soupGeometry(
     geometry.setAttribute('aTone', new THREE.BufferAttribute(data, 3));
   }
   if (parts) geometry.setAttribute('aPart', new THREE.BufferAttribute(Float32Array.from(parts), 1));
+  if (normals) {
+    geometry.setAttribute('aNormal', new THREE.BufferAttribute(Float32Array.from(normals), 3));
+  }
   return geometry;
 }
 
@@ -170,13 +174,23 @@ export function tierGeometry(teeth: number): THREE.BufferGeometry {
     const radius = tip ? 1 : 0.8;
     hem.push([Math.cos(angle) * radius, tip ? 0 : 0.11, Math.sin(angle) * radius]);
   }
+  // Shading normals follow the smooth cone, so the shade falls in one clean wedge.
+  const normals: number[] = [];
+  const slope = (point: [number, number, number]): [number, number, number] => {
+    const flat = Math.hypot(point[0], point[2]) || 1;
+    return [point[0] / flat / Math.SQRT2, Math.SQRT1_2, point[2] / flat / Math.SQRT2];
+  };
   for (let i = 0; i < hem.length; i += 1) {
     const a = hem[i] as [number, number, number];
     const b = hem[(i + 1) % hem.length] as [number, number, number];
+    const na = slope(a);
+    const nb = slope(b);
     soup.push(0, 1, 0, ...b, ...a);
+    normals.push((na[0] + nb[0]) / 2, na[1], (na[2] + nb[2]) / 2, ...nb, ...na);
     soup.push(0, 0.2, 0, ...a, ...b);
+    normals.push(0, -1, 0, 0, -1, 0, 0, -1, 0);
   }
-  return soupGeometry(soup, 1.3);
+  return soupGeometry(soup, 1.3, undefined, undefined, normals);
 }
 
 /**
@@ -305,6 +319,20 @@ export function emblemGeometry(
     soup.push(0, 0, 0, ...point(j, 0), ...point(i, 0));
   }
   return soupGeometry(soup, 1.2, new Float32Array(soup.length / 3).fill(tone));
+}
+
+/** Flat marks printed on a surface (the sundial's hour ticks): no hull, so no outline. */
+export function decalGeometry(positions: ArrayLike<number>, tone: number): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry();
+  const count = positions.length / 3;
+  const tones = new Float32Array(count * 3);
+  for (let i = 0; i < count; i += 1) {
+    tones[i * 3] = tone;
+    tones[i * 3 + 1] = tone;
+  }
+  geometry.setAttribute('position', new THREE.BufferAttribute(Float32Array.from(positions), 3));
+  geometry.setAttribute('aTone', new THREE.BufferAttribute(tones, 3));
+  return geometry;
 }
 
 /**

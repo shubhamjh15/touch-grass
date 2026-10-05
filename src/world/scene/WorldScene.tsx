@@ -1,3 +1,5 @@
+'use client';
+
 import { Canvas, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useState } from 'react';
 import type { OrthographicCamera } from 'three';

@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { clamp01, damp, smoothstep } from '@/lib/math';
-import { CAMERA, ISLAND, MOTION, QUALITY, TONE } from '../config';
+import { CAMERA, ISLAND, MOTION, QUALITY, SHADING, STICKER, TONE } from '../config';
 import type { Species, WorldQuality } from '../contract';
 import { hourDelta, lightAt, wrapHour } from '../daylight';
 import { fitSubject, type Placement } from '../framing';
-import { createToneTable, droopFor, glossFor, resolveTones } from '../tones';
+import { createToneTable, droopFor, glossFor, resolveTones, swayFor } from '../tones';
 import type { WorldFrame } from '../tracker';
 import { subjectFrame } from '../tree/frame';
 import { generateTree } from '../tree/generate';
@@ -15,6 +15,7 @@ import { composeInto } from '../tree/vec';
 import {
   blobGeometry,
   blossomGeometry,
+  decalGeometry,
   emblemGeometry,
   leafGeometry,
   rockGeometry,
@@ -26,7 +27,9 @@ import {
   type WoodMesh,
 } from './geometry';
 import {
+  ORDER,
   PASS_ORDER,
+  createCastMaterial,
   createLayer,
   createSharedUniforms,
   disposeLayer,
@@ -37,7 +40,7 @@ import {
 } from './materials';
 
 /** One solid of the Grove: a geometry drawn once per sticker pass. */
-interface Solid {
+export interface Solid {
   layer: Layer;
   geometry: THREE.BufferGeometry;
   meshes: THREE.Mesh[];
@@ -57,12 +60,12 @@ const TAU = Math.PI * 2;
  * computed by the tracker and the snapshot to show, eases what needs easing, re-poses
  * the tree only when the displayed growth changes, and updates a handful of uniforms.
  *
- * Seams for the next layer of work (pulses, props, particles, landmarks) are the
- * public members: `root`, `spin`, `island`, `tree`, `uniforms`, `addSolid`, `pose`,
- * `skeleton` and `placement`.
+ * Seams for the next layer of work (pulses, props, particles, landmarks, capture) are
+ * the public members: `root`, `spin`, `island`, `tree`, `uniforms`, `addSolid`,
+ * `skeleton`, `pose`, `placement`, `shown` and `orbit`.
  */
 export class GroveRig {
-  /** Positioned and scaled in CSS pixels by the placement. Add screen-locked things here. */
+  /** Positioned and scaled in CSS pixels by the placement. Screen-locked things go here. */
   readonly root = new THREE.Group();
   /** Camera elevation. */
   readonly tilt = new THREE.Group();
@@ -79,11 +82,20 @@ export class GroveRig {
   /** Extra yaw on top of the idle turn, for the interaction layer to drive. */
   orbit = 0;
   /** Values currently on screen (the snapshot, eased). */
-  readonly shown = { growth: 0, vitality: 1, hour: 12, pop: 0 };
+  readonly shown = {
+    growth: 0,
+    vitality: 1,
+    hour: 12,
+    pop: 0,
+    pitch: CAMERA.pitch as number,
+    yaw: 0,
+  };
 
   private readonly tones = createToneTable();
   private islandSolids: Solid[] = [];
   private treeSolids: Solid[] = [];
+  private casts: THREE.Mesh[] = [];
+  private castMaterials: THREE.ShaderMaterial[] = [];
   private wood: WoodMesh | null = null;
   private clumps: Solid | null = null;
   private clumpTones: THREE.InstancedBufferAttribute | null = null;
@@ -99,14 +111,13 @@ export class GroveRig {
   private posed = { growth: -1, vitality: -1, pop: -1, age: -1 };
   private toned = { vitality: -1, growth: -1 };
   private lit = Number.NaN;
-  private weight = -1;
-  private last = { x: Number.NaN, y: Number.NaN, scale: Number.NaN, width: 0, height: 0 };
+  private weighed = { ink: -1, margin: -1, shadow: -1, lift: -1 };
+  private last = { x: Number.NaN, y: Number.NaN, scale: Number.NaN, width: 0, height: 0, yaw: 0 };
 
   constructor() {
     this.root.add(this.tilt);
     this.tilt.add(this.spin);
     this.spin.add(this.island, this.tree);
-    this.tilt.rotation.x = CAMERA.pitch;
   }
 
   /**
@@ -120,7 +131,7 @@ export class GroveRig {
     capacity = 0,
   ): Solid {
     const layer = createLayer(this.uniforms, options);
-    if (this.weight >= 0) weighLayer(layer, this.weight);
+    this.weighed.ink = -1;
     const matrices =
       capacity > 0 ? new THREE.InstancedBufferAttribute(new Float32Array(capacity * 16), 16) : null;
     matrices?.setUsage(THREE.DynamicDrawUsage);
@@ -135,7 +146,7 @@ export class GroveRig {
       }
       // Bounds go stale under shader displacement, and the scene is one small subject.
       mesh.frustumCulled = false;
-      mesh.renderOrder = PASS_ORDER[pass];
+      mesh.renderOrder = pass === 'fill' ? layer.options.fillOrder : PASS_ORDER[pass];
       parent.add(mesh);
       return mesh;
     });
@@ -183,52 +194,113 @@ export class GroveRig {
   private buildIsland(seed: number, quality: WorldQuality): void {
     this.removeSolids(this.islandSolids);
     const tier = QUALITY[quality];
+    const { halftone, keyline } = tier;
     const model = buildIsland(seed, tier.islandSegments, tier.scatterShare);
-    this.tree.position.y = model.treeBase;
+    this.tree.position.set(...model.treeOrigin);
+    const u = this.uniforms;
+    u.uCastPlane.value.set(...model.treeOrigin, 0.03);
+    u.uCoast.value.set(model.coast.a1, model.coast.p1, model.coast.a2, model.coast.p2);
 
+    const body = soupGeometry(model.positions, 1.45, model.tones, undefined, model.normals);
     this.islandSolids.push(
-      this.addSolid(this.island, soupGeometry(model.positions, 1.45, model.tones), {
-        shade: 'facet',
-        decal: true,
+      // The lawn is painted first, so the sundial shadow and the hour ticks can land on it.
+      this.addSolid(this.island, body, {
+        shade: 'smooth',
+        normals: true,
+        halftone,
+        keyline,
+        decal: !tier.castShadow,
+        fillOrder: ORDER.lawn,
       }),
+      this.addSolid(this.island, decalGeometry(model.ticks, TONE.ink), {
+        shade: 'facet',
+        halftone: false,
+        ink: 0,
+        sticker: false,
+        fillOrder: ORDER.ticks,
+      }),
+      // Small things get no margin of their own: they sit inside the island's.
       this.scatterSolid(rockGeometry(), [...model.rocks, model.seed], {
         shade: 'facet',
+        halftone,
         ink: 0.75,
+        sticker: false,
       }),
-      // Tufts are too small to earn a die-cut margin of their own.
-      this.scatterSolid(tuftGeometry(), model.tufts, { shade: 'facet', ink: 0.6, sticker: false }),
+      this.scatterSolid(tuftGeometry(), model.tufts, {
+        shade: 'facet',
+        halftone: false,
+        ink: 0.5,
+        sticker: false,
+      }),
     );
 
     const { emblem } = model;
     const plaque = this.addSolid(
       this.island,
       emblemGeometry(emblem.width, emblem.height, emblem.depth, TONE.plaque),
-      { shade: 'emblem', ink: 0.65, sticker: false },
+      { shade: 'emblem', ink: 0.75, sticker: false },
     );
     for (const mesh of plaque.meshes) mesh.position.set(...emblem.position);
-    this.uniforms.uEmblem.value.set(0, 0, emblem.width, emblem.height);
+    u.uEmblem.value.set(0, 0, emblem.width, emblem.height);
     this.islandSolids.push(plaque);
+  }
+
+  /** The sundial shadow of a tree solid: the same geometry, projected onto the lawn. */
+  private addCast(solid: Solid): void {
+    const material = createCastMaterial(this.uniforms);
+    const source = solid.meshes[0];
+    let mesh: THREE.Mesh;
+    if (source instanceof THREE.InstancedMesh && solid.matrices) {
+      const instanced = new THREE.InstancedMesh(
+        solid.geometry,
+        material,
+        source.instanceMatrix.count,
+      );
+      instanced.instanceMatrix = solid.matrices;
+      mesh = instanced;
+    } else {
+      mesh = new THREE.Mesh(solid.geometry, material);
+    }
+    mesh.frustumCulled = false;
+    mesh.renderOrder = ORDER.cast;
+    // Parented to the island: the shader moves tree-space vertices onto the lawn itself.
+    this.island.add(mesh);
+    solid.meshes.push(mesh);
+    this.casts.push(mesh);
+    this.castMaterials.push(material);
   }
 
   private buildTree(seed: number, species: Species, quality: WorldQuality): void {
     this.removeSolids(this.treeSolids);
+    for (const material of this.castMaterials) material.dispose();
+    this.castMaterials.length = 0;
+    this.casts.length = 0;
     const tier = QUALITY[quality];
+    const { halftone, keyline } = tier;
     const skeleton = generateTree(seed, species);
     const pose = createPose(skeleton);
     this.skeleton = skeleton;
     this.pose = pose;
 
     this.wood = woodGeometry(skeleton, tier.trunkSides, tier.branchSides, TONE.bark);
-    this.treeSolids.push(this.addSolid(this.tree, this.wood.geometry, { shade: 'smooth' }));
+    const wood = this.addSolid(this.tree, this.wood.geometry, {
+      shade: 'smooth',
+      halftone,
+      keyline,
+      sticker: tier.woodSticker,
+    });
+    this.treeSolids.push(wood);
 
     // Clumps: the pose's matrix buffer is the instance buffer, so posing uploads directly.
     const clumpCount = skeleton.clumps.length;
-    const clumpGeometry =
-      skeleton.shape === 'tier' ? tierGeometry(9) : blobGeometry(tier.clumpDetail);
+    const tiers = skeleton.shape === 'tier';
+    const clumpGeometry = tiers ? tierGeometry(9) : blobGeometry(tier.clumpDetail);
     const clumps = this.addSolid(
       this.tree,
       clumpGeometry,
-      skeleton.shape === 'tier' ? { shade: 'facet' } : { shade: 'crescent', flatten: 0.1 },
+      tiers
+        ? { shade: 'smooth', normals: true, halftone, keyline }
+        : { shade: 'smooth', gloss: true, halftone, keyline, flatten: SHADING.clumpFlatten },
       clumpCount,
     );
     const clumpMatrices = new THREE.InstancedBufferAttribute(pose.clumpMatrix, 16);
@@ -250,7 +322,7 @@ export class GroveRig {
       // Blossoming clumps start in leaf green (tone A) and bloom into their variant (tone B).
       clumpTones[index * 3] = clump.bloom <= 1 ? TONE.canopyAlt : tone;
       clumpTones[index * 3 + 1] = tone;
-      swayOf(clump.branch, 0.22, clumpSway, index * 3);
+      swayOf(clump.branch, tiers ? 0.08 : 0.22, clumpSway, index * 3);
     });
     this.clumpTones = new THREE.InstancedBufferAttribute(clumpTones, 3);
     this.clumpTones.setUsage(THREE.DynamicDrawUsage);
@@ -258,6 +330,11 @@ export class GroveRig {
     clumpGeometry.setAttribute('aSway', new THREE.InstancedBufferAttribute(clumpSway, 3));
     this.clumps = clumps;
     this.treeSolids.push(clumps);
+
+    if (tier.castShadow) {
+      this.addCast(wood);
+      this.addCast(clumps);
+    }
 
     // Accents within this tier's share, split by kind because each has its own geometry.
     const drawn = skeleton.accents.filter((accent) => accent.rank < tier.accentShare);
@@ -279,7 +356,7 @@ export class GroveRig {
       const solid = this.addSolid(
         this.tree,
         geometry,
-        { shade: 'facet', ink: 0.7, flatten: 0.1 },
+        { shade: 'facet', halftone: false, ink: 0.75, keyline, flatten: SHADING.clumpFlatten },
         capacity,
       );
       const tones = new Float32Array(capacity * 3);
@@ -392,12 +469,14 @@ export class GroveRig {
     const growthTarget = clamp01(snapshot.growth);
     const vitalityTarget = clamp01(snapshot.vitality);
     const hourTarget = wrapHour(snapshot.hour);
+    const pitchTarget = CAMERA.pitchByMode[frame.mode];
     const shown = this.shown;
     const before = shown.growth;
     if (!this.started || still) {
       shown.growth = growthTarget;
       shown.vitality = vitalityTarget;
       shown.hour = hourTarget;
+      shown.pitch = pitchTarget;
       shown.pop = 0;
     } else {
       shown.growth = damp(shown.growth, growthTarget, MOTION.growthLambda, dt);
@@ -409,6 +488,8 @@ export class GroveRig {
         Math.abs(turn) < 0.003
           ? hourTarget
           : wrapHour(shown.hour + turn * (1 - Math.exp(-MOTION.hourLambda * dt)));
+      shown.pitch = damp(shown.pitch, pitchTarget, MOTION.pitchLambda, dt);
+      if (Math.abs(pitchTarget - shown.pitch) < 1e-4) shown.pitch = pitchTarget;
       // New parts overshoot only while growth is actually moving, then settle.
       const rate = dt > 0 ? Math.max(0, shown.growth - before) / dt : 0;
       const pop = clamp01(rate * 14) * MOTION.popOvershoot;
@@ -435,7 +516,7 @@ export class GroveRig {
     const u = this.uniforms;
     if (this.toned.vitality !== shown.vitality || this.toned.growth !== shown.growth) {
       resolveTones(this.tones, snapshot.species, shown.vitality, shown.growth);
-      u.uLit.value = this.tones.lit;
+      u.uBase.value = this.tones.lit;
       u.uShade.value = this.tones.shade;
       u.uHighlight.value = this.tones.highlight;
       u.uGloss.value = glossFor(shown.vitality);
@@ -445,66 +526,95 @@ export class GroveRig {
     }
     if (this.lit !== shown.hour) {
       const light = lightAt(shown.hour);
-      u.uLight.value.set(...light.direction);
-      u.uLight2.value.set(light.direction[0], light.direction[1]).normalize();
-      u.uGradeLit.value.set(...light.gradeLit);
-      u.uGradeShade.value.set(...light.gradeShade);
+      u.uGrade.value.set(...light.grade);
+      u.uSun.value.set(...light.sun);
+      u.uCast.value = light.castShadow;
       this.lit = shown.hour;
       dirty = true;
     }
-    u.uRings.value = 2 + Math.min(5, Math.floor(Math.sqrt(Math.max(0, snapshot.ageDays))));
+    for (const mesh of this.casts) mesh.visible = u.uCast.value > 0.01 && shown.growth > 0.01;
+    const rings = ISLAND.emblem.rings.filter((days) => snapshot.ageDays >= days).length;
+    if (u.uRings.value !== rings) {
+      u.uRings.value = rings;
+      dirty = true;
+    }
 
     // Placement: an eased virtual frame fitted into the box the tracker hands over.
     const metrics = this.skeleton?.metrics;
     if (!metrics) return dirty;
+    const bleed = frame.mode === 'hero' || frame.mode === 'hub';
     const placement = fitSubject({
       box: frame.box,
       canvas: frame.canvas,
-      frame: subjectFrame(metrics, shown.growth, CAMERA.pitch),
+      frame: subjectFrame(metrics, shown.growth, shown.pitch),
       fit: frame.fit,
       anchor: frame.anchor,
+      chrome: bleed ? Math.min(CAMERA.bleedChrome, frame.box.height * 0.12) : 0,
     });
     this.placement = placement;
     const time = still ? STILL_TIME : frame.time;
-    const scale = placement.scale * frame.appear;
+    const lift = frame.lift;
+    const scale = placement.scale * frame.appear * (1 + MOTION.carriedScale * lift);
     const bob = still ? 0 : Math.sin((time * TAU) / CAMERA.bobPeriod) * CAMERA.bob * scale;
-    const yaw =
-      CAMERA.yaw +
-      this.orbit +
-      (still ? 0 : CAMERA.idleYaw[frame.mode] * Math.sin((time * TAU) / CAMERA.idleYawPeriod));
+    const idle = CAMERA.idle[frame.mode];
+    const idleYaw = still
+      ? 0
+      : (idle.turn > 0 ? (time * TAU) / idle.turn : 0) +
+        idle.drift * Math.sin((time * TAU) / idle.period);
+    // The idle turn belongs to the mode; easing it keeps a stage change from snapping the island.
+    shown.yaw = this.started && dt > 0 && !still ? damp(shown.yaw, idleYaw, 4, dt) : idleYaw;
+    const yaw = CAMERA.yaw + this.orbit + shown.yaw;
     this.root.position.set(placement.x, placement.y + bob, 0);
+    this.root.rotation.z = MOTION.carriedTilt * lift;
     this.root.scale.setScalar(scale);
+    this.tilt.rotation.x = shown.pitch;
     this.spin.rotation.y = yaw;
-    if (this.last.x !== placement.x || this.last.y !== placement.y || this.last.scale !== scale) {
+    if (
+      this.last.x !== placement.x ||
+      this.last.y !== placement.y ||
+      this.last.scale !== scale ||
+      this.last.yaw !== yaw
+    ) {
       this.last.x = placement.x;
       this.last.y = placement.y;
       this.last.scale = scale;
+      this.last.yaw = yaw;
       dirty = true;
     }
 
-    if (this.weight !== placement.weight) {
-      this.weight = placement.weight;
-      for (const solid of this.islandSolids) weighLayer(solid.layer, this.weight);
-      for (const solid of this.treeSolids) weighLayer(solid.layer, this.weight);
+    const { sticker } = placement;
+    const weighed = this.weighed;
+    if (
+      weighed.ink !== sticker.ink ||
+      weighed.margin !== sticker.margin ||
+      weighed.shadow !== sticker.shadow ||
+      weighed.lift !== lift
+    ) {
+      for (const solid of this.islandSolids) weighLayer(solid.layer, sticker, lift);
+      for (const solid of this.treeSolids) weighLayer(solid.layer, sticker, lift);
+      weighed.ink = sticker.ink;
+      weighed.margin = sticker.margin;
+      weighed.shadow = sticker.shadow;
+      weighed.lift = lift;
+      // Halftone dots follow the line weight: finer on a thumbnail, 7 px at full size.
+      const full = STICKER.steps[STICKER.steps.length - 1]?.ink ?? sticker.ink;
+      u.uDotPitch.value = SHADING.dotPitchPx * Math.max(0.6, sticker.ink / full);
     }
 
     u.uTime.value = time;
-    u.uWind.value.w = still ? 0.5 : 1;
+    u.uWind.value.w = (still ? 0.5 : 1) * swayFor(shown.vitality);
     u.uGroveScale.value = scale;
     u.uGroveOrigin.value.copy(this.root.position);
 
-    // Contact decal: a flat disc of darker grass under the crown, pushed away from the
-    // light. It lives in island space, so the view-space offset is turned back by the yaw.
+    // Low tier: a flat patch under the crown, pushed where the sundial shadow would fall.
     const reach = Math.max(0.3, (this.pose?.stats.halfWidth ?? 0) * 0.74);
-    const offsetX = -u.uLight2.value.x * reach * 0.42;
-    const offsetZ = 0.3 + reach * 0.08;
-    const cos = Math.cos(yaw);
-    const sin = Math.sin(yaw);
+    const sun = u.uSun.value;
+    const flat = Math.hypot(sun.x, sun.z) || 1;
     u.uDecal.value.set(
-      offsetX * cos - offsetZ * sin,
-      offsetX * sin + offsetZ * cos,
-      Math.min(reach, ISLAND.radius * 0.8),
-      smoothstep(0.07, 0.16, shown.growth),
+      this.tree.position.x - (sun.x / flat) * reach * 0.55,
+      this.tree.position.z - (sun.z / flat) * reach * 0.55,
+      Math.min(reach, ISLAND.radius * 0.7),
+      smoothstep(0.07, 0.16, shown.growth) * u.uCast.value,
     );
     return dirty;
   }
@@ -513,6 +623,9 @@ export class GroveRig {
   dispose(): void {
     this.removeSolids(this.islandSolids);
     this.removeSolids(this.treeSolids);
+    for (const material of this.castMaterials) material.dispose();
+    this.castMaterials.length = 0;
+    this.casts.length = 0;
     this.quality = null;
     this.species = null;
     this.seed = Number.NaN;
@@ -523,7 +636,7 @@ export class GroveRig {
     this.leaves = null;
     this.blossoms = null;
     this.clumpTones = null;
-    this.weight = -1;
+    this.weighed.ink = -1;
     this.last.width = 0;
   }
 }
