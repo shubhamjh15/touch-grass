@@ -314,7 +314,7 @@ describe('editorial posts', () => {
 
   it.each(EDITORIAL_POSTS.map((post) => [post.id, post] as const))('%s is honest', (_id, post) => {
     expect(post.authoredBy).toBe(EDITORIAL_AUTHOR);
-    expect(post.authoredBy).toBe('EcoQuest team');
+    expect(post.authoredBy).toBe('Touch Grass team');
     expect(post.label).toBe('Editorial · Starter pack');
     expect(post.contentVersion).toBe(CONTENT_VERSION);
     expect(wordsIn(post.body)).toBeLessThanOrEqual(80);
@@ -505,10 +505,10 @@ describe('privacy', () => {
   it('lists the storage keys of the spec glossary', () => {
     const keys = PRIVACY_STORED.map((item) => item.key);
     for (const key of [
-      'ecoquest:game',
-      'ecoquest:coach',
-      'ecoquest:ui',
-      'ecoquest:legacy-backup',
+      'touchgrass:game',
+      'touchgrass:coach',
+      'touchgrass:ui',
+      'touchgrass:legacy-backup',
     ]) {
       expect(keys).toContain(key);
     }

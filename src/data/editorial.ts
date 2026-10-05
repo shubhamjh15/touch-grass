@@ -11,7 +11,7 @@ import type { Claim, SourceRef } from './lessons/types';
 /** Printed under every team post in place of a timestamp. */
 export const CONTENT_VERSION = '2026.10';
 
-export const EDITORIAL_AUTHOR = 'EcoQuest team';
+export const EDITORIAL_AUTHOR = 'Touch Grass team';
 
 export const EDITORIAL_LABEL = 'Editorial · Starter pack';
 
@@ -233,7 +233,7 @@ export const EDITORIAL_POSTS: readonly EditorialPost[] = [
   {
     id: 'missed-a-week',
     title: 'Missed a week? Read this',
-    body: 'Your tree is fine. In EcoQuest a missed day never kills it. It gets thirsty, and it waits. There is no penalty and no lecture. Life gets busy, and the habit is the thing worth keeping, not a perfect record. Open Today, water your tree, and log one small thing. That is a full restart.',
+    body: 'Your tree is fine. In Touch Grass a missed day never kills it. It gets thirsty, and it waits. There is no penalty and no lecture. Life gets busy, and the habit is the thing worth keeping, not a perfect record. Open Today, water your tree, and log one small thing. That is a full restart.',
     authoredBy: EDITORIAL_AUTHOR,
     label: EDITORIAL_LABEL,
     contentVersion: CONTENT_VERSION,

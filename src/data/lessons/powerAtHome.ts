@@ -73,7 +73,7 @@ export const POWER_AT_HOME: Lesson = {
       blocks: [
         {
           kind: 'p',
-          text: "One kilowatt-hour does not always mean the same CO2. In 2025 France's grid averaged about 41 grams of CO2e per kWh and India's about 671. That is why EcoQuest asks for your region: the same habit can be worth very different amounts.",
+          text: "One kilowatt-hour does not always mean the same CO2. In 2025 France's grid averaged about 41 grams of CO2e per kWh and India's about 671. That is why Touch Grass asks for your region: the same habit can be worth very different amounts.",
         },
         {
           kind: 'action',

@@ -68,7 +68,7 @@ export const STUFF: Lesson = {
         },
         {
           kind: 'p',
-          text: 'One honest note: buying second-hand or repairing does not always replace a new purchase. Some of the time the item would not have been bought at all. EcoQuest counts only part of the saving for that reason.',
+          text: 'One honest note: buying second-hand or repairing does not always replace a new purchase. Some of the time the item would not have been bought at all. Touch Grass counts only part of the saving for that reason.',
         },
       ],
     },

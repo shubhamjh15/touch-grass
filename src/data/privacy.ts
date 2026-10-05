@@ -48,7 +48,7 @@ export const PRIVACY_STORED: readonly StoredItem[] = [
   {
     id: 'game',
     area: 'localStorage',
-    key: 'ecoquest:game',
+    key: 'touchgrass:game',
     holds: [
       'Your profile: name, tree name and species, region, focus areas and settings.',
       'Everything you log, with the estimate it got, plus your streak, rings, quests, badges and lesson progress.',
@@ -57,12 +57,12 @@ export const PRIVACY_STORED: readonly StoredItem[] = [
     ],
     leavesDevice: false,
     howToDelete:
-      'Me, then Data, then "Reset EcoQuest". Or clear this site\'s data in your browser.',
+      'Me, then Data, then "Reset Touch Grass". Or clear this site\'s data in your browser.',
   },
   {
     id: 'coach',
     area: 'localStorage',
-    key: 'ecoquest:coach',
+    key: 'touchgrass:coach',
     holds: ['Your conversation with the coach: your messages and its answers.'],
     leavesDevice: false,
     howToDelete: 'Me, then Coach, then "Clear chat history".',
@@ -70,19 +70,19 @@ export const PRIVACY_STORED: readonly StoredItem[] = [
   {
     id: 'ui',
     area: 'localStorage',
-    key: 'ecoquest:ui',
+    key: 'touchgrass:ui',
     holds: [
       'Small interface conveniences, such as the tab you last used or a draft you have not sent.',
     ],
     leavesDevice: false,
-    howToDelete: "Reset EcoQuest, or clear this site's data in your browser.",
+    howToDelete: "Reset Touch Grass, or clear this site's data in your browser.",
   },
   {
     id: 'legacy-backup',
     area: 'localStorage',
-    key: 'ecoquest:legacy-backup',
+    key: 'touchgrass:legacy-backup',
     holds: [
-      'A copy of the data the old EcoQuest saved in this browser, kept in case you want it back, if you chose to bring it over.',
+      'A copy of the data an earlier version of this app saved in this browser, kept in case you want it back, if you chose to bring it over.',
     ],
     leavesDevice: false,
     howToDelete: 'Me, then Data, then "Delete legacy backup".',
@@ -112,7 +112,7 @@ export const PRIVACY_STORED: readonly StoredItem[] = [
     area: 'cacheStorage',
     key: null,
     holds: [
-      "EcoQuest's own files (pages, scripts, fonts and the bundled public data), so the app opens without a network.",
+      "Touch Grass's own files (pages, scripts, fonts and the bundled public data), so the app opens without a network.",
     ],
     leavesDevice: false,
     howToDelete: "Clear this site's data in your browser, or uninstall the app.",
@@ -128,7 +128,7 @@ export const PRIVACY_LEAVES: readonly LeavesItem[] = [
       'The text of your message and the last few turns of the conversation.',
       "A small block of facts about your progress (tree stage and vitality, level, streak, focus areas, region, today's logged actions, a weekly summary by category, quest progress, lessons passed, and your starting-line total and pace if you took the quiz).",
     ],
-    to: "EcoQuest's own /api service, which relays it to the AI provider the site is configured with. The key lives on the server and never reaches your browser. Nothing is stored on the server.",
+    to: "Touch Grass's own /api service, which relays it to the AI provider the site is configured with. The key lives on the server and never reaches your browser. Nothing is stored on the server.",
     control:
       'Switch off "Share my stats with the coach" in Me, and the block shrinks to your region. Or do not use the live coach.',
   },
@@ -139,7 +139,7 @@ export const PRIVACY_LEAVES: readonly LeavesItem[] = [
       'The short description you typed and the quantity.',
       'Your region and the titles of catalogue actions, so the model can match it to one.',
     ],
-    to: "EcoQuest's own /api service, then the same AI provider.",
+    to: "Touch Grass's own /api service, then the same AI provider.",
     control:
       'You can pick a category and effort level yourself instead. You always see and can edit the result before saving.',
   },
@@ -147,7 +147,7 @@ export const PRIVACY_LEAVES: readonly LeavesItem[] = [
     id: 'hosting',
     when: 'Every time you open the site, as with any website.',
     sends: [
-      "An ordinary request for the app's files, which the host that serves EcoQuest can see (your IP address and browser type). EcoQuest adds nothing to it.",
+      "An ordinary request for the app's files, which the host that serves Touch Grass can see (your IP address and browser type). Touch Grass adds nothing to it.",
     ],
     to: 'The host that serves this site.',
     control: 'Once the app is cached it opens without a network, apart from the live coach.',
@@ -163,7 +163,7 @@ export const PRIVACY_NEVER_SENT: readonly string[] = [
   'Custom-action text from other days.',
 ];
 
-/** Things EcoQuest does not do. */
+/** Things Touch Grass does not do. */
 export const PRIVACY_NOT_USED: readonly string[] = [
   'No cookies.',
   'No analytics, tracking pixels or advertising.',
@@ -181,7 +181,7 @@ export const PRIVACY_EXPORT: ExportStep = {
   title: 'Export your data',
   steps: [
     'Open Me, then Data.',
-    'Choose "Export JSON" to save everything on this device in one file, named ecoquest-YYYY-MM-DD.json. Coach chats are left out unless you tick "Include coach chats".',
+    'Choose "Export JSON" to save everything on this device in one file, named touch-grass-YYYY-MM-DD.json. Coach chats are left out unless you tick "Include coach chats".',
     'Choose "Export logs as CSV" for a spreadsheet of what you logged.',
   ],
 };
@@ -189,8 +189,8 @@ export const PRIVACY_EXPORT: ExportStep = {
 export const PRIVACY_DELETE: ExportStep = {
   title: 'Delete your data',
   steps: [
-    'Open Me, then Data, then "Reset EcoQuest". It lists what will be deleted and offers an export first.',
-    "Type your tree's name to confirm. Everything under the ecoquest: keys, and any old EcoQuest keys, is removed, and you return to the start.",
+    'Open Me, then Data, then "Reset Touch Grass". It lists what will be deleted and offers an export first.',
+    "Type your tree's name to confirm. Everything under the touchgrass: keys, and any keys left by an earlier version of the app, is removed, and you return to the start.",
     'Smaller resets exist: clear the coach chat, clear the journal, clear the starting line.',
     "You can also clear this site's data from your browser settings. Because nothing is kept on a server, that deletes everything.",
   ],
@@ -204,7 +204,7 @@ export const PRIVACY_SECTIONS: readonly PrivacySection[] = [
     blocks: [
       {
         kind: 'p',
-        text: "EcoQuest has no accounts. What you log, write and learn is saved in your browser on this device, and you can export or delete it whenever you like. The only thing that can leave the device is what you send to the live coach or ask it to estimate, and it goes through EcoQuest's own service to the AI provider the site is configured with.",
+        text: "Touch Grass has no accounts. What you log, write and learn is saved in your browser on this device, and you can export or delete it whenever you like. The only thing that can leave the device is what you send to the live coach or ask it to estimate, and it goes through Touch Grass's own service to the AI provider the site is configured with.",
       },
       {
         kind: 'note',
@@ -219,7 +219,7 @@ export const PRIVACY_SECTIONS: readonly PrivacySection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'These are the places EcoQuest writes to in your browser. None of them is sent anywhere by itself.',
+        text: 'These are the places Touch Grass writes to in your browser. None of them is sent anywhere by itself.',
       },
     ],
   },
@@ -242,7 +242,7 @@ export const PRIVACY_SECTIONS: readonly PrivacySection[] = [
   },
   {
     id: 'not-used',
-    heading: 'What EcoQuest does not do',
+    heading: 'What Touch Grass does not do',
     summary: 'No cookies, no trackers, no third parties.',
     blocks: [{ kind: 'list', items: PRIVACY_NOT_USED }],
   },

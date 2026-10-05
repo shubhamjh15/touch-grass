@@ -82,7 +82,7 @@ export const BIG_LEVERS: Lesson = {
     },
     {
       id: 'how-we-count',
-      heading: 'How EcoQuest handles this',
+      heading: 'How Touch Grass handles this',
       blocks: [
         {
           kind: 'p',
@@ -119,7 +119,7 @@ export const BIG_LEVERS: Lesson = {
     },
     {
       id: 'big-levers-q3',
-      prompt: 'Why does EcoQuest still reward small actions?',
+      prompt: 'Why does Touch Grass still reward small actions?',
       options: [
         'They save more carbon than flying less',
         'They build the habit, even though bigger levers matter more',

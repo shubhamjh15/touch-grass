@@ -104,7 +104,7 @@ export const CONFIDENCE_LEVELS: readonly ConfidenceLevel[] = [
     id: 'not_quantified',
     label: 'Not quantified',
     meaning:
-      'No credible CO2e figure exists. The action earns XP for showing up, and EcoQuest never prints a number for it.',
+      'No credible CO2e figure exists. The action earns XP for showing up, and Touch Grass never prints a number for it.',
     typicalRange: 'No number is shown.',
   },
 ];
@@ -185,7 +185,7 @@ export const METHODOLOGY_SECTIONS: readonly MethodologySection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'Every figure in EcoQuest is an estimate of the greenhouse gases you avoided compared with a stated alternative, called the counterfactual. The alternative is assumed, never observed, so the numbers are indicative. They are good for ranking actions and showing rough scale. They are not carbon accounting.',
+        text: 'Every figure in Touch Grass is an estimate of the greenhouse gases you avoided compared with a stated alternative, called the counterfactual. The alternative is assumed, never observed, so the numbers are indicative. They are good for ranking actions and showing rough scale. They are not carbon accounting.',
       },
       {
         kind: 'p',
@@ -241,7 +241,7 @@ export const METHODOLOGY_SECTIONS: readonly MethodologySection[] = [
     blocks: [
       {
         kind: 'p',
-        text: `One kilowatt-hour of electricity does not always mean the same CO2. EcoQuest holds the average carbon intensity of the grid for ${REGION_COUNT} countries and regions, from Ember's yearly data on a life-cycle basis. The default, "World average", is about ${WORLD_G} g CO2e per kWh. France is about ${grams(france.kgCO2ePerKWh)} g and India about ${grams(india.kgCO2ePerKWh)} g (${france.year}).`,
+        text: `One kilowatt-hour of electricity does not always mean the same CO2. Touch Grass holds the average carbon intensity of the grid for ${REGION_COUNT} countries and regions, from Ember's yearly data on a life-cycle basis. The default, "World average", is about ${WORLD_G} g CO2e per kWh. France is about ${grams(france.kgCO2ePerKWh)} g and India about ${grams(india.kgCO2ePerKWh)} g (${france.year}).`,
       },
       {
         kind: 'formula',
@@ -300,7 +300,7 @@ export const METHODOLOGY_SECTIONS: readonly MethodologySection[] = [
     blocks: [
       {
         kind: 'p',
-        text: 'For something that is not in the catalogue, EcoQuest first looks for a close match. If there is none and the live AI is connected, the model gives a conservative guess for the action you typed. Otherwise you choose a category and an effort level and no CO2e is claimed.',
+        text: 'For something that is not in the catalogue, Touch Grass first looks for a close match. If there is none and the live AI is connected, the model gives a conservative guess for the action you typed. Otherwise you choose a category and an effort level and no CO2e is claimed.',
       },
       {
         kind: 'list',
