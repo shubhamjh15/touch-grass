@@ -35,3 +35,8 @@ test-results
 dev-dist
 .vercel
 *.tsbuildinfo
+
+# Next.js
+.next
+.next-*
+next-env.d.ts

@@ -8,3 +8,6 @@ package-lock.json
 .redesign
 .vercel
 *.md
+.next
+.next-*
+next-env.d.ts

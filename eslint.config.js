@@ -8,6 +8,9 @@ import tseslint from 'typescript-eslint';
 export default defineConfig([
   globalIgnores([
     'dist',
+    '.next',
+    '.next-*',
+    'next-env.d.ts',
     'dev-dist',
     'coverage',
     'playwright-report',
@@ -43,8 +46,15 @@ export default defineConfig([
     },
   },
   {
+    // Next.js route files export metadata and config next to the component by design.
+    files: ['app/**'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
     // Server-side and tooling code runs in Node, not the browser.
-    files: ['api/**', 'server/**', 'vite/**', 'scripts/**', 'e2e/**', '*.config.{js,ts}'],
+    files: ['app/api/**', 'server/**', 'scripts/**', 'e2e/**', '*.config.{js,ts,mjs}'],
     languageOptions: {
       globals: globals.node,
     },
