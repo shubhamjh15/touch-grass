@@ -144,8 +144,8 @@ describe('rng', () => {
   });
 
   it('hashes strings stably', () => {
-    expect(hashString('ecoquest')).toBe(hashString('ecoquest'));
-    expect(hashString('ecoquest')).not.toBe(hashString('ecoquesT'));
+    expect(hashString('touchgrass')).toBe(hashString('touchgrass'));
+    expect(hashString('touchgrass')).not.toBe(hashString('touchgrasS'));
   });
 
   it('shuffles without losing items and leaves the input alone', () => {

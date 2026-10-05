@@ -2,7 +2,7 @@
  * Storage keys and the export envelope's app id, in one place so a rename is one edit.
  * Everything the product stores in the browser lives under the same prefix.
  */
-export const STORAGE_PREFIX = 'ecoquest:';
+export const STORAGE_PREFIX = 'touchgrass:';
 
 export const STORAGE_KEYS = {
   /** The persisted game state. */
@@ -18,5 +18,5 @@ export const STORAGE_KEYS = {
 } as const;
 
 /** `app` field of an export file; an import of anything else is refused. */
-export const EXPORT_APP_ID = 'ecoquest';
-export const EXPORT_FILE_PREFIX = 'ecoquest';
+export const EXPORT_APP_ID = 'touchgrass';
+export const EXPORT_FILE_PREFIX = 'touch-grass';

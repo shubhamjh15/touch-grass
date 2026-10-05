@@ -229,12 +229,12 @@ describe('export and import', () => {
   it('wraps the state in an envelope with a checksum', () => {
     const state = playedState();
     const envelope = buildExport(state, NOW);
-    expect(envelope).toMatchObject({ app: 'ecoquest', coach: null, state });
+    expect(envelope).toMatchObject({ app: 'touchgrass', coach: null, state });
     expect(envelope.exportedAt).toBe(new Date(NOW).toISOString());
     expect(envelope.checksum).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(envelope.checksum).toBe(checksumOf(state));
-    expect(exportFileName(NOW)).toBe(`ecoquest-${day(20)}.json`);
-    expect(exportFileName(NOW, 'csv')).toBe(`ecoquest-${day(20)}.csv`);
+    expect(exportFileName(NOW)).toBe(`touch-grass-${day(20)}.json`);
+    expect(exportFileName(NOW, 'csv')).toBe(`touch-grass-${day(20)}.csv`);
   });
 
   it('round-trips: export then import gives the same state', () => {

@@ -61,7 +61,7 @@ describe('the @/game barrel', () => {
     expect(typeof game.getCoachContext).toBe('function');
     expect(typeof game.worldPulsesFor).toBe('function');
     expect(typeof game.startGameClock).toBe('function');
-    expect(game.STORAGE_KEYS.game).toBe('ecoquest:game');
+    expect(game.STORAGE_KEYS.game).toBe('touchgrass:game');
     expect(game.DAILY_GOAL).toBe(3);
     expect(game.growthOf(8)).toBeCloseTo(0.03, 12);
   });

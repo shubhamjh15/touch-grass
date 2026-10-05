@@ -299,9 +299,9 @@ describe('storage that misbehaves', () => {
   it('detects the browser storage', () => {
     const detected = detectStorage();
     expect(detected.mode).toBe('local');
-    detected.storage.setItem('ecoquest:probe-test', 'x');
-    expect(detected.storage.keys()).toContain('ecoquest:probe-test');
-    expect(localStorage.getItem('ecoquest:probe-test')).toBe('x');
+    detected.storage.setItem('touchgrass:probe-test', 'x');
+    expect(detected.storage.keys()).toContain('touchgrass:probe-test');
+    expect(localStorage.getItem('touchgrass:probe-test')).toBe('x');
   });
 });
 
@@ -375,7 +375,7 @@ describe('export, import and reset', () => {
     h.game.actions.logAction({ actionId: 'plant-based-meal', qty: 3 });
     h.storage.setItem(STORAGE_KEYS.coach, JSON.stringify([{ role: 'user', content: 'hello' }]));
     const plain = JSON.parse(h.game.actions.exportState()) as { coach: unknown; app: string };
-    expect(plain).toMatchObject({ app: 'ecoquest', coach: null });
+    expect(plain).toMatchObject({ app: 'touchgrass', coach: null });
     const text = h.game.actions.exportState({ includeCoach: true });
 
     const target = harness({}, h.clock.now);
@@ -410,7 +410,7 @@ describe('export, import and reset', () => {
     for (const text of [
       'nope',
       '{"app":"other"}',
-      JSON.stringify({ app: 'ecoquest', state: { schemaVersion: 1 } }),
+      JSON.stringify({ app: 'touchgrass', state: { schemaVersion: 1 } }),
     ]) {
       expect(h.game.actions.importState(text).ok).toBe(false);
     }
@@ -435,7 +435,7 @@ describe('export, import and reset', () => {
     expect(h.events).toEqual([{ type: 'state-reset' }]);
     expect(stateOf(h.game).onboarding.completedAt).toBeNull();
     expect(stateOf(h.game).logs).toEqual([]);
-    expect(h.storage.keys().sort()).toEqual([STORAGE_KEYS.game, 'someone-elses-key']);
+    expect(h.storage.keys().sort()).toEqual([STORAGE_KEYS.game, 'someone-elses-key'].sort());
     expect(saved(h.storage).state.xp).toBe(0);
     expect(h.again().store.getState().game.onboarding.completedAt).toBeNull();
   });

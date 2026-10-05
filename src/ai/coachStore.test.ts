@@ -171,9 +171,9 @@ describe('safeStorage', () => {
 
   it('round-trips through real localStorage', () => {
     const storage = safeStorage();
-    storage.setItem('ecoquest-test', 'x');
-    expect(localStorage.getItem('ecoquest-test')).toBe('x');
-    storage.removeItem('ecoquest-test');
-    expect(localStorage.getItem('ecoquest-test')).toBeNull();
+    storage.setItem('touchgrass-test', 'x');
+    expect(localStorage.getItem('touchgrass-test')).toBe('x');
+    storage.removeItem('touchgrass-test');
+    expect(localStorage.getItem('touchgrass-test')).toBeNull();
   });
 });

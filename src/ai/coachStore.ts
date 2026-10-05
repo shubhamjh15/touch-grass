@@ -67,7 +67,7 @@ export interface CoachState {
 export const MAX_STORED_MESSAGES = 60;
 const MAX_STORED_CHARS = 4000;
 export const STORE_VERSION = 1;
-export const STORE_KEY = 'ecoquest.coach';
+export const STORE_KEY = 'touchgrass:coach';
 
 const initialLive: LiveState = {
   ready: false,
