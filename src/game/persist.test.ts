@@ -186,6 +186,15 @@ describe('loading a save', () => {
     expect(loaded.ok && loaded.state.seen.maxStage).toBe(state.seen.maxStage);
   });
 
+  it('stamps a loaded save with this build’s content and factor versions', () => {
+    const state = playedState();
+    const old = { ...state, contentVersion: '2025.01', factorsVersion: '2025.01' };
+    const loaded = loadState(JSON.parse(JSON.stringify(old)), 1);
+    expect(loaded.ok && loaded.state.contentVersion).toBe(state.contentVersion);
+    expect(loaded.ok && loaded.state.factorsVersion).toBe(state.factorsVersion);
+    expect(loaded.ok && loaded.state.logs[0]?.factorsVersion).toBe(state.logs[0]?.factorsVersion);
+  });
+
   it('walks an older save up through every migration, one version at a time', () => {
     expect(MIGRATIONS).toEqual({});
     const state = playedState();

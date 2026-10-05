@@ -4,9 +4,10 @@
  * section 13.2). A save that cannot be read is never dropped silently: the caller
  * gets the reason and keeps the raw text.
  */
+import { EVIDENCE_META } from '@/data/catalogue';
 import { sha256Hex } from '@/lib/codec';
 import { dayKey } from '@/lib/dates';
-import { SCHEMA_VERSION } from './economy';
+import { CONTENT_VERSION, SCHEMA_VERSION } from './economy';
 import { stageIndexOf } from './growth';
 import { EXPORT_APP_ID, EXPORT_FILE_PREFIX } from './keys';
 import { levelOf } from './levels';
@@ -80,10 +81,20 @@ export function loadState(
     maxLevel: Math.max(state.seen.maxLevel, levelOf(state.xp)),
     maxStage: Math.max(state.seen.maxStage, stageIndexOf(state.tree.gp)),
   };
-  const rebased =
-    seen.maxLevel === state.seen.maxLevel && seen.maxStage === state.seen.maxStage
-      ? state
-      : { ...state, seen };
+  // New logs are stamped with this build's factors; content ids are checked when quests are drawn.
+  const upToDate =
+    seen.maxLevel === state.seen.maxLevel &&
+    seen.maxStage === state.seen.maxStage &&
+    state.contentVersion === CONTENT_VERSION &&
+    state.factorsVersion === EVIDENCE_META.factorsVersion;
+  const rebased = upToDate
+    ? state
+    : {
+        ...state,
+        seen,
+        contentVersion: CONTENT_VERSION,
+        factorsVersion: EVIDENCE_META.factorsVersion,
+      };
   return { ok: true, state: rebased, migratedFrom: version === currentVersion ? null : version };
 }
 
