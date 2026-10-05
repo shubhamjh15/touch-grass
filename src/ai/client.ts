@@ -93,6 +93,7 @@ export function createNameFilter(name: string | undefined): NameFilter {
   const clean = [...(name ?? '')]
     .filter((char) => char.charCodeAt(0) > 31 && char !== '<' && char !== '>')
     .join('')
+    .replace(/\[\[|\]\]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 40);

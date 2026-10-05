@@ -129,13 +129,20 @@ export function originAllowed(request: Request, env: Env): boolean {
   return [hostOf(request.url), request.headers.get('host')?.toLowerCase()].includes(host);
 }
 
-/** The address a request came from, as reported by the platform proxy. Unspoofable on Vercel; best effort elsewhere. */
+/**
+ * The address a request came from, as reported by the platform proxy. Vercel
+ * sets these headers itself, so a client cannot choose its own bucket there.
+ * Elsewhere they are only as trustworthy as the proxy in front. A client can
+ * prepend fake entries to X-Forwarded-For, but a proxy appends the real
+ * address at the END, so the last entry is the one to trust.
+ */
 export function clientKey(request: Request): string {
   const headers = request.headers;
+  const forwarded = headers.get('x-forwarded-for')?.split(',');
   const raw =
     headers.get('x-vercel-forwarded-for') ??
     headers.get('x-real-ip') ??
-    headers.get('x-forwarded-for')?.split(',')[0] ??
+    forwarded?.[forwarded.length - 1] ??
     'unknown';
   return raw.trim().slice(0, 64) || 'unknown';
 }

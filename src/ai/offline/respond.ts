@@ -31,6 +31,46 @@ export interface OfflineReply {
 
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,47}$/;
 
+/** Text that came from the user or the game must never be able to write chip syntax or markup. */
+function plain(value: string | undefined, max = 80): string | undefined {
+  if (value === undefined) return undefined;
+  const text = [...value]
+    .filter((char) => char.charCodeAt(0) > 31)
+    .join('')
+    .replace(/\[\[|\]\]/g, '')
+    .replace(/[<>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return [...text].slice(0, max).join('');
+}
+
+function scrub(context: CoachContext): CoachContext {
+  return {
+    ...context,
+    displayName: plain(context.displayName, 40),
+    tree: context.tree
+      ? {
+          ...context.tree,
+          name: plain(context.tree.name, 40),
+          vitality: plain(context.tree.vitality, 20),
+        }
+      : undefined,
+    baseline: plain(context.baseline, 120),
+    topCategories: context.topCategories?.map((item) => ({
+      ...item,
+      category: plain(item.category, 24) ?? '',
+    })),
+    actions: context.actions?.map((action) => ({
+      ...action,
+      title: plain(action.title, 80) ?? '',
+    })),
+    quests: context.quests?.map((quest) => ({ ...quest, line: plain(quest.line, 100) ?? '' })),
+    nextLesson: context.nextLesson
+      ? { ...context.nextLesson, title: plain(context.nextLesson.title, 60) ?? '' }
+      : undefined,
+  };
+}
+
 function pick<T>(variants: readonly T[], seed: number): T {
   return variants[seed % variants.length] as T;
 }
@@ -381,7 +421,8 @@ const REPLIES: Readonly<Record<Exclude<IntentId, 'crisis'>, Reply>> = {
 };
 
 /** Answers one message from the user. Pure and synchronous. */
-export function respondOffline(message: string, context: CoachContext = {}): OfflineReply {
+export function respondOffline(message: string, raw: CoachContext = {}): OfflineReply {
+  const context = scrub(raw);
   const { intent } = matchIntent(message);
   if (intent === 'crisis') return { text: CRISIS_REPLY, intent, label: OFFLINE_LABEL };
   const seed = hashString(normalise(message));
@@ -393,7 +434,8 @@ export function respondOffline(message: string, context: CoachContext = {}): Off
  * resting tree, a quest at least two-thirds done, the easiest unlogged action
  * in a focus area, then a fact. `seed` (for example the day number) rotates facts.
  */
-export function offlineTip(context: CoachContext = {}, seed = 0): OfflineReply {
+export function offlineTip(raw: CoachContext = {}, seed = 0): OfflineReply {
+  const context = scrub(raw);
   const state = vitality(context);
   const easy = easiestAction(context);
   if (state === 'thirsty' || state === 'dormant') {

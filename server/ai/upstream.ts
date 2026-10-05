@@ -262,6 +262,8 @@ function itemsFromPayload(value: unknown, think: ThinkFilter): UpstreamItem[] {
  * in-stream errors, CRLF, and providers that ignore `stream: true` and answer
  * with one JSON object.
  */
+const MAX_LINE_CHARS = 1_000_000;
+
 export function createUpstreamReader(body: ReadableStream<Uint8Array>): UpstreamReader {
   const reader = body.getReader();
   const decoder = new TextDecoder('utf-8');
@@ -320,6 +322,8 @@ export function createUpstreamReader(body: ReadableStream<Uint8Array>): Upstream
       start = i + 1;
     }
     buffer = buffer.slice(start);
+    // A provider that never ends a line would grow this without bound.
+    if (buffer.length > MAX_LINE_CHARS) throw new Error('upstream line too long');
   };
 
   const finish = (): void => {

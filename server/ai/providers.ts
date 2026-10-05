@@ -387,7 +387,8 @@ export function checkBaseUrl(raw: string): BaseUrlCheck {
   } catch {
     return { ok: false, reason: 'AI_BASE_URL is not a valid URL.' };
   }
-  const host = url.hostname.toLowerCase();
+  // "localhost." and "example.internal." are the same hosts as without the dot.
+  const host = url.hostname.toLowerCase().replace(/\.$/, '');
   const loopback = LOOPBACK_HOSTS.has(host);
   if (url.username || url.password)
     return { ok: false, reason: 'AI_BASE_URL must not contain credentials.' };
@@ -610,4 +611,31 @@ export function describeChain(env: Env): {
     devOnly: head?.devOnly ?? false,
     hint: head ? undefined : problems[0],
   };
+}
+
+/** Every environment variable the registry reads for keys, for documentation and collision checks. */
+export function providerEnvNames(): string[] {
+  return Object.values(PROVIDERS).flatMap((def) => [
+    def.keyEnv,
+    ...(def.accountEnv ? [def.accountEnv] : []),
+  ]);
+}
+
+/** The models the registry would try for chat, per provider, without needing a key (docs and tests). */
+export function registrySummary(): {
+  id: ProviderId;
+  keyEnv: string;
+  label: string;
+  baseUrl: string;
+  chat: readonly string[];
+  fast: string;
+}[] {
+  return Object.values(PROVIDERS).map((def) => ({
+    id: def.id,
+    keyEnv: def.keyEnv,
+    label: def.label,
+    baseUrl: def.baseUrl,
+    chat: def.chat,
+    fast: def.fast,
+  }));
 }
