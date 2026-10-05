@@ -2,7 +2,7 @@
 @plugin '@tailwindcss/typography';
 
 /*
- * EcoQuest design tokens, base layer and paper recipes.
+ * Touch Grass design tokens, base layer and paper recipes.
  * Source of truth: the design bible, sections 1 to 3 and 7. Components never contain a hex value:
  * if a token is missing, add it here first.
  */
@@ -1240,7 +1240,13 @@
 
 /* ---- Horizontal rows (sticker rows, chip rows, tab lists): snap, no scrollbar, room for shadows and focus rings. ---- */
 @utility scroll-row {
+  /* Positioned, so visually hidden (absolute) text inside a scrolled item cannot widen the page. */
+  position: relative;
   display: flex;
+  /* Room for hard shadows and the focus ring, which a scroll container would otherwise clip. */
+  padding: var(--row-pad, 8px);
+  margin: calc(var(--row-pad, 8px) * -1);
+  scroll-padding-inline: var(--row-pad, 8px);
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
@@ -1276,193 +1282,199 @@
 
 /* ---- PROSE: lessons, methodology, privacy and the coach's markdown. Use with the typography plugin: `prose prose-eco`. ---- */
 @utility prose-eco {
-  --tw-prose-body: var(--color-ink);
-  --tw-prose-headings: var(--color-ink);
-  --tw-prose-lead: var(--color-ink-2);
-  --tw-prose-links: var(--color-blue-deep);
-  --tw-prose-bold: var(--color-ink);
-  --tw-prose-counters: var(--color-ink-3);
-  --tw-prose-bullets: var(--color-ink);
-  --tw-prose-hr: var(--color-ink);
-  --tw-prose-quotes: var(--color-ink);
-  --tw-prose-quote-borders: var(--color-ink);
-  --tw-prose-captions: var(--color-ink-3);
-  --tw-prose-kbd: var(--color-ink);
-  --tw-prose-kbd-shadows: 24 24 27;
-  --tw-prose-code: var(--color-ink);
-  --tw-prose-pre-code: var(--color-ink);
-  --tw-prose-pre-bg: var(--color-paper);
-  --tw-prose-th-borders: var(--color-ink);
-  --tw-prose-td-borders: var(--color-line);
-  max-width: var(--measure);
-  font-size: var(--text-reading);
-  line-height: 1.65;
-  font-weight: 400;
+  /* `.prose-eco.prose` outranks the plugin's `.prose :where(...)` rules, whatever the output order. */
+  &.prose {
+    --tw-prose-body: var(--color-ink);
+    --tw-prose-headings: var(--color-ink);
+    --tw-prose-lead: var(--color-ink-2);
+    --tw-prose-links: var(--color-blue-deep);
+    --tw-prose-bold: var(--color-ink);
+    --tw-prose-counters: var(--color-ink-3);
+    --tw-prose-bullets: var(--color-ink);
+    --tw-prose-hr: var(--color-ink);
+    --tw-prose-quotes: var(--color-ink);
+    --tw-prose-quote-borders: var(--color-ink);
+    --tw-prose-captions: var(--color-ink-3);
+    --tw-prose-kbd: var(--color-ink);
+    --tw-prose-kbd-shadows: 24 24 27;
+    --tw-prose-code: var(--color-ink);
+    --tw-prose-pre-code: var(--color-ink);
+    --tw-prose-pre-bg: var(--color-paper);
+    --tw-prose-th-borders: var(--color-ink);
+    --tw-prose-td-borders: var(--color-line);
+    max-width: var(--measure);
+    font-size: var(--text-reading);
+    line-height: 1.65;
+    font-weight: 400;
 
-  & :where(h1, h2, h3, h4) {
-    font-family: var(--font-sans);
-    font-weight: 700;
-    text-wrap: balance;
-  }
-  & :where(h1) {
-    font-size: var(--text-h1);
-    line-height: 1.08;
-    letter-spacing: -0.02em;
-    margin-bottom: 0.6em;
-  }
-  & :where(h2) {
-    font-size: var(--text-h2);
-    line-height: 1.12;
-    letter-spacing: -0.015em;
-    margin-top: 1.8em;
-    margin-bottom: 0.6em;
-  }
-  & :where(h3) {
-    font-size: var(--text-h3);
-    line-height: 1.2;
-    letter-spacing: -0.01em;
-    margin-top: 1.6em;
-    margin-bottom: 0.5em;
-  }
-  & :where(h4) {
-    font-size: var(--text-h4);
-    line-height: 1.25;
-    margin-top: 1.4em;
-    margin-bottom: 0.4em;
-  }
-  & :where(p, ul, ol) {
-    margin-top: 0.9em;
-    margin-bottom: 0.9em;
-  }
-  & :where(strong) {
-    font-weight: 700;
-  }
-  & :where(a) {
-    font-weight: 600;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 4px;
-    border-radius: var(--radius-paper);
-  }
-  & :where(mark) {
-    background-color: var(--color-yellow);
-    color: var(--color-ink);
-    padding-inline: 0.14em;
-    border-radius: var(--radius-paper);
-  }
-  & :where(ul > li)::marker {
-    color: var(--color-ink);
-  }
-  & :where(ol > li)::marker {
-    font-family: var(--font-mono);
-    font-stretch: 85%;
-    font-size: 0.8em;
-    font-weight: 600;
-  }
-  /* A pull quote is a taped note, not a grey bar. */
-  & :where(blockquote) {
-    margin-block: 1.4em;
-    padding: 0.75rem 1rem;
-    border: 3px solid var(--color-ink);
-    border-radius: var(--radius-paper);
-    background-color: var(--color-yellow-tint);
-    box-shadow: var(--shadow-3);
-    font-style: normal;
-    font-weight: 500;
-    quotes: none;
-  }
-  & :where(blockquote p) {
-    margin-block: 0.25em;
-  }
-  & :where(blockquote p)::before,
-  & :where(blockquote p)::after {
-    content: none;
-  }
-  & :where(hr) {
-    margin-block: 2em;
-    border: 0;
-    border-top: 2px dashed var(--color-ink);
-  }
-  & :where(code):not(:where(pre code)) {
-    font-family: var(--font-mono);
-    font-size: 0.78em;
-    font-weight: 600;
-    padding: 0.15em 0.4em;
-    border: 2px solid var(--color-ink);
-    border-radius: var(--radius-xs);
-    background-color: var(--color-white);
-  }
-  & :where(code)::before,
-  & :where(code)::after {
-    content: none;
-  }
-  & :where(pre) {
-    border: 3px solid var(--color-ink);
-    border-radius: var(--radius-paper);
-    font-size: var(--text-data);
-    line-height: 1.6;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
-  & :where(kbd) {
-    font-family: var(--font-mono);
-    font-size: 0.7em;
-    font-weight: 600;
-    border: 2px solid var(--color-ink);
-    border-radius: var(--radius-sm);
-    background-color: var(--color-white);
-    box-shadow: var(--shadow-key);
-  }
-  & :where(table) {
-    display: block;
-    max-width: 100%;
-    overflow-x: auto;
-    font-family: var(--font-mono);
-    font-stretch: 85%;
-    font-size: var(--text-data);
-    line-height: 1.45;
-    font-variant-numeric: tabular-nums;
-  }
-  & :where(thead th) {
-    font-size: var(--text-slug);
-    font-stretch: 75%;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-ink-3);
-    border-bottom-width: 1.5px;
-    white-space: nowrap;
-  }
-  & :where(tbody td) {
-    border-bottom-width: 1px;
-  }
-  & :where(figcaption) {
-    font-size: var(--text-caption);
-    line-height: 1.4;
-  }
-  & :where(img, svg, video) {
-    border-radius: var(--radius-sm);
-  }
-  & > :first-child {
-    margin-top: 0;
-  }
-  & > :last-child {
-    margin-bottom: 0;
+    & :where(h1, h2, h3, h4) {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      text-wrap: balance;
+    }
+    & :where(h1) {
+      font-size: var(--text-h1);
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.6em;
+    }
+    & :where(h2) {
+      font-size: var(--text-h2);
+      line-height: 1.12;
+      letter-spacing: -0.015em;
+      margin-top: 1.8em;
+      margin-bottom: 0.6em;
+    }
+    & :where(h3) {
+      font-size: var(--text-h3);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin-top: 1.6em;
+      margin-bottom: 0.5em;
+    }
+    & :where(h4) {
+      font-size: var(--text-h4);
+      line-height: 1.25;
+      margin-top: 1.4em;
+      margin-bottom: 0.4em;
+    }
+    & :where(p, ul, ol) {
+      margin-top: 0.9em;
+      margin-bottom: 0.9em;
+    }
+    & :where(strong) {
+      font-weight: 700;
+    }
+    & :where(a) {
+      font-weight: 600;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 4px;
+      border-radius: var(--radius-paper);
+    }
+    & :where(mark) {
+      background-color: var(--color-yellow);
+      color: var(--color-ink);
+      padding-inline: 0.14em;
+      border-radius: var(--radius-paper);
+    }
+    & :where(ul > li)::marker {
+      color: var(--color-ink);
+    }
+    & :where(ol > li)::marker {
+      font-family: var(--font-mono);
+      font-stretch: 85%;
+      font-size: 0.8em;
+      font-weight: 600;
+    }
+    /* A pull quote is a taped note, not a grey bar. */
+    & :where(blockquote) {
+      margin-block: 1.4em;
+      padding: 0.75rem 1rem;
+      border: 3px solid var(--color-ink);
+      border-radius: var(--radius-paper);
+      background-color: var(--color-yellow-tint);
+      box-shadow: var(--shadow-3);
+      font-style: normal;
+      font-weight: 500;
+      quotes: none;
+    }
+    & :where(blockquote p) {
+      margin-block: 0.25em;
+    }
+    & :where(blockquote p)::before,
+    & :where(blockquote p)::after {
+      content: none;
+    }
+    & :where(hr) {
+      margin-block: 2em;
+      border: 0;
+      border-top: 2px dashed var(--color-ink);
+    }
+    & :where(code):not(:where(pre code)) {
+      font-family: var(--font-mono);
+      font-size: 0.78em;
+      font-weight: 600;
+      padding: 0.15em 0.4em;
+      border: 2px solid var(--color-ink);
+      border-radius: var(--radius-xs);
+      background-color: var(--color-white);
+    }
+    & :where(code)::before,
+    & :where(code)::after {
+      content: none;
+    }
+    & :where(pre) {
+      border: 3px solid var(--color-ink);
+      border-radius: var(--radius-paper);
+      font-size: var(--text-data);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    & :where(kbd) {
+      font-family: var(--font-mono);
+      font-size: 0.7em;
+      font-weight: 600;
+      border: 2px solid var(--color-ink);
+      border-radius: var(--radius-sm);
+      background-color: var(--color-white);
+      box-shadow: var(--shadow-key);
+    }
+    & :where(table) {
+      position: relative;
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-stretch: 85%;
+      font-size: var(--text-data);
+      line-height: 1.45;
+      font-variant-numeric: tabular-nums;
+    }
+    & :where(thead th) {
+      font-size: var(--text-slug);
+      font-stretch: 75%;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-ink-3);
+      border-bottom-width: 1.5px;
+      white-space: nowrap;
+    }
+    & :where(tbody td) {
+      border-bottom-width: 1px;
+    }
+    & :where(figcaption) {
+      font-size: var(--text-caption);
+      line-height: 1.4;
+    }
+    & :where(img, svg, video) {
+      border-radius: var(--radius-sm);
+    }
+    & > :first-child {
+      margin-top: 0;
+    }
+    & > :last-child {
+      margin-bottom: 0;
+    }
   }
 }
 /* Chat-sized prose (coach slips, toasts with markdown): body metrics instead of reading metrics. */
 @utility prose-compact {
-  font-size: var(--text-body);
-  line-height: 1.5;
-  font-weight: 500;
-  & :where(p, ul, ol) {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-  }
-  & :where(h1, h2, h3, h4) {
-    font-size: var(--text-h4);
-    line-height: 1.25;
-    letter-spacing: -0.005em;
-    margin-top: 1em;
-    margin-bottom: 0.3em;
+  &.prose.prose-eco {
+    font-size: var(--text-body);
+    line-height: 1.5;
+    font-weight: 500;
+    & :where(p, ul, ol) {
+      margin-top: 0.5em;
+      margin-bottom: 0.5em;
+    }
+    & :where(h1, h2, h3, h4) {
+      font-size: var(--text-h4);
+      line-height: 1.25;
+      letter-spacing: -0.005em;
+      margin-top: 1em;
+      margin-bottom: 0.3em;
+    }
   }
 }
