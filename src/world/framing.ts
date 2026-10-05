@@ -1,5 +1,5 @@
-import { clamp } from '@/lib/math';
-import { STICKER } from './config';
+import { clamp, clamp01, lerp } from '@/lib/math';
+import { CAMERA, STICKER, type StickerSpec } from './config';
 
 /**
  * Pure placement maths: how a DOM rectangle becomes a position and a scale for the
@@ -18,9 +18,11 @@ export interface Box {
 /**
  * The virtual box that is framed, in world units as seen by the camera: the subject
  * spans `halfWidth` either side of its origin, `top` above it and `bottom` below it.
+ * `lawn` is the half-width of the island alone, which is what `fit` measures.
  */
 export interface SubjectFrame {
   halfWidth: number;
+  lawn: number;
   top: number;
   bottom: number;
 }
@@ -31,8 +33,8 @@ export interface Placement {
   y: number;
   /** CSS pixels per world unit. */
   scale: number;
-  /** 0..1 multiplier for ink, sticker border and shadow widths. */
-  weight: number;
+  /** Line weights of the sticker for this box. */
+  sticker: StickerSpec;
   /** The same origin in canvas CSS pixels (y down), for DOM overlays. */
   left: number;
   top: number;
@@ -42,59 +44,69 @@ export interface FitInput {
   box: Box;
   canvas: { width: number; height: number };
   frame: SubjectFrame;
-  /** Share of the box the framed subject may fill, 0..1. */
+  /** Share of the box width the lawn takes, 0..1. */
   fit: number;
   /** 0 = vertically centred in the box, 1 = base on the bottom edge. */
   anchor: number;
-}
-
-/** Line weight multiplier for a subject drawn at `scale` px per world unit. */
-export function stickerWeight(scale: number): number {
-  return clamp(scale / STICKER.fullWeightScale, STICKER.minWeight, 1);
-}
-
-/** Pixels the sticker adds around the painted subject: outline, die-cut margin, hard shadow. */
-export function stickerMargins(weight: number): { side: number; shadow: number } {
-  return {
-    side: (STICKER.inkPx + STICKER.borderPx + STICKER.keylinePx) * weight,
-    shadow: STICKER.shadowPx * weight,
-  };
+  /** Pixels at the top of the box kept free for page chrome. */
+  chrome?: number;
 }
 
 /**
- * Places the subject inside a stage box, like `object-fit: contain` with an anchor:
- * horizontally centred, scaled so the frame plus its sticker margins fits inside
- * `fit` times the box in both dimensions.
+ * Line weights for a stage whose short side is `shortSide` pixels: three steps that
+ * match the UI border family, cross-faded around each threshold so a sticker flying
+ * between a thumbnail and a hero stage changes weight smoothly.
  */
-export function fitSubject({ box, canvas, frame, fit, anchor }: FitInput): Placement {
-  const availableW = Math.max(1, box.width * fit);
-  const availableH = Math.max(1, box.height * fit);
-  const frameW = frame.halfWidth * 2;
-  const frameH = frame.top + frame.bottom;
+export function stickerSpec(shortSide: number): StickerSpec {
+  const { steps, blend, keyline } = STICKER;
+  let ink: number = steps[0].ink;
+  let margin: number = steps[0].margin;
+  let shadow: number = steps[0].shadow;
+  for (let i = 1; i < steps.length; i += 1) {
+    const edge = (steps[i - 1] as (typeof steps)[number]).below;
+    const next = steps[i] as (typeof steps)[number];
+    const t = clamp01((shortSide - (edge - blend / 2)) / blend);
+    ink = lerp(ink, next.ink, t);
+    margin = lerp(margin, next.margin, t);
+    shadow = lerp(shadow, next.shadow, t);
+  }
+  return { ink, margin, keyline, shadow };
+}
 
-  // The margins are in pixels, so the scale depends on them and they on the scale.
-  // One refinement from the margin-free estimate is stable and exact enough.
-  const estimate = Math.min(availableW / frameW, availableH / frameH);
-  const weight = stickerWeight(estimate);
-  const { side, shadow } = stickerMargins(weight);
+/** Pixels the sticker adds outside the painted subject on every side. */
+export function stickerReach(spec: StickerSpec): number {
+  return spec.ink + spec.margin + spec.keyline;
+}
+
+/**
+ * Places the subject inside a stage box: horizontally centred, the lawn `fit` times as
+ * wide as the box, and never so large that the whole sticker (subject, margins, shadow
+ * and a little headroom) would leave the box in either dimension.
+ */
+export function fitSubject({ box, canvas, frame, fit, anchor, chrome = 0 }: FitInput): Placement {
+  const sticker = stickerSpec(Math.min(box.width, box.height));
+  const reach = stickerReach(sticker);
+  const height = Math.max(1, box.height - chrome);
   const scale = Math.max(
     0.01,
     Math.min(
-      (availableW - 2 * side - 2 * shadow) / frameW,
-      (availableH - 2 * side - shadow) / frameH,
+      (box.width * clamp(fit, 0.05, 1)) / (2 * frame.lawn),
+      (box.width - 2 * reach - 2 * sticker.shadow) / (2 * frame.halfWidth),
+      (height - 2 * reach - sticker.shadow) / ((frame.top + frame.bottom) * CAMERA.headroom),
     ),
   );
 
   const left = box.x + box.width / 2;
-  const centred = box.y + box.height / 2 + ((frame.top - frame.bottom) * scale - shadow) / 2;
-  const grounded = box.y + box.height - side - shadow - frame.bottom * scale;
-  const top = centred + (grounded - centred) * clamp(anchor, 0, 1);
+  const middle = box.y + chrome + height / 2;
+  const centred = middle + ((frame.top - frame.bottom) * scale - sticker.shadow) / 2;
+  const grounded = box.y + box.height - reach - sticker.shadow - frame.bottom * scale;
+  const top = lerp(centred, grounded, clamp01(anchor));
 
   return {
     x: left - canvas.width / 2,
     y: canvas.height / 2 - top,
     scale,
-    weight,
+    sticker,
     left,
     top,
   };

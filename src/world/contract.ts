@@ -101,9 +101,12 @@ export interface WorldStageProps {
   /** Show landmark hotspots as focusable buttons tracked to the island. Default: false. */
   landmarks?: boolean;
   onLandmark?: (id: LandmarkId) => void;
-  /** Portion (0..1) of the stage box the island may fill. Default: 0.86. */
+  /**
+   * Share (0..1) of the stage width the island's lawn takes; the tree is always kept
+   * inside the box as well. Default by mode: hero 0.86, hub 0.74, companion 0.86, ceremony 0.62.
+   */
   fit?: number;
-  /** Where the island sits inside the box. Default: `bottom`. */
+  /** Where the island sits inside the box. Default: `bottom` (`center` for `ceremony`). */
   anchor?: 'center' | 'bottom';
   /**
    * Draw the printed sky (halftone bands, sun or moon, clouds, crop marks) inside this

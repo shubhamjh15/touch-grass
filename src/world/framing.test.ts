@@ -1,56 +1,77 @@
 import { describe, expect, it } from 'vitest';
-import { STICKER } from './config';
+import { CAMERA, STICKER } from './config';
 import {
   fitSubject,
   stepSpring,
-  stickerMargins,
-  stickerWeight,
+  stickerReach,
+  stickerSpec,
   type Box,
   type Spring,
 } from './framing';
 
 const canvas = { width: 1200, height: 800 };
-const frame = { halfWidth: 3, top: 5, bottom: 2.5 };
+const frame = { halfWidth: 3.1, lawn: 3.08, top: 5, bottom: 2.5 };
 
 describe('fitSubject', () => {
-  const box: Box = { x: 100, y: 50, width: 600, height: 500 };
+  const box: Box = { x: 100, y: 50, width: 600, height: 700 };
 
   it('centres the subject horizontally and stands it on the bottom edge', () => {
     const placed = fitSubject({ box, canvas, frame, fit: 0.86, anchor: 1 });
-    const { side, shadow } = stickerMargins(placed.weight);
     expect(placed.left).toBeCloseTo(box.x + box.width / 2, 6);
     // The lowest pixel of the sticker (paint + margin + shadow) is the bottom edge of the box.
-    const lowest = placed.top + frame.bottom * placed.scale + side + shadow;
+    const lowest =
+      placed.top +
+      frame.bottom * placed.scale +
+      stickerReach(placed.sticker) +
+      placed.sticker.shadow;
     expect(lowest).toBeCloseTo(box.y + box.height, 6);
   });
 
-  it('fits the framed subject inside fit x box in both dimensions', () => {
+  it('makes the lawn fit x the box width when the height allows it', () => {
+    const placed = fitSubject({ box, canvas, frame, fit: 0.74, anchor: 1 });
+    expect(2 * frame.lawn * placed.scale).toBeCloseTo(box.width * 0.74, 6);
+  });
+
+  it('never lets the sticker leave the box in either dimension', () => {
     const sizes = [
-      [600, 500],
+      [600, 700],
       [900, 300],
       [200, 700],
       [120, 120],
+      [1400, 900],
     ] as const;
     for (const fit of [0.5, 0.86, 1]) {
       for (const [width, height] of sizes) {
         const target: Box = { x: 0, y: 0, width, height };
         const placed = fitSubject({ box: target, canvas, frame, fit, anchor: 1 });
-        const { side, shadow } = stickerMargins(placed.weight);
-        const usedWidth = frame.halfWidth * 2 * placed.scale + 2 * side + 2 * shadow;
-        const usedHeight = (frame.top + frame.bottom) * placed.scale + 2 * side + shadow;
-        expect(usedWidth).toBeLessThanOrEqual(width * fit + 1e-6);
-        expect(usedHeight).toBeLessThanOrEqual(height * fit + 1e-6);
-        // It touches the limit in at least one dimension: no wasted space.
-        expect(Math.min(width * fit - usedWidth, height * fit - usedHeight)).toBeLessThan(1e-6);
+        const reach = stickerReach(placed.sticker);
+        const usedWidth =
+          frame.halfWidth * 2 * placed.scale + 2 * reach + 2 * placed.sticker.shadow;
+        const usedHeight =
+          (frame.top + frame.bottom) * placed.scale * CAMERA.headroom +
+          2 * reach +
+          placed.sticker.shadow;
+        expect(usedWidth).toBeLessThanOrEqual(width + 1e-6);
+        expect(usedHeight).toBeLessThanOrEqual(height + 1e-6);
+        expect(2 * frame.lawn * placed.scale).toBeLessThanOrEqual(width * fit + 1e-6);
       }
     }
   });
 
+  it('keeps page chrome free at the top of a bleed stage', () => {
+    const tall: Box = { x: 0, y: 0, width: 2000, height: 600 };
+    const bare = fitSubject({ box: tall, canvas, frame, fit: 0.86, anchor: 1 });
+    const chromed = fitSubject({ box: tall, canvas, frame, fit: 0.86, anchor: 1, chrome: 64 });
+    expect(chromed.scale).toBeLessThan(bare.scale);
+    const highest = chromed.top - frame.top * chromed.scale - stickerReach(chromed.sticker);
+    expect(highest).toBeGreaterThanOrEqual(64);
+  });
+
   it('centres vertically for the centre anchor', () => {
-    const placed = fitSubject({ box, canvas, frame, fit: 0.8, anchor: 0 });
-    const { side, shadow } = stickerMargins(placed.weight);
-    const highest = placed.top - frame.top * placed.scale - side;
-    const lowest = placed.top + frame.bottom * placed.scale + side + shadow;
+    const placed = fitSubject({ box, canvas, frame, fit: 0.62, anchor: 0 });
+    const reach = stickerReach(placed.sticker);
+    const highest = placed.top - frame.top * placed.scale - reach;
+    const lowest = placed.top + frame.bottom * placed.scale + reach + placed.sticker.shadow;
     expect((highest + lowest) / 2).toBeCloseTo(box.y + box.height / 2, 6);
   });
 
@@ -75,11 +96,24 @@ describe('fitSubject', () => {
     expect(Number.isFinite(placed.scale)).toBe(true);
     expect(placed.scale).toBeGreaterThan(0);
   });
+});
 
-  it('thins the sticker lines for small subjects but keeps them readable', () => {
-    expect(stickerWeight(STICKER.fullWeightScale * 2)).toBe(1);
-    expect(stickerWeight(1)).toBe(STICKER.minWeight);
-    expect(stickerWeight(STICKER.fullWeightScale * 0.6)).toBeCloseTo(0.6, 6);
+describe('stickerSpec', () => {
+  it('uses the three line weights of the design bible', () => {
+    expect(stickerSpec(112)).toMatchObject({ ink: 2, margin: 5, shadow: 5, keyline: 1.5 });
+    expect(stickerSpec(400)).toMatchObject({ ink: 3, margin: 8, shadow: 8 });
+    expect(stickerSpec(900)).toMatchObject({ ink: 4, margin: 10, shadow: 8 });
+  });
+
+  it('cross-fades between them instead of popping', () => {
+    let previous = stickerSpec(0);
+    for (let side = 1; side <= 1000; side += 1) {
+      const now = stickerSpec(side);
+      expect(now.ink).toBeGreaterThanOrEqual(previous.ink);
+      expect(now.ink - previous.ink).toBeLessThan(2 / STICKER.blend + 1e-9);
+      expect(now.margin - previous.margin).toBeLessThan(4 / STICKER.blend + 1e-9);
+      previous = now;
+    }
   });
 });
 

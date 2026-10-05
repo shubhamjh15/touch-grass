@@ -1,5 +1,8 @@
+'use client';
+
 import { useEffect, useId, useMemo, useRef } from 'react';
 import { cn } from '@/lib/cn';
+import { STAGE_DEFAULTS } from './config';
 import type { WorldStageProps } from './contract';
 import { FallbackTree } from './FallbackTree';
 import { useWorldStore, type StageOptions } from './store';
@@ -15,8 +18,8 @@ export function WorldStage({
   interactive,
   landmarks = false,
   onLandmark,
-  fit = 0.86,
-  anchor = 'bottom',
+  fit = STAGE_DEFAULTS[mode].fit,
+  anchor = STAGE_DEFAULTS[mode].anchor,
   priority = 0,
   sky,
   label,
