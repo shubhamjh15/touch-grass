@@ -39,8 +39,9 @@ export function subjectFrame(metrics: TreeMetrics, growth: number, pitch: number
   return {
     halfWidth: Math.max(island.halfWidth, (metrics.halfWidth + CROWN_MARGIN) * eased),
     lawn: island.lawn,
-    top: young + Math.max(0, elder - young) * eased,
-    bottom: island.bottom,
+    // The idle bob moves the whole sticker: keep that much clear above and below.
+    top: young + Math.max(0, elder - young) * eased + CAMERA.bob,
+    bottom: island.bottom + CAMERA.bob,
   };
 }
 
