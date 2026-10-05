@@ -11,7 +11,7 @@
  *   node scripts/build-catalogue.mjs [path/to/emissions.json] [--check]
  *
  * The evidence file defaults to .redesign/research/emissions.json (the research
- * workspace); pass a path or set ECOQUEST_EVIDENCE to build from another copy.
+ * workspace); pass a path or set TOUCHGRASS_EVIDENCE to build from another copy.
  * `--check` writes nothing and exits 1 when a generated file is out of date.
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -27,7 +27,7 @@ const args = process.argv.slice(2);
 const check = args.includes('--check');
 const evidencePath = path.resolve(
   args.find((arg) => !arg.startsWith('--')) ??
-    process.env.ECOQUEST_EVIDENCE ??
+    process.env.TOUCHGRASS_EVIDENCE ??
     path.join(root, '.redesign', 'research', 'emissions.json'),
 );
 if (!existsSync(evidencePath)) {

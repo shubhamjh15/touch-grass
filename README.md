@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌱 EcoQuest
+# 🌱 Touch Grass
 
 [![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Space+Grotesk&weight=700&size=35&duration=3000&pause=1000&color=22c55e&center=true&vCenter=true&width=500&lines=Gamifying+Sustainability;Level+Up+Your+Green+Game;Save+the+Planet,+Earn+XP;Powered+by+AI+%26+You)](https://git.io/typing-svg)
 
@@ -28,7 +28,7 @@
 > "Eco-Anxiety" and "Climate Doomism" are paralyzing. People often feel their individual actions are too small to matter in the face of global climate change.
 >
 > **The Solution:**  
-> **EcoQuest** shifts the narrative from *fear* to *fun*. By applying game mechanics—XP, levels, badges, and streaks—we make sustainable living addictive. It bridges the gap between *knowing* you should help and actually *doing* it.
+> **Touch Grass** shifts the narrative from *fear* to *fun*. By applying game mechanics—XP, levels, badges, and streaks—we make sustainable living addictive. It bridges the gap between *knowing* you should help and actually *doing* it.
 
 ---
 
@@ -73,8 +73,8 @@ Follow these steps to set up the project locally.
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/ecoquest.git
-cd ecoquest
+git clone https://github.com/yourusername/touchgrass.git
+cd touchgrass
 ```
 
 ### 2. Install Dependencies
