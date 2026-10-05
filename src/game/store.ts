@@ -8,6 +8,7 @@
  * unless a browser is present.
  */
 import { msUntilTomorrow } from '@/lib/dates';
+import { IS_DEV } from '@/lib/env';
 import { randomSeed } from '@/lib/rng';
 import { persist, type PersistStorage, type StorageValue } from 'zustand/middleware';
 import { createStore, type StoreApi } from 'zustand/vanilla';
@@ -570,6 +571,8 @@ export function startGameClock(target: Game = game, intervalMs = 60_000): ClockH
   actions.tick();
   scheduleMidnight();
   const interval = setInterval(() => actions.tick(), intervalMs);
+  // The QA helper is loaded on demand, and only where development code is allowed.
+  if (IS_DEV) void import('./dev').then((module) => module.installGameDevTools(target));
   document.addEventListener('visibilitychange', onVisible);
   window.addEventListener('focus', onVisible);
   window.addEventListener('pageshow', onVisible);
