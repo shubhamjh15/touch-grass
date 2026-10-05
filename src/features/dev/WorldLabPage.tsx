@@ -1,19 +1,24 @@
 'use client';
 
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import {
   ISLAND_PROPS,
   SPECIES,
   WorldStage,
+  captureWorld,
+  emitPulse,
+  getStickingPoint,
   getWorldStats,
   setWorldSnapshot,
   useWorldStore,
   type IslandPropId,
+  type LandmarkId,
   type Species,
   type StageMode,
   type WorldMotion,
   type WorldPreference,
+  type WorldPulse,
   type WorldStats,
 } from '@/world';
 
@@ -23,7 +28,24 @@ import {
  * so a screenshot of any state can be scripted:
  *
  *   /__world?species=cherry&growth=0.6&hour=19&mode=hero&quality=high
+ *   /__world?pulse=level-up            fires that pulse about 600 ms after the world is ready
+ *   /__world?props=all&landmarks=1     every prop, landmark callouts on
+ *   /__world?preview=0.9               the stage previews that growth over the live snapshot
+ *   /__world?capture=1                 runs captureWorld() once ready and shows the PNG
  */
+
+const PULSES: ReadonlyArray<{ id: string; label: string; pulse: WorldPulse }> = [
+  { id: 'grow', label: 'Grow', pulse: { kind: 'grow', strength: 0.6 } },
+  { id: 'grow-max', label: 'Grow (max)', pulse: { kind: 'grow', strength: 1 } },
+  { id: 'ring', label: 'Ring', pulse: { kind: 'ring' } },
+  { id: 'water', label: 'Water', pulse: { kind: 'water' } },
+  { id: 'level-up', label: 'Level up', pulse: { kind: 'level-up', level: 6 } },
+  { id: 'badge', label: 'Badge', pulse: { kind: 'badge' } },
+  { id: 'streak', label: 'Streak 30', pulse: { kind: 'streak', days: 30 } },
+  { id: 'plant', label: 'Plant', pulse: { kind: 'plant' } },
+  { id: 'celebrate', label: 'Celebrate', pulse: { kind: 'celebrate' } },
+];
+const INTERACTIVE = ['auto', 'on', 'off'] as const;
 
 const MODES: readonly StageMode[] = ['hero', 'hub', 'companion', 'ceremony'];
 const QUALITIES: readonly WorldPreference[] = ['auto', 'low', 'medium', 'high', 'off'];
@@ -51,6 +73,11 @@ interface LabState {
   motion: WorldMotion;
   second: boolean;
   tall: boolean;
+  landmarks: boolean;
+  interactive: (typeof INTERACTIVE)[number];
+  /** Growth the stage previews over the live snapshot; negative = no preview. */
+  preview: number;
+  capture: boolean;
 }
 
 const DEFAULTS: LabState = {
@@ -70,6 +97,10 @@ const DEFAULTS: LabState = {
   motion: 'system',
   second: false,
   tall: false,
+  landmarks: false,
+  interactive: 'auto',
+  preview: -1,
+  capture: false,
 };
 
 const BOX_CLASS: Record<BoxSize, string> = {
@@ -99,9 +130,12 @@ function readUrl(): LabState {
     age: numberIn(query.get('age') ?? query.get('ageDays'), 0, 100_000, DEFAULTS.age),
     hour: numberIn(query.get('hour'), 0, 24, DEFAULTS.hour),
     seed: Math.round(numberIn(query.get('seed'), 0, 4_294_967_295, DEFAULTS.seed)),
-    props: (query.get('props') ?? '')
-      .split(',')
-      .filter((id): id is IslandPropId => ISLAND_PROPS.includes(id as IslandPropId)),
+    props:
+      query.get('props') === 'all'
+        ? [...ISLAND_PROPS]
+        : (query.get('props') ?? '')
+            .split(',')
+            .filter((id): id is IslandPropId => ISLAND_PROPS.includes(id as IslandPropId)),
     mode: oneOf(query.get('mode'), MODES, DEFAULTS.mode),
     fit: numberIn(query.get('fit'), 0.2, 1, DEFAULTS.fit),
     anchor: oneOf(query.get('anchor'), ANCHORS, DEFAULTS.anchor),
@@ -111,6 +145,10 @@ function readUrl(): LabState {
     motion: oneOf(query.get('motion'), MOTIONS, DEFAULTS.motion),
     second: flag('second', DEFAULTS.second),
     tall: flag('tall', DEFAULTS.tall),
+    landmarks: flag('landmarks', DEFAULTS.landmarks),
+    interactive: oneOf(query.get('interactive'), INTERACTIVE, DEFAULTS.interactive),
+    preview: numberIn(query.get('preview'), -1, 1, DEFAULTS.preview),
+    capture: flag('capture', DEFAULTS.capture),
   };
 }
 
@@ -234,8 +272,13 @@ function Readout() {
     ['fps', stats.fps.toFixed(0)],
     ['frame', `${stats.frameMs.toFixed(1)} ms`],
     ['dpr', stats.dpr.toFixed(2)],
+    ['dpr scale', stats.dprScale.toFixed(2)],
     ['shown growth', stats.growth.toFixed(3)],
     ['px / unit', stats.scale.toFixed(1)],
+    ['frames', String(stats.frames)],
+    ['geometries', String(stats.geometries)],
+    ['textures', String(stats.textures)],
+    ['programs', String(stats.programs)],
   ];
   return (
     <dl
@@ -254,8 +297,117 @@ function Readout() {
   );
 }
 
+const labButton =
+  'min-h-11 rounded-lg border-4 border-ink px-3 font-bold shadow-2 active:translate-x-[3px] active:translate-y-[3px] active:shadow-none focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus';
+
+/** Runs `captureWorld()` and shows the PNG it returns, at the size it was asked for. */
+function CapturePreview({ auto }: { auto: boolean }) {
+  const status = useWorldStore((state) => state.status);
+  const [shot, setShot] = useState<{ url: string; bytes: number; ms: number } | null>(null);
+  const [note, setNote] = useState('');
+  const ran = useRef(false);
+
+  const capture = async () => {
+    setNote('Capturing…');
+    const started = performance.now();
+    const blob = await captureWorld({ width: 1080, height: 1080 });
+    if (!blob) {
+      setNote('captureWorld() returned null (3D is off or not ready).');
+      return;
+    }
+    setShot((previous) => {
+      if (previous) URL.revokeObjectURL(previous.url);
+      return {
+        url: URL.createObjectURL(blob),
+        bytes: blob.size,
+        ms: performance.now() - started,
+      };
+    });
+    setNote('');
+  };
+
+  useEffect(() => {
+    if (!auto || ran.current || status !== 'ready') return;
+    ran.current = true;
+    const timer = window.setTimeout(() => void capture(), 900);
+    return () => window.clearTimeout(timer);
+  }, [auto, status]);
+
+  return (
+    <fieldset className="grid gap-2">
+      <legend className="text-sm mb-1 font-bold">Capture (captureWorld 1080 × 1080)</legend>
+      <button
+        type="button"
+        data-lab="capture"
+        className={cn(labButton, 'bg-pink')}
+        onClick={() => void capture()}
+      >
+        Capture PNG
+      </button>
+      {note && (
+        <p className="text-sm font-medium" role="status">
+          {note}
+        </p>
+      )}
+      {shot && (
+        <figure className="grid gap-1" data-lab="capture-result">
+          <img
+            src={shot.url}
+            alt="Captured world"
+            className="w-full rounded-lg border-4 border-ink"
+          />
+          <figcaption className="text-sm font-medium tabular-nums">
+            {(shot.bytes / 1024).toFixed(0)} kB PNG in {shot.ms.toFixed(0)} ms
+          </figcaption>
+        </figure>
+      )}
+    </fieldset>
+  );
+}
+
+/** Marks where `getStickingPoint()` says a logged action lands. */
+function StickingDot() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      const point = getStickingPoint();
+      const el = ref.current;
+      if (el) {
+        el.style.opacity = point ? '1' : '0';
+        if (point) el.style.transform = `translate(${point.x - 6}px, ${point.y - 6}px)`;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      className="pointer-events-none fixed top-0 left-0 z-50 size-3 rounded-full border-2 border-ink bg-tomato opacity-0"
+    />
+  );
+}
+
 export default function WorldLabPage() {
   const [lab, setLab] = useState<LabState>(readUrl);
+  const status = useWorldStore((state) => state.status);
+  const [lastLandmark, setLastLandmark] = useState<LandmarkId | null>(null);
+  const [showSticking, setShowSticking] = useState(false);
+
+  // `?pulse=level-up` fires once, about 600 ms after the world is ready (for screenshots).
+  const fired = useRef(false);
+  useEffect(() => {
+    if (fired.current || status !== 'ready') return;
+    const wanted = new URLSearchParams(window.location.search).get('pulse');
+    const entry = PULSES.find((item) => item.id === wanted);
+    if (!entry) return;
+    fired.current = true;
+    const timer = window.setTimeout(() => emitPulse(entry.pulse), 600);
+    return () => window.clearTimeout(timer);
+  }, [status]);
 
   const change = (patch: Partial<LabState>) => {
     const next = { ...lab, ...patch };
@@ -283,6 +435,8 @@ export default function WorldLabPage() {
   }, [lab.quality, lab.motion]);
 
   const sky = lab.sky === 'auto' ? undefined : lab.sky === 'on';
+  const interactive = lab.interactive === 'auto' ? undefined : lab.interactive === 'on';
+  const preview = lab.preview >= 0 ? { growth: lab.preview } : undefined;
 
   return (
     <main className="mx-auto grid max-w-[1400px] gap-6 p-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:p-6">
@@ -292,9 +446,15 @@ export default function WorldLabPage() {
           fit={lab.fit}
           anchor={lab.anchor}
           sky={sky}
+          interactive={interactive}
+          landmarks={lab.landmarks}
+          onLandmark={setLastLandmark}
+          landmarkMeta={{ quests: '1/3', impact: `${lab.age} rings` }}
+          preview={preview}
           label={`${lab.species} at growth ${lab.growth.toFixed(2)}`}
           className={cn('rounded-xl border-4 border-ink', BOX_CLASS[lab.box])}
         />
+        {showSticking && <StickingDot />}
 
         {lab.second && (
           <div className="rounded-xl border-4 border-dashed border-ink p-4">
@@ -326,6 +486,76 @@ export default function WorldLabPage() {
       >
         <h1 className="text-2xl font-bold">World lab</h1>
         <Readout />
+
+        <fieldset className="grid gap-2">
+          <legend className="text-sm mb-1 font-bold">Pulses (emitPulse)</legend>
+          <div className="grid grid-cols-3 gap-2">
+            {PULSES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                data-pulse={item.id}
+                className={cn(labButton, 'text-sm bg-green px-1')}
+                onClick={() => emitPulse(item.pulse)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            aria-pressed={lab.landmarks}
+            data-lab="landmarks"
+            className={cn(labButton, 'bg-yellow')}
+            onClick={() => change({ landmarks: !lab.landmarks })}
+          >
+            {lab.landmarks ? 'Hide landmarks' : 'Show landmarks'}
+          </button>
+          <Choice
+            label="Interactive"
+            value={lab.interactive}
+            options={INTERACTIVE}
+            onChange={(next) => change({ interactive: next })}
+          />
+          <button
+            type="button"
+            aria-pressed={showSticking}
+            data-lab="sticking"
+            className={cn(labButton, 'col-span-2 bg-white')}
+            onClick={() => setShowSticking((shown) => !shown)}
+          >
+            {showSticking ? 'Hide sticking point' : 'Show sticking point'}
+          </button>
+        </div>
+        <p className="text-sm font-medium" role="status" data-lab="landmark">
+          Last landmark: {lastLandmark ?? 'none'}
+        </p>
+
+        <div className="grid gap-2">
+          <label className="text-sm flex min-h-11 items-center gap-2 font-bold">
+            <input
+              type="checkbox"
+              className="size-5 accent-green"
+              checked={lab.preview >= 0}
+              onChange={(event) => change({ preview: event.target.checked ? lab.growth : -1 })}
+            />
+            Preview override (stage `preview.growth`)
+          </label>
+          {lab.preview >= 0 && (
+            <Slider
+              label="Preview growth"
+              value={lab.preview}
+              min={0}
+              max={1}
+              step={0.001}
+              digits={3}
+              onChange={(value) => change({ preview: value })}
+            />
+          )}
+        </div>
 
         <Choice
           label="Species"
@@ -437,7 +667,7 @@ export default function WorldLabPage() {
             type="button"
             aria-pressed={lab.second}
             data-lab="second"
-            className="min-h-11 rounded-lg border-4 border-ink bg-yellow px-3 font-bold shadow-2 active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+            className={cn(labButton, 'bg-yellow')}
             onClick={() => change({ second: !lab.second })}
           >
             {lab.second ? 'Remove 2nd stage' : 'Mount 2nd stage'}
@@ -446,15 +676,35 @@ export default function WorldLabPage() {
             type="button"
             aria-pressed={lab.tall}
             data-lab="tall"
-            className="min-h-11 rounded-lg border-4 border-ink bg-blue px-3 font-bold shadow-2 active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+            className={cn(labButton, 'bg-blue')}
             onClick={() => change({ tall: !lab.tall })}
           >
             {lab.tall ? 'Short page' : 'Tall page'}
           </button>
         </div>
 
+        <CapturePreview auto={lab.capture} />
+
         <fieldset className="grid gap-2">
           <legend className="text-sm mb-1 font-bold">Island props (unlocked)</legend>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              data-lab="props-all"
+              className={cn(labButton, 'text-sm bg-white')}
+              onClick={() => change({ props: [...ISLAND_PROPS] })}
+            >
+              All
+            </button>
+            <button
+              type="button"
+              data-lab="props-none"
+              className={cn(labButton, 'text-sm bg-white')}
+              onClick={() => change({ props: [] })}
+            >
+              None
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-x-3">
             {ISLAND_PROPS.map((prop) => (
               <label key={prop} className="text-sm flex min-h-11 items-center gap-2 font-medium">
