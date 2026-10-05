@@ -91,6 +91,8 @@ export interface CoachContext {
   baseline?: string;
   /** Loggable actions; the only ids a chip may reference. */
   actions?: CoachAction[];
+  /** Lesson slugs the coach may link with a learn chip. */
+  lessonSlugs?: string[];
 }
 
 export interface ChatRequestBody {
