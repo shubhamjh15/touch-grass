@@ -1,0 +1,31 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/*
+ * Design tokens. Tailwind v4 reads these and generates the matching utilities
+ * (bg-neo-green, shadow-neo, font-sans, …).
+ */
+@theme {
+  --font-sans: 'Space Grotesk Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --color-neo-green: #4ade80;
+  --color-neo-blue: #60a5fa;
+  --color-neo-yellow: #facc15;
+  --color-neo-pink: #f472b6;
+  --color-ink: #18181b;
+  --color-mint: #f0fdf4;
+
+  --shadow-neo-sm: 3px 3px 0 0 #18181b;
+  --shadow-neo: 5px 5px 0 0 #18181b;
+  --shadow-neo-lg: 8px 8px 0 0 #18181b;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-mint font-sans text-ink antialiased;
+  }
+}

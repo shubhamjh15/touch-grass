@@ -1,48 +1,19 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EcoQuest | Fix the Future</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Styles moved to index.css -->
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'neo-green': '#4ade80',
-              'neo-blue': '#60a5fa',
-              'neo-yellow': '#facc15',
-              'neo-pink': '#f472b6',
-              'neo-black': '#18181b',
-              'neo-white': '#ffffff',
-            },
-            boxShadow: {
-              'neo': '5px 5px 0px 0px rgba(0,0,0,1)',
-              'neo-sm': '3px 3px 0px 0px rgba(0,0,0,1)',
-              'neo-lg': '8px 8px 0px 0px rgba(0,0,0,1)',
-            }
-          }
-        }
-      }
-    </script>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "recharts": "https://esm.sh/recharts@^3.6.0"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>EcoQuest — Grow a living tree by shrinking your footprint</title>
+    <meta
+      name="description"
+      content="EcoQuest turns small climate actions into a living 3D tree. Log an action in seconds, see the CO2e you avoided, and watch your tree grow."
+    />
+    <meta name="theme-color" content="#f0fdf4" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
   <body>
     <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <noscript>EcoQuest needs JavaScript to grow your tree.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
