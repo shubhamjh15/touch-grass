@@ -1,5 +1,5 @@
 import { clamp01, smoothstep } from '@/lib/math';
-import { hexToRgb, mixRgb, type Rgb } from './color';
+import { hexToRgb, mixOklab, mixRgb, type Rgb } from './color';
 import {
   ACCENT,
   CANOPY,
@@ -9,7 +9,9 @@ import {
   LEAF,
   TONE,
   TONE_COUNT,
+  VITALITY,
   type ToneTriple,
+  type VitalityRamp,
 } from './config';
 import type { Species } from './contract';
 
@@ -38,17 +40,15 @@ const parse = (triple: ToneTriple): Triple => [
   hexToRgb(triple[1]),
   hexToRgb(triple[2]),
 ];
+/** Vitality ramps are mixed perceptually, so "thirsty" never passes through mud. */
 const mixTriple = (a: Triple, b: Triple, t: number): Triple => [
-  mixRgb(a[0], b[0], t),
-  mixRgb(a[1], b[1], t),
-  mixRgb(a[2], b[2], t),
+  mixOklab(a[0], b[0], t),
+  mixOklab(a[1], b[1], t),
+  mixOklab(a[2], b[2], t),
 ];
 
 /** Blends the three vitality ramps: 1 thriving, 0.5 thirsty, 0 dormant. */
-function byVitality(
-  ramp: { thriving: ToneTriple; thirsty: ToneTriple; dormant: ToneTriple },
-  vitality: number,
-): Triple {
+function byVitality(ramp: VitalityRamp, vitality: number): Triple {
   const v = clamp01(vitality);
   return v >= 0.5
     ? mixTriple(parse(ramp.thirsty), parse(ramp.thriving), (v - 0.5) * 2)
@@ -98,7 +98,7 @@ export function resolveTones(
   const grassTo = v >= 0.5 ? GRASS.thriving : GRASS.thirsty;
   const grassMix = v >= 0.5 ? (v - 0.5) * 2 : v * 2;
   const grass = (pick: (set: (typeof GRASS)['thriving']) => string) =>
-    mixRgb(hexToRgb(pick(grassFrom)), hexToRgb(pick(grassTo)), grassMix);
+    mixOklab(hexToRgb(pick(grassFrom)), hexToRgb(pick(grassTo)), grassMix);
   // The "shade" of a grass top is the contact decal under the crown.
   const decal = grass((set) => set.decal);
   put(TONE.grassPatch, [grass((set) => set.patch), decal, grass((set) => set.patch)]);
@@ -117,7 +117,16 @@ export function resolveTones(
   fixed(TONE.soil, FIXED_TONES.soil);
   fixed(TONE.seed, FIXED_TONES.seed);
   fixed(TONE.plaque, FIXED_TONES.plaque);
+  fixed(TONE.ink, FIXED_TONES.ink);
   return table;
+}
+
+/** Piecewise-linear read of a [thriving, thirsty, dormant] triple at a vitality. */
+function byState(values: readonly [number, number, number], vitality: number): number {
+  const v = clamp01(vitality);
+  return v >= 0.5
+    ? values[1] + (values[0] - values[1]) * (v - 0.5) * 2
+    : values[2] + (values[1] - values[2]) * v * 2;
 }
 
 /** How glossy the clumps are: a resting tree loses its shine. */
@@ -125,7 +134,12 @@ export function glossFor(vitality: number): number {
   return smoothstep(0.12, 0.6, vitality);
 }
 
-/** How far the tips hang: a thirsty tree droops softly, a dormant one a little more. */
+/** How far the tips hang: most when thirsty; a dormant tree is stiller and droops less. */
 export function droopFor(vitality: number): number {
-  return clamp01(1 - vitality) ** 0.8;
+  return byState(VITALITY.droop, vitality);
+}
+
+/** Share of the full sway: a thirsty tree moves less, a dormant one is very still. */
+export function swayFor(vitality: number): number {
+  return byState(VITALITY.sway, vitality);
 }

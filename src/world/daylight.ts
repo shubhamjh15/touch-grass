@@ -1,9 +1,11 @@
-import { hexToRgb, mixOklab, mixRgb, rgbToHex, type Rgb } from './color';
+import { hexToRgb, mixOklab, rgbToHex, type Rgb } from './color';
 import {
-  GRADE_BLEND_HOURS,
-  SKY_BLEND_HOURS,
+  ORB,
+  SLOT_BLEND_HOURS,
   SLOT_EDGES,
   SLOT_LOOK,
+  STAR,
+  SUNDIAL,
   type DaySlot,
   type SlotLook,
 } from './config';
@@ -36,16 +38,14 @@ export function slotAt(hour: number): DaySlot {
  */
 export function slotBlend(
   hour: number,
-  halfWindow: number,
+  halfWindow = SLOT_BLEND_HOURS,
 ): { from: DaySlot; to: DaySlot; mix: number } {
   const h = wrapHour(hour);
   for (const slot of ORDER) {
-    const edge = STARTS[slot];
-    const signed = ((h - edge + 36) % 24) - 12;
+    const signed = ((h - STARTS[slot] + 36) % 24) - 12;
     if (Math.abs(signed) < halfWindow) {
       const previous = ORDER[(ORDER.indexOf(slot) + 3) % 4] as DaySlot;
-      const t = (signed + halfWindow) / (2 * halfWindow);
-      return { from: previous, to: slot, mix: t * t * (3 - 2 * t) };
+      return { from: previous, to: slot, mix: (signed + halfWindow) / (2 * halfWindow) };
     }
   }
   const slot = slotAt(h);
@@ -54,11 +54,10 @@ export function slotBlend(
 
 function blendLook<T>(
   hour: number,
-  halfWindow: number,
   read: (look: SlotLook) => T,
   mix: (a: T, b: T, t: number) => T,
 ): T {
-  const blend = slotBlend(hour, halfWindow);
+  const blend = slotBlend(hour);
   const from = read(SLOT_LOOK[blend.from]);
   return blend.mix === 0 ? from : mix(from, read(SLOT_LOOK[blend.to]), blend.mix);
 }
@@ -68,7 +67,6 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 export interface SkyLook {
   bands: [string, string, string, string];
-  page: string;
   orb: string;
   cloud: string;
   mark: string;
@@ -80,43 +78,51 @@ export interface SkyLook {
   moon: number;
 }
 
-/** 0 at the start of the arc (rising on the left), 1 at its end. Sun 06-18, moon 18-06. */
-function arcProgress(hour: number): { u: number; night: boolean } {
+/** The sun travels left to right between first and last light, highest a little after noon. */
+function orbPosition(hour: number): { x: number; y: number; moon: number } {
   const h = wrapHour(hour);
-  const night = h < 6 || h >= 18;
-  return { u: night ? ((h + 6) % 12) / 12 : (h - 6) / 12, night };
-}
-
-export function skyAt(hour: number): SkyLook {
-  const read = <T>(pick: (look: SlotLook) => T, mix: (a: T, b: T, t: number) => T) =>
-    blendLook(hour, SKY_BLEND_HOURS, pick, mix);
-  const bands = [0, 1, 2, 3].map((index) =>
-    read((look) => look.bands[index] as string, mixHex),
-  ) as SkyLook['bands'];
-  const { u, night } = arcProgress(hour);
+  if (h < ORB.from || h >= ORB.until) return { x: ORB.moon[0], y: ORB.moon[1], moon: 1 };
+  const across = (h - ORB.from) / (ORB.until - ORB.from);
+  const climb =
+    h <= ORB.highest
+      ? (h - ORB.from) / (ORB.highest - ORB.from)
+      : (ORB.until - h) / (ORB.until - ORB.highest);
   return {
-    bands,
-    page: read((look) => look.page, mixHex),
-    orb: read((look) => look.orb, mixHex),
-    cloud: read((look) => look.cloud, mixHex),
-    mark: read((look) => look.mark, mixHex),
-    stars: read((look) => look.stars, lerp),
-    orbX: 0.5 - 0.36 * Math.cos(Math.PI * u),
-    orbY: 0.6 - 0.46 * Math.sin(Math.PI * u),
-    moon: night ? 1 : 0,
+    x: lerp(ORB.left, ORB.right, across),
+    y: lerp(ORB.low, ORB.high, Math.sin((climb * Math.PI) / 2)),
+    moon: 0,
   };
 }
 
-/** Publishes the sky as `--sky-*` custom properties (on `:root`) for the CSS layers and the UI. */
+export function skyAt(hour: number): SkyLook {
+  const bands = [0, 1, 2, 3].map((index) =>
+    blendLook(hour, (look) => look.bands[index] as string, mixHex),
+  ) as SkyLook['bands'];
+  const orb = orbPosition(hour);
+  return {
+    bands,
+    orb: blendLook(hour, (look) => look.orb, mixHex),
+    cloud: blendLook(hour, (look) => look.cloud, mixHex),
+    mark: blendLook(hour, (look) => look.mark, mixHex),
+    stars: blendLook(hour, (look) => look.stars, lerp),
+    orbX: orb.x,
+    orbY: orb.y,
+    moon: orb.moon,
+  };
+}
+
+/**
+ * Publishes the sky as custom properties. On `:root` these are the public tokens the UI
+ * may read (`--sky-0..3`, `--orb`, `--cloud`, `--stage-mark`); the world's own layer sets
+ * them on itself too, so its print is exact at once even where the page eases the tokens.
+ */
 export function applySkyVars(target: HTMLElement, sky: SkyLook): void {
   const style = target.style;
   sky.bands.forEach((band, index) => style.setProperty(`--sky-${index}`, band));
-  style.setProperty('--sky-top', sky.bands[0]);
-  style.setProperty('--sky-horizon', sky.bands[3]);
-  style.setProperty('--sky-page', sky.page);
-  style.setProperty('--sky-orb', sky.orb);
-  style.setProperty('--sky-cloud', sky.cloud);
-  style.setProperty('--sky-mark', sky.mark);
+  style.setProperty('--orb', sky.orb);
+  style.setProperty('--cloud', sky.cloud);
+  style.setProperty('--stage-mark', sky.mark);
+  style.setProperty('--star', STAR);
   style.setProperty('--sky-stars', sky.stars.toFixed(3));
   style.setProperty('--sky-orb-x', `${(sky.orbX * 100).toFixed(2)}%`);
   style.setProperty('--sky-orb-y', `${(sky.orbY * 100).toFixed(2)}%`);
@@ -124,32 +130,27 @@ export function applySkyVars(target: HTMLElement, sky: SkyLook): void {
 }
 
 export interface LightLook {
-  /** Unit vector towards the light, in view space (x right, y up, z towards the viewer). */
-  direction: [number, number, number];
-  gradeLit: Rgb;
-  gradeShade: Rgb;
+  /** Multiplied over every painted tone. */
+  grade: Rgb;
+  /**
+   * Unit vector towards the sun in the island's rest frame (x to the viewer's right,
+   * y up, z towards the viewer). The island is a sundial: the tree's shadow points to
+   * the right at 06:00, at the viewer at noon and to the left at 18:00.
+   */
+  sun: [number, number, number];
+  /** 0..1: how much of the cast shadow is printed (it fades out at night). */
+  castShadow: number;
 }
 
-/**
- * Key light for the paint shader. The sun rises low on the left, stands high (still a
- * little left, like every card shadow in the UI) at noon and sets low on the right; the
- * moon repeats the arc. Elevation is what makes dawn and dusk read as "low sun".
- */
 export function lightAt(hour: number): LightLook {
-  const { u } = arcProgress(hour);
-  const side = -Math.cos(Math.PI * u);
-  const height = Math.sin(Math.PI * u);
-  // Noon keeps a left bias so the shade side never flips straight overhead.
-  const x = side * 0.78 - 0.22 * height;
-  const y = 0.22 + 0.62 * height;
-  const z = 0.55;
-  const length = Math.hypot(x, y, z);
-  const grade = (pick: (look: SlotLook) => string) =>
-    blendLook(hour, GRADE_BLEND_HOURS, (look) => hexToRgb(pick(look)), mixRgb);
+  const h = wrapHour(hour);
+  const sweep = (Math.PI * (h - 6)) / 12;
+  const elevation = SUNDIAL.base + SUNDIAL.swing * Math.max(0, Math.sin(sweep));
+  const flat = Math.cos(elevation);
   return {
-    direction: [x / length, y / length, z / length],
-    gradeLit: grade((look) => look.gradeLit),
-    gradeShade: grade((look) => look.gradeShade),
+    grade: blendLook(hour, (look) => hexToRgb(look.grade), mixOklab),
+    sun: [-Math.cos(sweep) * flat, Math.sin(elevation), -Math.sin(sweep) * flat],
+    castShadow: blendLook(hour, (look) => look.castShadow, lerp),
   };
 }
 

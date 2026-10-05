@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { contrastRatio, hexToRgb } from './color';
-import { INK, SLOT_LOOK } from './config';
+import { contrastRatio, hexToRgb, multiplyRgb } from './color';
+import { CANOPY, FIXED_TONES, INK, PAPER, SLOT_LOOK } from './config';
 import { hourDelta, lightAt, skyAt, slotAt, slotBlend } from './daylight';
 
 describe('skyAt', () => {
@@ -26,27 +26,21 @@ describe('skyAt', () => {
     }
   });
 
-  it('keeps the page tint pale enough for ink text at every hour', () => {
-    const ink = hexToRgb(INK);
-    for (let hour = 0; hour < 24; hour += 0.1) {
-      expect(contrastRatio(hexToRgb(skyAt(hour).page), ink)).toBeGreaterThanOrEqual(7);
-    }
-  });
-
   it('hangs the sun by day and the moon by night, inside the box', () => {
     expect(skyAt(12).moon).toBe(0);
     expect(skyAt(23).moon).toBe(1);
-    for (let hour = 0; hour < 24; hour += 0.5) {
+    for (let hour = 0; hour < 24; hour += 0.25) {
       const sky = skyAt(hour);
-      expect(sky.orbX).toBeGreaterThan(0.1);
-      expect(sky.orbX).toBeLessThan(0.9);
+      expect(sky.orbX).toBeGreaterThanOrEqual(0.12);
+      expect(sky.orbX).toBeLessThanOrEqual(0.88);
       expect(sky.orbY).toBeGreaterThan(0.1);
-      expect(sky.orbY).toBeLessThan(0.65);
+      expect(sky.orbY).toBeLessThanOrEqual(0.5);
     }
-    // Low on the left at dawn, high at noon, low on the right at dusk.
-    expect(skyAt(6.5).orbX).toBeLessThan(0.25);
-    expect(skyAt(12).orbY).toBeLessThan(skyAt(7).orbY);
-    expect(skyAt(17.5).orbX).toBeGreaterThan(0.75);
+    // Low on the left at first light, highest a little after noon, low on the right at dusk.
+    expect(skyAt(5.6).orbX).toBeLessThan(0.15);
+    expect(skyAt(12.75).orbY).toBeLessThan(skyAt(9).orbY);
+    expect(skyAt(12.75).orbY).toBeLessThan(skyAt(16).orbY);
+    expect(skyAt(19.9).orbX).toBeGreaterThan(0.85);
   });
 });
 
@@ -70,24 +64,51 @@ describe('slots', () => {
 });
 
 describe('lightAt', () => {
-  it('is a unit vector that always shines from the front and from above', () => {
-    for (let hour = 0; hour < 24; hour += 0.25) {
-      const { direction } = lightAt(hour);
-      expect(Math.hypot(...direction)).toBeCloseTo(1, 6);
-      expect(direction[2]).toBeGreaterThan(0.3);
-      expect(direction[1]).toBeGreaterThan(0);
+  it('leaves brand colours untouched by day and grades them at the edges of the day', () => {
+    expect(lightAt(12).grade).toEqual([1, 1, 1]);
+    const dusk = lightAt(18.75).grade;
+    expect(dusk[0]).toBeGreaterThan(dusk[2]);
+    const night = lightAt(1).grade;
+    expect(night[2]).toBeGreaterThan(night[0]);
+  });
+
+  it('keeps every base tone readable against ink under moonlight, and the margin white', () => {
+    const ink = hexToRgb(INK);
+    const night = lightAt(1).grade;
+    const bases = [
+      CANOPY.oak.thriving[0],
+      CANOPY.cherry.thriving[0],
+      CANOPY.pine.thriving[0],
+      FIXED_TONES.bark[0],
+    ];
+    for (const base of bases) {
+      expect(contrastRatio(multiplyRgb(hexToRgb(base), night), ink)).toBeGreaterThanOrEqual(3);
+    }
+    for (const band of SLOT_LOOK.night.bands) {
+      expect(contrastRatio(hexToRgb(PAPER), hexToRgb(band))).toBeGreaterThan(9);
     }
   });
 
-  it('is low and warm at dusk, neutral at noon, cool at night', () => {
-    expect(lightAt(12).gradeLit).toEqual([1, 1, 1]);
-    expect(lightAt(18.75).direction[1]).toBeLessThan(lightAt(12).direction[1]);
-    const dusk = lightAt(18.75).gradeLit;
-    expect(dusk[0]).toBeGreaterThan(dusk[2]);
-    const night = lightAt(1).gradeLit;
-    expect(night[2]).toBeGreaterThan(night[0]);
-    // Lifted ambient: at night the shade grade stays close to the lit grade.
-    expect(night[0] - lightAt(1).gradeShade[0]).toBeLessThan(0.15);
+  it('turns the island into a sundial', () => {
+    // The shadow points away from the sun: to the right of the viewer at 06:00, at the
+    // viewer at noon, to the left at 18:00. Coordinates: x right, y up, z towards the viewer.
+    const shadow = (hour: number) => {
+      const { sun } = lightAt(hour);
+      return [-sun[0], -sun[2]];
+    };
+    expect(shadow(6)[0]).toBeGreaterThan(0.9);
+    expect(shadow(12)[1]).toBeGreaterThan(0.4);
+    expect(Math.abs(shadow(12)[0] as number)).toBeLessThan(1e-6);
+    expect(shadow(18)[0]).toBeLessThan(-0.9);
+    for (let hour = 0; hour < 24; hour += 0.5) {
+      const { sun } = lightAt(hour);
+      expect(Math.hypot(...sun)).toBeCloseTo(1, 6);
+      expect(sun[1]).toBeGreaterThan(0.3);
+    }
+    // Low sun at the edges of the day, high at noon; no shadow is cast at night.
+    expect(lightAt(12).sun[1]).toBeGreaterThan(lightAt(7).sun[1]);
+    expect(lightAt(12).castShadow).toBe(1);
+    expect(lightAt(1).castShadow).toBe(0);
   });
 
   it('takes the short way round the dial', () => {
