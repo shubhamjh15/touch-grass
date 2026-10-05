@@ -57,9 +57,14 @@ export function formatDecimal(value: number, decimals = 1): string {
   return new Intl.NumberFormat(LOCALE, { maximumFractionDigits: decimals }).format(value);
 }
 
-/** A yearly footprint in tonnes, to one decimal: "7.8 t". */
+const tonnesFormat = new Intl.NumberFormat(LOCALE, {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+/** A yearly footprint in tonnes, always to one decimal: "7.8 t", "8.0 t". */
 export function formatTonnes(tonnes: number): string {
-  return `${oneDecimal.format(tonnes)} t`;
+  return `${tonnesFormat.format(tonnes)} t`;
 }
 
 /**

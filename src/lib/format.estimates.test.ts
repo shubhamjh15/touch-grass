@@ -13,6 +13,7 @@ describe('estimate formatting', () => {
     expect(formatTonnes(7.83)).toBe('7.8 t');
     expect(formatTonnes(15.66)).toBe('15.7 t');
     expect(formatTonnes(1.2)).toBe('1.2 t');
+    expect(formatTonnes(8.03)).toBe('8.0 t');
   });
 
   it('never claims more than two significant figures', () => {
