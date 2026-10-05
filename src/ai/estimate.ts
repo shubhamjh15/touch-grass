@@ -54,7 +54,7 @@ interface Rule {
 const RULES: readonly Rule[] = [
   {
     re: /\b(cycl\w*|biked|biking|rode (my|a|the) bike|bike (ride|trip|to))\b/,
-    category: 'transport',
+    category: 'move',
     title: 'Cycled instead of driving',
     emoji: '🚲',
     unit: 'km',
@@ -66,7 +66,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(walk\w*|on foot)\b/,
-    category: 'transport',
+    category: 'move',
     title: 'Walked instead of driving',
     emoji: '🚶',
     unit: 'km',
@@ -78,7 +78,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(bus|tram|metro|subway|underground|transit)\b/,
-    category: 'transport',
+    category: 'move',
     title: 'Took public transport',
     emoji: '🚌',
     unit: 'km',
@@ -90,7 +90,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(train|rail)\b/,
-    category: 'transport',
+    category: 'move',
     title: 'Took the train',
     emoji: '🚆',
     unit: 'km',
@@ -102,7 +102,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(carpool\w*|shared (a |the )?(ride|car)|lift share)\b/,
-    category: 'transport',
+    category: 'move',
     title: 'Shared the ride',
     emoji: '🚗',
     unit: 'km',
@@ -114,7 +114,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(vegan|plant based|fully plant)\b/,
-    category: 'food',
+    category: 'eat',
     title: 'Plant-based meal',
     emoji: '🌱',
     unit: 'meals',
@@ -126,7 +126,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(vegetarian|veggie|meat ?free|meatless)\b/,
-    category: 'food',
+    category: 'eat',
     title: 'Vegetarian meal',
     emoji: '🥗',
     unit: 'meals',
@@ -138,7 +138,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(instead of|skipped|no|swapped) (beef|lamb)\b|\b(beef|lamb) (swap|free)\b/,
-    category: 'food',
+    category: 'eat',
     title: 'Swapped beef or lamb',
     emoji: '🫘',
     unit: 'meals',
@@ -150,7 +150,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(leftovers?|used up|food scraps|saved (the )?food|stale bread)\b/,
-    category: 'food',
+    category: 'eat',
     title: 'Used up leftovers',
     emoji: '🍲',
     unit: 'portions',
@@ -162,7 +162,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(line ?dr\w*|air ?dr\w*|drying rack|clothes ?line|hung (my )?(washing|laundry|clothes))\b/,
-    category: 'energy',
+    category: 'power',
     title: 'Air-dried laundry',
     emoji: '🧺',
     unit: 'loads',
@@ -198,7 +198,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(thermostat|heating (down|lower|off)|turned (the )?heating|lowered (the )?heating)\b/,
-    category: 'energy',
+    category: 'power',
     title: 'Turned the heating down',
     emoji: '🌡️',
     unit: '°C',
@@ -222,7 +222,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(second ?hand|thrift\w*|vintage|pre ?owned|charity shop|op shop)\b/,
-    category: 'shopping',
+    category: 'stuff',
     title: 'Bought second-hand',
     emoji: '👕',
     unit: 'item',
@@ -234,7 +234,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(repair\w*|fixed|mended|patched|resoled)\b/,
-    category: 'shopping',
+    category: 'stuff',
     title: 'Repaired instead of replacing',
     emoji: '🧵',
     unit: 'item',
@@ -246,7 +246,7 @@ const RULES: readonly Rule[] = [
   },
   {
     re: /\b(borrow\w*|rented|lent|swapped|shared (a |my )?(tool|drill|ladder))\b/,
-    category: 'shopping',
+    category: 'stuff',
     title: 'Borrowed instead of buying',
     emoji: '🤝',
     unit: 'item',
@@ -392,15 +392,16 @@ export function estimateLocally(text: string, options: EstimateOptions = {}): Es
     const estimate: ActionEstimate = {
       isClimateAction: true,
       matchedActionId: matched?.id ?? null,
+      variant: null,
       title: title60(text) || 'Something else',
       emoji: '🌱',
       category: 'nature',
       effort: 2,
-      quantity: options.quantity ?? 1,
+      qty: options.quantity ?? 1,
       unit: matched?.unit ?? 'once',
-      co2Kg: null,
+      co2eKg: null,
       confidence: 'low',
-      reasoning:
+      rationale:
         'Nothing in the built-in list matches, so there is no number. Pick a category and effort yourself.',
     };
     return { estimate, source: 'heuristic', recognised: false };
@@ -408,20 +409,21 @@ export function estimateLocally(text: string, options: EstimateOptions = {}): Es
 
   const quantity = options.quantity ?? parseQuantity(text, rule.unit) ?? rule.defaultQuantity;
   const raw = rule.perUnitKg === null ? null : rule.perUnitKg * quantity;
-  const co2Kg =
+  const co2eKg =
     raw === null ? null : Math.round(Math.min(AI_LIMITS.maxEstimateKg, raw) * 100) / 100;
   const estimate: ActionEstimate = {
     isClimateAction: true,
     matchedActionId: matched?.id ?? null,
+    variant: null,
     title: rule.title,
     emoji: rule.emoji,
     category: rule.category,
     effort: rule.effort,
-    quantity,
+    qty: quantity,
     unit: matched?.unit ?? rule.unit,
-    co2Kg: matched ? null : co2Kg,
+    co2eKg: matched ? null : co2eKg,
     confidence: 'low',
-    reasoning:
+    rationale:
       rule.perUnitKg === null
         ? `Recognised from your words; no number given: ${rule.basis}.`
         : `A rough guess compared with ${rule.basis}.`,

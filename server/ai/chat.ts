@@ -73,8 +73,8 @@ export interface ChatDeps {
 export const DEFAULT_CHAT_OPTIONS: ChatOptions = {
   maxTokens: 600,
   temperature: 0.6,
-  firstTokenMs: 8000,
-  connectDeadlineMs: 20_000,
+  firstTokenMs: 7000,
+  connectDeadlineMs: 12_000,
   totalMs: 55_000,
   heartbeatMs: 15_000,
   maxAttempts: 4,

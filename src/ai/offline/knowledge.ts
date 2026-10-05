@@ -64,14 +64,3 @@ export const DINNER_IDEAS: readonly string[] = [
 /** Crisis answer. Never coaches; points to people. Resource names are real and international. */
 export const CRISIS_REPLY =
   "I'm really sorry you're carrying this. You matter more than any habit or number in this app, and I'm only a built-in coach, so I can't be the support you deserve right now.\n\nPlease reach out to someone who can help: if you might act on these thoughts or are in immediate danger, call your local emergency number now. In the US you can call or text 988; findahelpline.com lists free, confidential lines in most countries. If you can, tell someone you trust how you're feeling today.\n\nThe tree will be here whenever you want to come back.";
-
-/** Words that suggest a category on a loggable action, used when no preferred id is available. */
-export const CATEGORY_HINTS: Readonly<Record<string, readonly string[]>> = {
-  food: ['eat', 'food', 'meal'],
-  transport: ['move', 'transport', 'travel'],
-  energy: ['power', 'energy', 'home'],
-  water: ['water'],
-  shopping: ['stuff', 'shopping'],
-  waste: ['waste'],
-  nature: ['nature'],
-};

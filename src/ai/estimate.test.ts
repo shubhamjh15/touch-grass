@@ -21,15 +21,16 @@ const idle: ClientAiStatus = {
 const aiEstimate: ActionEstimate = {
   isClimateAction: true,
   matchedActionId: null,
+  variant: null,
   title: 'Fixed a bike',
   emoji: '🔧',
-  category: 'shopping',
+  category: 'stuff',
   effort: 3,
-  quantity: 1,
+  qty: 1,
   unit: 'item',
-  co2Kg: 0.4,
+  co2eKg: 0.4,
   confidence: 'low',
-  reasoning: 'A repair avoids a replacement.',
+  rationale: 'A repair avoids a replacement.',
 };
 
 describe('estimateLocally', () => {
@@ -38,46 +39,46 @@ describe('estimateLocally', () => {
     expect(cycling.recognised).toBe(true);
     expect(cycling.source).toBe('heuristic');
     expect(cycling.estimate).toMatchObject({
-      category: 'transport',
-      quantity: 5,
+      category: 'move',
+      qty: 5,
       unit: 'km',
       confidence: 'low',
       matchedActionId: 'move_bike_trip',
-      co2Kg: null,
+      co2eKg: null,
     });
   });
 
   it('gives a number when no catalogue action matches', () => {
     const outcome = estimateLocally('cycled 5 km to work');
     expect(outcome.estimate).toMatchObject({
-      co2Kg: 0.5,
+      co2eKg: 0.5,
       matchedActionId: null,
       confidence: 'low',
     });
-    expect(outcome.estimate.reasoning).toMatch(/rough guess/i);
+    expect(outcome.estimate.rationale).toMatch(/rough guess/i);
   });
 
   it('converts miles and ignores numbers without a matching unit', () => {
-    expect(estimateLocally('cycled 10 miles').estimate.quantity).toBe(16.1);
-    expect(estimateLocally('cycled for 30 minutes').estimate.quantity).toBe(3);
+    expect(estimateLocally('cycled 10 miles').estimate.qty).toBe(16.1);
+    expect(estimateLocally('cycled for 30 minutes').estimate.qty).toBe(3);
   });
 
   it('reads meals and loads', () => {
     expect(estimateLocally('had 2 vegetarian meals').estimate).toMatchObject({
-      quantity: 2,
-      co2Kg: 1.6,
-      category: 'food',
+      qty: 2,
+      co2eKg: 1.6,
+      category: 'eat',
     });
     expect(estimateLocally('line dried 3 loads of washing').estimate).toMatchObject({
-      quantity: 3,
-      category: 'energy',
+      qty: 3,
+      category: 'power',
     });
   });
 
   it('does not mistake repairing a bike for cycling', () => {
     const outcome = estimateLocally("fixed my neighbour's bike", { actions: catalogue });
     expect(outcome.estimate).toMatchObject({
-      category: 'shopping',
+      category: 'stuff',
       matchedActionId: 'stuff_repair',
     });
   });
@@ -86,29 +87,29 @@ describe('estimateLocally', () => {
     const outcome = estimateLocally('learned the ukulele');
     expect(outcome.recognised).toBe(false);
     expect(outcome.estimate).toMatchObject({
-      co2Kg: null,
+      co2eKg: null,
       confidence: 'low',
       title: 'Learned the ukulele',
     });
-    expect(outcome.estimate.reasoning).toMatch(/no number/);
+    expect(outcome.estimate.rationale).toMatch(/no number/);
   });
 
   it('gives no number for actions without an honest factor', () => {
     expect(estimateLocally('picked up litter in the park').estimate).toMatchObject({
-      co2Kg: null,
+      co2eKg: null,
       category: 'nature',
     });
-    expect(estimateLocally('sorted the recycling').estimate.co2Kg).toBeNull();
+    expect(estimateLocally('sorted the recycling').estimate.co2eKg).toBeNull();
   });
 
   it('never exceeds the per-log cap, whatever the quantity', () => {
     const huge = estimateLocally('took the train 5000 km');
-    expect(huge.estimate.co2Kg).toBeLessThanOrEqual(5);
-    expect(estimateLocally('cycled 9999999 km').estimate.co2Kg).toBeLessThanOrEqual(5);
+    expect(huge.estimate.co2eKg).toBeLessThanOrEqual(2);
+    expect(estimateLocally('cycled 9999999 km').estimate.co2eKg).toBeLessThanOrEqual(2);
   });
 
   it('respects a typed quantity over one in the text', () => {
-    expect(estimateLocally('cycled 5 km', { quantity: 8 }).estimate.quantity).toBe(8);
+    expect(estimateLocally('cycled 5 km', { quantity: 8 }).estimate.qty).toBe(8);
   });
 
   it('keeps titles within 60 characters and handles empty and odd input', () => {

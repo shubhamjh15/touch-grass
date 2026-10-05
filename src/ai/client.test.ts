@@ -331,6 +331,62 @@ describe('streamChat', () => {
     await expect(pending).rejects.toMatchObject({ code: 'aborted', partial: 'One' });
   });
 
+  it('gives up when no first token arrives in time, so the built-in coach can answer', async () => {
+    const fetchMock = vi.fn(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError')),
+          );
+        }),
+    );
+    const client = createAiClient({
+      fetch: fetchMock as unknown as typeof fetch,
+      firstTokenMs: 20,
+    });
+    await expect(client.streamChat({ messages })).rejects.toMatchObject({
+      code: 'timeout',
+      partial: '',
+    });
+  });
+
+  it('times out when the stream opens but stays silent', async () => {
+    const stream = new ReadableStream<Uint8Array>({ start: () => undefined });
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+    );
+    const client = createAiClient({
+      fetch: fetchMock as unknown as typeof fetch,
+      firstTokenMs: 20,
+    });
+    await expect(client.streamChat({ messages })).rejects.toMatchObject({ code: 'timeout' });
+  });
+
+  it('stops the first-token timer once text arrives, however long the answer takes', async () => {
+    let controller: ReadableStreamDefaultController<Uint8Array> | undefined;
+    const stream = new ReadableStream<Uint8Array>({
+      start(c) {
+        controller = c;
+      },
+    });
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } }),
+    );
+    const client = createAiClient({
+      fetch: fetchMock as unknown as typeof fetch,
+      firstTokenMs: 30,
+    });
+    const pending = client.streamChat({ messages });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    controller?.enqueue(encoder.encode(delta('Hi')));
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    controller?.enqueue(encoder.encode(done()));
+    controller?.close();
+    expect((await pending).text).toBe('Hi');
+  });
+
   it('ignores malformed events and keeps going', async () => {
     const { client } = clientWith(() =>
       sse(['event: delta\ndata: not json\n\n', delta('ok'), done()]),
@@ -343,15 +399,16 @@ describe('estimateAction', () => {
   const estimate: ActionEstimate = {
     isClimateAction: true,
     matchedActionId: null,
+    variant: null,
     title: 'Fixed a bike',
     emoji: '🔧',
-    category: 'transport',
+    category: 'stuff',
     effort: 3,
-    quantity: 1,
+    qty: 1,
     unit: 'item',
-    co2Kg: 0.4,
+    co2eKg: 0.4,
     confidence: 'low',
-    reasoning: 'A repair avoids a replacement.',
+    rationale: 'A repair avoids a replacement.',
   };
 
   it('returns a validated estimate and sends text, region and the optional catalogue', async () => {
@@ -365,7 +422,7 @@ describe('estimateAction', () => {
     expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
       text: 'fixed a bike',
       region: 'eu',
-      quantity: 2,
+      qty: 2,
       catalogue: [{ id: 'stuff_repair', title: 'Repaired', unit: 'item' }],
     });
   });
@@ -373,15 +430,20 @@ describe('estimateAction', () => {
   it('rejects a response that fails the browser-side validation', async () => {
     for (const bad of [
       {},
-      { estimate: { ...estimate, co2Kg: 50 } },
+      { estimate: { ...estimate, co2eKg: 50 } },
       { estimate: { ...estimate, category: 'x' } },
-      { estimate: { ...estimate, confidence: 'high' } },
+      { estimate: { ...estimate, confidence: 'certain' } },
     ]) {
       const { client } = clientWith(() => json(bad));
       await expect(client.estimateAction('fixed a bike', 'eu')).rejects.toMatchObject({
         code: 'estimate_failed',
       });
     }
+  });
+
+  it('forces confidence to low, whatever the server claims', async () => {
+    const { client } = clientWith(() => json({ estimate: { ...estimate, confidence: 'high' } }));
+    expect((await client.estimateAction('fixed a bike', 'eu')).confidence).toBe('low');
   });
 
   it('maps server errors, HTML and network failures', async () => {

@@ -197,6 +197,8 @@ export interface AiClientOptions {
   baseUrl?: string;
   /** How long a successful status is trusted, in ms. */
   statusTtlMs?: number;
+  /** No first token within this long means "timeout" so the built-in coach can answer (spec: 15 s). */
+  firstTokenMs?: number;
   /** Per-request ceiling for status and estimate calls. */
   timeoutMs?: number;
   now?: () => number;
@@ -237,12 +239,17 @@ function isAiStatus(value: unknown): value is AiStatus {
   );
 }
 
-/** Strict client-side check of an estimate, so a bad server never reaches the UI (spec 8.8). */
+/**
+ * Strict client-side check of an estimate, so a bad server never reaches the UI
+ * (spec 8.8). Confidence is forced to "low": an AI estimate never claims more.
+ */
 export function parseActionEstimate(value: unknown): ActionEstimate | null {
   if (!isRecord(value)) return null;
   const { category, effort, confidence } = value;
   if (typeof value.isClimateAction !== 'boolean') return null;
   if (value.matchedActionId !== null && typeof value.matchedActionId !== 'string') return null;
+  const variant = value.variant ?? null;
+  if (variant !== null && (typeof variant !== 'string' || variant.length > 40)) return null;
   if (typeof value.title !== 'string' || value.title === '' || value.title.length > 60) return null;
   if (typeof value.emoji !== 'string' || value.emoji === '' || value.emoji.length > 16) return null;
   if (
@@ -251,27 +258,27 @@ export function parseActionEstimate(value: unknown): ActionEstimate | null {
   )
     return null;
   if (effort !== 1 && effort !== 2 && effort !== 3 && effort !== 4) return null;
-  if (typeof value.quantity !== 'number' || !Number.isFinite(value.quantity) || value.quantity <= 0)
-    return null;
+  if (typeof value.qty !== 'number' || !Number.isFinite(value.qty) || value.qty <= 0) return null;
   if (typeof value.unit !== 'string') return null;
-  if (value.co2Kg !== null) {
-    if (typeof value.co2Kg !== 'number' || !Number.isFinite(value.co2Kg)) return null;
-    if (value.co2Kg < 0 || value.co2Kg > AI_LIMITS.maxEstimateKg) return null;
+  if (value.co2eKg !== null) {
+    if (typeof value.co2eKg !== 'number' || !Number.isFinite(value.co2eKg)) return null;
+    if (value.co2eKg < 0 || value.co2eKg > AI_LIMITS.maxEstimateKg) return null;
   }
-  if (confidence !== 'low' && confidence !== 'medium') return null;
-  if (typeof value.reasoning !== 'string' || value.reasoning.length > 160) return null;
+  if (confidence !== 'low' && confidence !== 'medium' && confidence !== 'high') return null;
+  if (typeof value.rationale !== 'string' || value.rationale.length > 160) return null;
   return {
     isClimateAction: value.isClimateAction,
     matchedActionId: value.matchedActionId,
+    variant,
     title: value.title,
     emoji: value.emoji,
     category: category as ActionEstimate['category'],
     effort,
-    quantity: value.quantity,
+    qty: value.qty,
     unit: value.unit,
-    co2Kg: value.co2Kg,
-    confidence,
-    reasoning: value.reasoning,
+    co2eKg: value.co2eKg,
+    confidence: 'low',
+    rationale: value.rationale,
   };
 }
 
@@ -280,6 +287,7 @@ export function createAiClient(options: AiClientOptions = {}): AiClient {
   const ttl = options.statusTtlMs ?? 5 * 60_000;
   const failureTtl = 30_000;
   const timeoutMs = options.timeoutMs ?? 8000;
+  const firstTokenMs = options.firstTokenMs ?? 15_000;
   const now = options.now ?? (() => Date.now());
   const doFetch: typeof fetch = (input, init) => (options.fetch ?? globalThis.fetch)(input, init);
 
@@ -338,6 +346,83 @@ export function createAiClient(options: AiClientOptions = {}): AiClient {
     }
   }
 
+  async function streamOnce(
+    { messages, context, signal, onDelta }: StreamChatParams,
+    onFirstDelta: () => void,
+  ): Promise<ChatResult> {
+    const body = JSON.stringify({
+      messages: prepareMessages(messages),
+      context: toWireContext(context),
+    });
+    const response = await send(
+      '/chat',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'text/event-stream' },
+        body,
+      },
+      signal,
+      null,
+    );
+    if (!response.ok) throw await errorFromResponse(response);
+    const type = response.headers.get('content-type') ?? '';
+    if (!type.includes('text/event-stream') || !response.body)
+      throw new AiError('not_configured', 'The AI service is not available here.', {
+        status: response.status,
+      });
+
+    const filter = createNameFilter(context?.displayName);
+    let text = '';
+    const deliver = (piece: string): void => {
+      if (piece === '') return;
+      text += piece;
+      onDelta?.(piece, text);
+    };
+    let meta: { provider: string; model: string; finish: string } | null = null;
+
+    try {
+      for await (const event of readSse(response.body, signal)) {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(event.data);
+        } catch {
+          continue;
+        }
+        if (!isRecord(parsed)) continue;
+        const kind = event.event as StreamEvent['type'];
+        if (kind === 'delta' && typeof parsed.text === 'string') {
+          onFirstDelta();
+          deliver(filter.push(parsed.text));
+        } else if (kind === 'done') {
+          deliver(filter.flush());
+          meta = {
+            provider: typeof parsed.provider === 'string' ? parsed.provider : 'AI',
+            model: typeof parsed.model === 'string' ? parsed.model : '',
+            finish: typeof parsed.finish === 'string' ? parsed.finish : 'stop',
+          };
+          break;
+        } else if (kind === 'error') {
+          deliver(filter.flush());
+          throw new AiError(
+            isCode(parsed.code) ? parsed.code : 'upstream_unavailable',
+            typeof parsed.message === 'string' ? parsed.message : 'The answer was interrupted.',
+            { partial: text },
+          );
+        }
+      }
+    } catch (error) {
+      if (isAiError(error)) throw error;
+      if (signal?.aborted)
+        throw new AiError('aborted', 'The request was cancelled.', { partial: text });
+      throw new AiError('offline', 'The connection dropped.', { partial: text });
+    }
+    if (signal?.aborted)
+      throw new AiError('aborted', 'The request was cancelled.', { partial: text });
+    if (!meta)
+      throw new AiError('upstream_unavailable', 'The answer was interrupted.', { partial: text });
+    return { text, ...meta };
+  }
+
   return {
     async getAiStatus({ refresh = false, signal } = {}) {
       const age = cached ? now() - cached.at : Infinity;
@@ -363,77 +448,27 @@ export function createAiClient(options: AiClientOptions = {}): AiClient {
       });
     },
 
-    async streamChat({ messages, context, signal, onDelta }) {
-      const body = JSON.stringify({
-        messages: prepareMessages(messages),
-        context: toWireContext(context),
-      });
-      const response = await send(
-        '/chat',
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', accept: 'text/event-stream' },
-          body,
-        },
-        signal,
-        null,
-      );
-      if (!response.ok) throw await errorFromResponse(response);
-      const type = response.headers.get('content-type') ?? '';
-      if (!type.includes('text/event-stream') || !response.body)
-        throw new AiError('not_configured', 'The AI service is not available here.', {
-          status: response.status,
-        });
-
-      const filter = createNameFilter(context?.displayName);
-      let text = '';
-      const deliver = (piece: string): void => {
-        if (piece === '') return;
-        text += piece;
-        onDelta?.(piece, text);
-      };
-      let meta: { provider: string; model: string; finish: string } | null = null;
-
+    async streamChat(params) {
+      const { signal } = params;
+      const own = new AbortController();
+      const relay = (): void => own.abort();
+      signal?.addEventListener('abort', relay, { once: true });
+      if (signal?.aborted) own.abort();
+      let timedOut = false;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        own.abort();
+      }, firstTokenMs);
       try {
-        for await (const event of readSse(response.body, signal)) {
-          let parsed: unknown;
-          try {
-            parsed = JSON.parse(event.data);
-          } catch {
-            continue;
-          }
-          if (!isRecord(parsed)) continue;
-          const kind = event.event as StreamEvent['type'];
-          if (kind === 'delta' && typeof parsed.text === 'string')
-            deliver(filter.push(parsed.text));
-          else if (kind === 'done') {
-            deliver(filter.flush());
-            meta = {
-              provider: typeof parsed.provider === 'string' ? parsed.provider : 'AI',
-              model: typeof parsed.model === 'string' ? parsed.model : '',
-              finish: typeof parsed.finish === 'string' ? parsed.finish : 'stop',
-            };
-            break;
-          } else if (kind === 'error') {
-            deliver(filter.flush());
-            throw new AiError(
-              isCode(parsed.code) ? parsed.code : 'upstream_unavailable',
-              typeof parsed.message === 'string' ? parsed.message : 'The answer was interrupted.',
-              { partial: text },
-            );
-          }
-        }
+        return await streamOnce({ ...params, signal: own.signal }, () => clearTimeout(timer));
       } catch (error) {
-        if (isAiError(error)) throw error;
-        if (signal?.aborted)
-          throw new AiError('aborted', 'The request was cancelled.', { partial: text });
-        throw new AiError('offline', 'The connection dropped.', { partial: text });
+        if (timedOut && isAiError(error) && error.code === 'aborted' && error.partial === '')
+          throw new AiError('timeout', 'The coach took too long to answer.');
+        throw error;
+      } finally {
+        clearTimeout(timer);
+        signal?.removeEventListener('abort', relay);
       }
-      if (signal?.aborted)
-        throw new AiError('aborted', 'The request was cancelled.', { partial: text });
-      if (!meta)
-        throw new AiError('upstream_unavailable', 'The answer was interrupted.', { partial: text });
-      return { text, ...meta };
     },
 
     async estimateAction(text, region, extras = {}) {
@@ -445,7 +480,7 @@ export function createAiClient(options: AiClientOptions = {}): AiClient {
           body: JSON.stringify({
             text,
             region,
-            ...(extras.quantity !== undefined ? { quantity: extras.quantity } : {}),
+            ...(extras.quantity !== undefined ? { qty: extras.quantity } : {}),
             ...(extras.catalogue ? { catalogue: extras.catalogue } : {}),
           }),
         },

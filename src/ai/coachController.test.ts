@@ -219,9 +219,9 @@ describe('falling back to the built-in coach', () => {
     );
     await controller.send('hi');
     expect(state().notice?.text).toBe(
-      'The coach needs a breather. Back in about 3 min. The built-in coach is still here.',
+      'Moss needs a breather. Back in 3 min — the built-in coach is still here.',
     );
-    expect(fallbackNotice('rate_limited')).toMatch(/about 1 min/);
+    expect(fallbackNotice('rate_limited')).toMatch(/Back in 1 min/);
   });
 
   it('resets the cached status after a connection failure so the next send re-checks', async () => {

@@ -26,8 +26,10 @@ export const AI_LIMITS = {
   /** Longest custom-action description, in characters. */
   maxEstimateChars: 80,
   minEstimateChars: 3,
-  /** Largest CO2e a single AI-estimated log can claim, in kg. */
-  maxEstimateKg: 5,
+  /** Largest CO2e a single AI-estimated log can claim, in kg (spec 3.6). */
+  maxEstimateKg: 2,
+  /** Largest AI-estimated CO2e per day, in kg. Enforced by the game layer; stated here for reference. */
+  maxEstimateKgPerDay: 5,
 } as const;
 
 /** Where in the day the user is. Coarse on purpose: no timestamps leave the device. */
@@ -93,6 +95,10 @@ export interface CoachContext {
   actions?: CoachAction[];
   /** Lesson slugs the coach may link with a learn chip. */
   lessonSlugs?: string[];
+  /** Actions still needed to close today's ring. Drives the built-in coach's Today tip. */
+  ringLeft?: number;
+  /** An unpassed lesson in the week's top category, for the Today tip. */
+  nextLesson?: { slug: string; title: string };
 }
 
 export interface ChatRequestBody {
@@ -149,34 +155,36 @@ export interface ClientAiStatus extends AiStatus {
   reason: 'ready' | 'not_configured' | 'no_functions' | 'offline';
 }
 
+/** The product's seven categories (spec 3.2). */
 export const ESTIMATE_CATEGORIES = [
-  'transport',
-  'food',
-  'energy',
-  'waste',
+  'move',
+  'eat',
+  'power',
   'water',
-  'shopping',
+  'stuff',
+  'waste',
   'nature',
 ] as const;
 
 export type EstimateCategory = (typeof ESTIMATE_CATEGORIES)[number];
 
 /**
- * The product spec names its catalogue categories move / eat / power / water /
- * stuff / waste / nature. Both vocabularies are accepted on input; the estimate
- * always answers in `ESTIMATE_CATEGORIES`, and this map is the bridge for the game layer.
+ * The evidence base files the same actions under transport / food / energy /
+ * shopping. Both vocabularies are accepted from a model; the estimate always
+ * answers in the product categories above.
  */
-export const SPEC_CATEGORY_TO_ESTIMATE: Readonly<Record<string, EstimateCategory>> = {
-  move: 'transport',
-  eat: 'food',
-  power: 'energy',
+export const EVIDENCE_CATEGORY_TO_PRODUCT: Readonly<Record<string, EstimateCategory>> = {
+  transport: 'move',
+  food: 'eat',
+  energy: 'power',
   water: 'water',
-  stuff: 'shopping',
+  shopping: 'stuff',
   waste: 'waste',
   nature: 'nature',
 };
 
-export type EstimateConfidence = 'low' | 'medium' | 'high';
+/** AI estimates are always "low" confidence (spec 8.8); the server and the browser both force it. */
+export type EstimateConfidence = 'low';
 
 export interface EstimateCatalogueEntry {
   id: string;
@@ -187,27 +195,28 @@ export interface EstimateCatalogueEntry {
 export interface EstimateRequestBody {
   text: string;
   region: string;
-  quantity?: number;
+  qty?: number;
   catalogue?: EstimateCatalogueEntry[];
 }
 
 export interface ActionEstimate {
   /** False when the text is not a climate action; the caller offers a journal note instead. */
   isClimateAction: boolean;
-  /** A catalogue action the text matches. When set, callers use the catalogue factor, not `co2Kg`. */
+  /** A catalogue action the text matches. When set, callers use the catalogue factor, not `co2eKg`. */
   matchedActionId: string | null;
+  /** A variant of the matched action (for example "small-appliance"), when the model names one. */
+  variant: string | null;
   title: string;
   emoji: string;
   category: EstimateCategory;
-  /** 1 (tiny) to 4 (big). */
+  /** 1 (tiny) to 4 (big): maps to 8 / 10 / 12 / 15 XP. */
   effort: 1 | 2 | 3 | 4;
-  quantity: number;
+  qty: number;
   unit: string;
-  /** Conservative kg CO2e avoided, 0..5, or null when no honest number exists. */
-  co2Kg: number | null;
-  /** Never "high" for an AI estimate; the server clamps it. */
+  /** Conservative kg CO2e avoided, 0 to 2, or null when no honest number exists. */
+  co2eKg: number | null;
   confidence: EstimateConfidence;
-  reasoning: string;
+  rationale: string;
 }
 
 /** Which path produced an estimate, so the UI can label it truthfully. */

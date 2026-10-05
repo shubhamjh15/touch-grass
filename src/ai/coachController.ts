@@ -80,7 +80,7 @@ export function fallbackNotice(code: AiErrorCode, retryAfterSec?: number): strin
       return "You're offline, so the built-in coach is answering.";
     case 'rate_limited': {
       const minutes = Math.max(1, Math.ceil((retryAfterSec ?? 60) / 60));
-      return `The coach needs a breather. Back in about ${minutes} min. The built-in coach is still here.`;
+      return `Moss needs a breather. Back in ${minutes} min — the built-in coach is still here.`;
     }
     default:
       return "The live coach isn't answering right now, so the built-in coach is.";

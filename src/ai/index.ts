@@ -51,7 +51,7 @@ export {
 export {
   AI_LIMITS,
   ESTIMATE_CATEGORIES,
-  SPEC_CATEGORY_TO_ESTIMATE,
+  EVIDENCE_CATEGORY_TO_PRODUCT,
   type ActionEstimate,
   type AiErrorCode,
   type AiStatus,

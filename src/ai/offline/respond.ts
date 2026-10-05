@@ -7,14 +7,13 @@
 import { formatCo2, pluralize } from '@/lib/format';
 import { hashString } from '@/lib/rng';
 import {
-  SPEC_CATEGORY_TO_ESTIMATE,
+  EVIDENCE_CATEGORY_TO_PRODUCT,
   type CoachAction,
   type CoachContext,
   type CoachQuest,
 } from '../contract';
 import { matchIntent, normalise, type IntentId } from './intents';
 import {
-  CATEGORY_HINTS,
   CRISIS_REPLY,
   DAILY_FACTS,
   DINNER_IDEAS,
@@ -38,7 +37,7 @@ function pick<T>(variants: readonly T[], seed: number): T {
 
 function canonicalCategory(category: string): string {
   const key = category.trim().toLowerCase();
-  return SPEC_CATEGORY_TO_ESTIMATE[key] ?? key;
+  return EVIDENCE_CATEGORY_TO_PRODUCT[key] ?? key;
 }
 
 function inCategories(action: CoachAction, categories: readonly string[]): boolean {
@@ -76,8 +75,7 @@ function findAction(
     if (hit) return hit;
   }
   if (categories.length === 0) return null;
-  const wanted = categories.flatMap((category) => [category, ...(CATEGORY_HINTS[category] ?? [])]);
-  return actions.find((action) => inCategories(action, wanted)) ?? null;
+  return actions.find((action) => inCategories(action, categories)) ?? null;
 }
 
 const chip = (action: CoachAction | null): string => (action ? `[[log:${action.id}]]` : '');
@@ -220,7 +218,7 @@ const food: Reply = (context, seed) => {
     .map((offset) => DINNER_IDEAS[(start + offset) % DINNER_IDEAS.length])
     .join(', ');
   const tokens = chips(
-    findAction(context, ['eat_plant_meal', 'eat_veg_meal'], ['food']),
+    findAction(context, ['eat_plant_meal', 'eat_veg_meal'], ['eat']),
     findAction(context, ['eat_beef_swap']),
   );
   return withChips(
@@ -239,7 +237,7 @@ const transport: Reply = (context) =>
   withChips(
     'Short trips are the easy ones: anything under about 3 km is usually a walk or a ride. Per kilometre, a train typically emits several times less than driving alone, and a bus or tram sits in between.',
     chips(
-      findAction(context, ['move_bike_trip', 'move_walk_trip'], ['transport']),
+      findAction(context, ['move_bike_trip', 'move_walk_trip'], ['move']),
       findAction(context, ['move_transit_trip', 'move_train_trip']),
     ),
   );
@@ -254,7 +252,7 @@ const homeEnergy: Reply = (context) =>
   withChips(
     'Heating and hot water are usually the biggest part of home energy in cooler climates. One degree off the thermostat typically saves roughly 5 to 10% of heating energy, and washing at 30 °C instead of 60 °C uses far less energy because most of it heats the water. A full machine and a drying rack add up too.',
     chips(
-      findAction(context, ['power_heat_down'], ['energy']),
+      findAction(context, ['power_heat_down'], ['power']),
       findAction(context, ['water_cold_wash']),
     ),
   );
@@ -263,7 +261,7 @@ const stuffWaste: Reply = (context) =>
   withChips(
     'Order of play for stuff: use what you have, borrow, buy second-hand, repair, and recycle last. Recycling helps, but the energy and materials already inside an object are saved far more by keeping it in use.',
     [
-      chips(findAction(context, ['stuff_repair', 'stuff_secondhand'], ['shopping'])),
+      chips(findAction(context, ['stuff_repair', 'stuff_secondhand'], ['stuff'])),
       lessonChip(context, ['recycling-honestly']),
     ]
       .filter(Boolean)
@@ -416,9 +414,25 @@ export function offlineTip(context: CoachContext = {}, seed = 0): OfflineReply {
       label: OFFLINE_LABEL,
     };
   }
+  if (easy && (context.ringLeft ?? 0) > 0) {
+    const left = context.ringLeft ?? 0;
+    const text = `${pluralize(left, 'more action')} closes today's ring. ${easy.action.title} is a quick one.`;
+    return { text: withChips(text, chip(easy.action)), intent: 'easy_win', label: OFFLINE_LABEL };
+  }
   if (easy?.inFocus) {
     const text = `Easy one in your focus area: ${easy.action.title}.`;
     return { text: withChips(text, chip(easy.action)), intent: 'easy_win', label: OFFLINE_LABEL };
+  }
+  if (context.nextLesson && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,47}$/.test(context.nextLesson.slug)) {
+    const title = context.nextLesson.title.replace(/[<>[\]]/g, '').slice(0, 60);
+    return {
+      text: withChips(
+        `A two-minute read worth your time: ${title}.`,
+        `[[learn:${context.nextLesson.slug}]]`,
+      ),
+      intent: 'unknown',
+      label: OFFLINE_LABEL,
+    };
   }
   return { text: pick(DAILY_FACTS, Math.abs(seed)), intent: 'unknown', label: OFFLINE_LABEL };
 }

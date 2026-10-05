@@ -388,6 +388,25 @@ describe('offlineTip', () => {
   });
 });
 
+describe('offlineTip: the rest of the spec priority', () => {
+  it('suggests closing the ring, then an unpassed lesson, then a fact', () => {
+    const base: CoachContext = {
+      actions: context.actions,
+      tree: { name: 'Juniper', vitality: 'thriving' },
+    };
+    expect(offlineTip({ ...base, ringLeft: 2 }).text).toMatch(/2 more actions closes today's ring/);
+    expect(offlineTip({ ...base, ringLeft: 1 }).text).toMatch(/1 more action closes/);
+    const lesson = offlineTip({
+      nextLesson: { slug: 'the-blanket', title: 'The [blanket] <around> us' },
+    });
+    expect(lesson.text).toMatch(/The blanket around us/);
+    expect(lesson.text).toContain('[[learn:the-blanket]]');
+    expect(offlineTip({ nextLesson: { slug: 'bad slug]]', title: 'x' } }, 2).text).not.toContain(
+      '[[learn:',
+    );
+  });
+});
+
 describe('streaming', () => {
   it('splits text so the pieces rebuild it exactly', () => {
     const text = '  Hello   there,\nfriend!\n\n[[log:eat_veg_meal]]\n';
