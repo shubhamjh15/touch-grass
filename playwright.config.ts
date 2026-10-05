@@ -26,6 +26,8 @@ export default defineConfig({
   webServer: {
     command: 'npm run build && npm run preview',
     url: 'http://localhost:4173',
+    // Its own output folder, so the suite can run while the dev server is up.
+    env: { NEXT_DIST_DIR: '.next-e2e' },
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
   },
