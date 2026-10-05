@@ -15,6 +15,10 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    watch: {
+      // Local scratch output (screenshots, notes) must not trigger page reloads.
+      ignored: ['**/.redesign/**', '**/playwright-report/**', '**/test-results/**'],
+    },
   },
   preview: {
     port: 4173,
