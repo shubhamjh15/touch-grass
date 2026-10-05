@@ -52,6 +52,26 @@ export function formatPercent(fraction: number, decimals = 0): string {
   return `${(fraction * 100).toFixed(decimals)}%`;
 }
 
+/** A plain number with at most `decimals` decimals: 7.84 → "7.8", 12 → "12". */
+export function formatDecimal(value: number, decimals = 1): string {
+  return new Intl.NumberFormat(LOCALE, { maximumFractionDigits: decimals }).format(value);
+}
+
+/** A yearly footprint in tonnes, to one decimal: "7.8 t". */
+export function formatTonnes(tonnes: number): string {
+  return `${oneDecimal.format(tonnes)} t`;
+}
+
+/**
+ * A mass of CO2e rounded to two significant figures before it is formatted, which is
+ * the most precision an estimate may claim: 0.1234 → "120 g", 48.7 → "49 kg".
+ */
+export function formatCo2Estimate(kg: number): string {
+  if (!Number.isFinite(kg) || kg === 0) return formatCo2(0);
+  const magnitude = 10 ** (Math.floor(Math.log10(Math.abs(kg))) - 1);
+  return formatCo2(Math.round(kg / magnitude) * magnitude);
+}
+
 /** "1 day", "3 days". Pass `plural` for irregular nouns. */
 export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
   return `${formatNumber(count)} ${count === 1 ? singular : plural}`;
