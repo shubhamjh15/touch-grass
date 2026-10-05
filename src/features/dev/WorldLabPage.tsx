@@ -1,5 +1,479 @@
-import { PagePlaceholder } from '@/features/system/PagePlaceholder';
+import { useEffect, useId, useState, type ReactNode } from 'react';
+import { cn } from '@/lib/cn';
+import {
+  ISLAND_PROPS,
+  SPECIES,
+  WorldStage,
+  getWorldStats,
+  setWorldSnapshot,
+  useWorldStore,
+  type IslandPropId,
+  type Species,
+  type StageMode,
+  type WorldMotion,
+  type WorldPreference,
+  type WorldStats,
+} from '@/world';
+
+/**
+ * World lab (dev only, /__world). Drives the Grove exactly like the game bridge will:
+ * `setWorldSnapshot()` plus `<WorldStage>` props. Every control is mirrored in the URL,
+ * so a screenshot of any state can be scripted:
+ *
+ *   /__world?species=cherry&growth=0.6&hour=19&mode=hero&quality=high
+ */
+
+const MODES: readonly StageMode[] = ['hero', 'hub', 'companion', 'ceremony'];
+const QUALITIES: readonly WorldPreference[] = ['auto', 'low', 'medium', 'high', 'off'];
+const MOTIONS: readonly WorldMotion[] = ['system', 'reduced', 'full'];
+const BOXES = ['hero', 'wide', 'card', 'thumb'] as const;
+const SKIES = ['auto', 'on', 'off'] as const;
+const ANCHORS = ['bottom', 'center'] as const;
+
+type BoxSize = (typeof BOXES)[number];
+
+interface LabState {
+  species: Species;
+  growth: number;
+  vitality: number;
+  age: number;
+  hour: number;
+  seed: number;
+  props: IslandPropId[];
+  mode: StageMode;
+  fit: number;
+  anchor: (typeof ANCHORS)[number];
+  sky: (typeof SKIES)[number];
+  box: BoxSize;
+  quality: WorldPreference;
+  motion: WorldMotion;
+  second: boolean;
+  tall: boolean;
+}
+
+const DEFAULTS: LabState = {
+  species: 'oak',
+  growth: 0.6,
+  vitality: 1,
+  age: 12,
+  hour: 13,
+  seed: 12,
+  props: [],
+  mode: 'hero',
+  fit: 0.86,
+  anchor: 'bottom',
+  sky: 'auto',
+  box: 'hero',
+  quality: 'high',
+  motion: 'system',
+  second: false,
+  tall: false,
+};
+
+const BOX_CLASS: Record<BoxSize, string> = {
+  hero: 'h-[62vh] min-h-80 w-full lg:h-[calc(100vh-3rem)]',
+  wide: 'h-64 w-full',
+  card: 'size-72',
+  thumb: 'size-32',
+};
+
+function oneOf<T extends string>(value: string | null, options: readonly T[], fallback: T): T {
+  return options.includes(value as T) ? (value as T) : fallback;
+}
+
+function numberIn(value: string | null, min: number, max: number, fallback: number): number {
+  const parsed = value === null || value === '' ? Number.NaN : Number(value);
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
+function readUrl(): LabState {
+  const query = new URLSearchParams(window.location.search);
+  const flag = (name: string, fallback: boolean) =>
+    query.has(name) ? !['0', 'false', 'off'].includes(query.get(name) ?? '') : fallback;
+  return {
+    species: oneOf(query.get('species'), SPECIES, DEFAULTS.species),
+    growth: numberIn(query.get('growth'), 0, 1, DEFAULTS.growth),
+    vitality: numberIn(query.get('vitality'), 0, 1, DEFAULTS.vitality),
+    age: numberIn(query.get('age') ?? query.get('ageDays'), 0, 100_000, DEFAULTS.age),
+    hour: numberIn(query.get('hour'), 0, 24, DEFAULTS.hour),
+    seed: Math.round(numberIn(query.get('seed'), 0, 4_294_967_295, DEFAULTS.seed)),
+    props: (query.get('props') ?? '')
+      .split(',')
+      .filter((id): id is IslandPropId => ISLAND_PROPS.includes(id as IslandPropId)),
+    mode: oneOf(query.get('mode'), MODES, DEFAULTS.mode),
+    fit: numberIn(query.get('fit'), 0.2, 1, DEFAULTS.fit),
+    anchor: oneOf(query.get('anchor'), ANCHORS, DEFAULTS.anchor),
+    sky: oneOf(query.get('sky'), SKIES, DEFAULTS.sky),
+    box: oneOf(query.get('box'), BOXES, DEFAULTS.box),
+    quality: oneOf(query.get('quality'), QUALITIES, DEFAULTS.quality),
+    motion: oneOf(query.get('motion'), MOTIONS, DEFAULTS.motion),
+    second: flag('second', DEFAULTS.second),
+    tall: flag('tall', DEFAULTS.tall),
+  };
+}
+
+function writeUrl(state: LabState): void {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(state)) {
+    const fallback = DEFAULTS[key as keyof LabState];
+    const text = Array.isArray(value) ? value.join(',') : String(value);
+    const base = Array.isArray(fallback) ? fallback.join(',') : String(fallback);
+    if (text !== base) query.set(key, typeof value === 'boolean' ? (value ? '1' : '0') : text);
+  }
+  const search = query.toString();
+  window.history.replaceState(null, '', search ? `?${search}` : window.location.pathname);
+}
+
+const fieldClass =
+  'h-11 w-full rounded-lg border-4 border-ink bg-white px-2 font-medium focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-neo-blue';
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: (id: string) => ReactNode;
+}) {
+  const id = useId();
+  return (
+    <div className="grid gap-1">
+      <label htmlFor={id} className="flex items-baseline justify-between text-sm font-bold">
+        <span>{label}</span>
+        {hint !== undefined && <span className="font-medium tabular-nums">{hint}</span>}
+      </label>
+      {children(id)}
+    </div>
+  );
+}
+
+function Choice<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: readonly T[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <Field label={label}>
+      {(id) => (
+        <select
+          id={id}
+          value={value}
+          className={fieldClass}
+          onChange={(event) => onChange(event.target.value as T)}
+        >
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      )}
+    </Field>
+  );
+}
+
+function Slider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  digits,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  digits: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <Field label={label} hint={value.toFixed(digits)}>
+      {(id) => (
+        <input
+          id={id}
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          className="h-11 w-full accent-neo-green"
+          onChange={(event) => onChange(Number(event.target.value))}
+        />
+      )}
+    </Field>
+  );
+}
+
+function Readout() {
+  const status = useWorldStore((state) => state.status);
+  const quality = useWorldStore((state) => state.quality);
+  const [stats, setStats] = useState<WorldStats>(getWorldStats);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setStats(getWorldStats()), 400);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const rows: Array<[string, string]> = [
+    ['status', status],
+    ['tier', quality],
+    ['draw calls', String(stats.drawCalls)],
+    ['triangles', stats.triangles.toLocaleString('en')],
+    ['fps', stats.fps.toFixed(0)],
+    ['frame', `${stats.frameMs.toFixed(1)} ms`],
+    ['dpr', stats.dpr.toFixed(2)],
+    ['shown growth', stats.growth.toFixed(3)],
+    ['px / unit', stats.scale.toFixed(1)],
+  ];
+  return (
+    <dl
+      data-world-readout
+      className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border-4 border-ink bg-mint p-3 text-sm tabular-nums"
+    >
+      {rows.map(([name, value]) => (
+        <div key={name} className="contents">
+          <dt className="font-bold">{name}</dt>
+          <dd className="text-right" data-stat={name}>
+            {value}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 export default function WorldLabPage() {
-  return <PagePlaceholder title="World lab" />;
+  const [lab, setLab] = useState<LabState>(readUrl);
+
+  const change = (patch: Partial<LabState>) => {
+    const next = { ...lab, ...patch };
+    setLab(next);
+    writeUrl(next);
+  };
+
+  // The lab is the "game bridge" here: push its state into the world, as the app will.
+  useEffect(() => {
+    setWorldSnapshot({
+      species: lab.species,
+      growth: lab.growth,
+      vitality: lab.vitality,
+      ageDays: lab.age,
+      hour: lab.hour,
+      seed: lab.seed,
+      props: lab.props,
+    });
+  }, [lab.species, lab.growth, lab.vitality, lab.age, lab.hour, lab.seed, lab.props]);
+
+  useEffect(() => {
+    const { setPreference, setMotion } = useWorldStore.getState();
+    setPreference(lab.quality);
+    setMotion(lab.motion);
+  }, [lab.quality, lab.motion]);
+
+  const sky = lab.sky === 'auto' ? undefined : lab.sky === 'on';
+
+  return (
+    <main className="mx-auto grid max-w-[1400px] gap-6 p-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:p-6">
+      <section aria-label="Stage" className="grid content-start gap-6">
+        <WorldStage
+          mode={lab.mode}
+          fit={lab.fit}
+          anchor={lab.anchor}
+          sky={sky}
+          label={`${lab.species} at growth ${lab.growth.toFixed(2)}`}
+          className={cn('rounded-xl border-4 border-ink', BOX_CLASS[lab.box])}
+        />
+
+        {lab.second && (
+          <div className="rounded-xl border-4 border-dashed border-ink p-4">
+            <p className="mb-3 font-bold">Second stage (priority 1): the Grove flies here.</p>
+            <WorldStage
+              mode="companion"
+              priority={1}
+              sky
+              label="Second stage"
+              className="ml-auto size-56 rounded-xl border-4 border-ink"
+            />
+          </div>
+        )}
+
+        {lab.tall &&
+          ['Scroll', 'locking', 'test', 'area'].map((word) => (
+            <div
+              key={word}
+              className="grid h-96 place-items-center rounded-xl border-4 border-ink bg-white text-4xl font-bold shadow-neo"
+            >
+              {word}
+            </div>
+          ))}
+      </section>
+
+      <aside
+        aria-label="Controls"
+        className="grid content-start gap-4 rounded-xl border-4 border-ink bg-white p-4 shadow-neo lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
+      >
+        <h1 className="text-2xl font-bold">World lab</h1>
+        <Readout />
+
+        <Choice
+          label="Species"
+          value={lab.species}
+          options={SPECIES}
+          onChange={(species) => change({ species })}
+        />
+        <Slider
+          label="Growth"
+          value={lab.growth}
+          min={0}
+          max={1}
+          step={0.001}
+          digits={3}
+          onChange={(growth) => change({ growth })}
+        />
+        <Slider
+          label="Vitality"
+          value={lab.vitality}
+          min={0}
+          max={1}
+          step={0.01}
+          digits={2}
+          onChange={(vitality) => change({ vitality })}
+        />
+        <Slider
+          label="Hour"
+          value={lab.hour}
+          min={0}
+          max={24}
+          step={0.25}
+          digits={2}
+          onChange={(hour) => change({ hour })}
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Age (days)">
+            {(id) => (
+              <input
+                id={id}
+                type="number"
+                min={0}
+                value={lab.age}
+                className={fieldClass}
+                onChange={(event) => change({ age: Math.max(0, Number(event.target.value) || 0) })}
+              />
+            )}
+          </Field>
+          <Field label="Seed">
+            {(id) => (
+              <input
+                id={id}
+                type="number"
+                min={0}
+                value={lab.seed}
+                className={fieldClass}
+                onChange={(event) =>
+                  change({ seed: Math.max(0, Math.round(Number(event.target.value) || 0)) })
+                }
+              />
+            )}
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Choice
+            label="Stage mode"
+            value={lab.mode}
+            options={MODES}
+            onChange={(mode) => change({ mode })}
+          />
+          <Choice
+            label="Anchor"
+            value={lab.anchor}
+            options={ANCHORS}
+            onChange={(anchor) => change({ anchor })}
+          />
+          <Choice label="Box" value={lab.box} options={BOXES} onChange={(box) => change({ box })} />
+          <Choice
+            label="Sky"
+            value={lab.sky}
+            options={SKIES}
+            onChange={(next) => change({ sky: next })}
+          />
+          <Choice
+            label="Quality"
+            value={lab.quality}
+            options={QUALITIES}
+            onChange={(quality) => change({ quality })}
+          />
+          <Choice
+            label="Motion"
+            value={lab.motion}
+            options={MOTIONS}
+            onChange={(motion) => change({ motion })}
+          />
+        </div>
+        <Slider
+          label="Fit"
+          value={lab.fit}
+          min={0.2}
+          max={1}
+          step={0.01}
+          digits={2}
+          onChange={(fit) => change({ fit })}
+        />
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            aria-pressed={lab.second}
+            data-lab="second"
+            className="min-h-11 rounded-lg border-4 border-ink bg-neo-yellow px-3 font-bold shadow-neo-sm active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+            onClick={() => change({ second: !lab.second })}
+          >
+            {lab.second ? 'Remove 2nd stage' : 'Mount 2nd stage'}
+          </button>
+          <button
+            type="button"
+            aria-pressed={lab.tall}
+            data-lab="tall"
+            className="min-h-11 rounded-lg border-4 border-ink bg-neo-blue px-3 font-bold shadow-neo-sm active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+            onClick={() => change({ tall: !lab.tall })}
+          >
+            {lab.tall ? 'Short page' : 'Tall page'}
+          </button>
+        </div>
+
+        <fieldset className="grid gap-2">
+          <legend className="mb-1 text-sm font-bold">Island props (unlocked)</legend>
+          <div className="grid grid-cols-2 gap-x-3">
+            {ISLAND_PROPS.map((prop) => (
+              <label key={prop} className="flex min-h-11 items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  className="size-5 accent-neo-green"
+                  checked={lab.props.includes(prop)}
+                  onChange={(event) =>
+                    change({
+                      props: event.target.checked
+                        ? [...lab.props, prop]
+                        : lab.props.filter((id) => id !== prop),
+                    })
+                  }
+                />
+                {prop}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </aside>
+    </main>
+  );
 }
