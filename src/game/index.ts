@@ -41,7 +41,9 @@
  * ── HOOKS — read models that keep their identity until something relevant changes ────────
  *   useGameHydrated()   saved state has been read (false on the server)
  *   useGameRuntime()    storage mode, save failure, recovery, legacy scan
+ *   useGameNow() · useGameClockStatus()   the store clock; today, and a clock that was set back
  *   useIsOnboarded() · useProfile() · useSettings() · useOnboarding()
+ *   useCustomActions() · useActivity()   "My actions"; the activity log, newest first
  *   useHud()            level, XP bar, streak, rain, ≈ kg — the shell's HUD
  *   useLevelInfo()      level, title, XP into level, XP to next
  *   useTreeStatus()     stage, stage progress, vitality + label, rings, status line, scene label
