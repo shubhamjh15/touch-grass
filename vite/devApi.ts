@@ -91,9 +91,19 @@ export function devApi(): Plugin {
     apply: 'serve',
     config(_, { mode }) {
       // Functions read secrets from process.env, exactly like they do on Vercel.
+      // Vite restarts when a .env file changes; drop what we injected last time so
+      // an edited or removed key takes effect without restarting `npm run dev`.
+      const store = globalThis as { __ecoquestEnvKeys?: Set<string> };
+      const injected = (store.__ecoquestEnvKeys ??= new Set<string>());
+      for (const key of injected) delete process.env[key];
+      injected.clear();
+
       const env = loadEnv(mode, process.cwd(), '');
       for (const [key, value] of Object.entries(env)) {
-        if (process.env[key] === undefined) process.env[key] = value;
+        if (process.env[key] === undefined) {
+          process.env[key] = value;
+          injected.add(key);
+        }
       }
     },
     configureServer(server: ViteDevServer) {
