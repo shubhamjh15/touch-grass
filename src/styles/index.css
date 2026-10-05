@@ -2,30 +2,1467 @@
 @plugin '@tailwindcss/typography';
 
 /*
- * Design tokens. Tailwind v4 reads these and generates the matching utilities
- * (bg-neo-green, shadow-neo, font-sans, …).
+ * EcoQuest design tokens, base layer and paper recipes.
+ * Source of truth: the design bible, sections 1 to 3 and 7. Components never contain a hex value:
+ * if a token is missing, add it here first.
  */
-@theme {
-  --font-sans: 'Space Grotesk Variable', ui-sans-serif, system-ui, sans-serif;
 
-  --color-neo-green: #4ade80;
-  --color-neo-blue: #60a5fa;
-  --color-neo-yellow: #facc15;
-  --color-neo-pink: #f472b6;
-  --color-ink: #18181b;
-  --color-mint: #f0fdf4;
-
-  --shadow-neo-sm: 3px 3px 0 0 #18181b;
-  --shadow-neo: 5px 5px 0 0 #18181b;
-  --shadow-neo-lg: 8px 8px 0 0 #18181b;
+/* Reduced motion from either the OS or Settings → Motion (the shell sets data-motion on <html>). */
+@custom-variant calm {
+  @media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion='full']) & {
+      @slot;
+    }
+  }
+  :root[data-motion='reduced'] & {
+    @slot;
+  }
 }
+/* Disabled by attribute or by aria (aria-disabled keeps the control focusable so a tooltip can say why). */
+@custom-variant off (&:is(:disabled, [aria-disabled='true']));
+/* Hover exists only for fine pointers: nothing may be hover-only on touch. */
+@custom-variant fine (@media (hover: hover) and (pointer: fine));
+
+/* `static` keeps every token in the output, so `var(--color-*)` works in arbitrary values and from JS. */
+@theme static {
+  /* Wipe Tailwind's defaults so nothing off-system compiles (bg-red-500, rounded-2xl, shadow-lg, text-sm, blur-sm ...). */
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-*: initial;
+  --ease-*: initial;
+  --breakpoint-*: initial;
+  --animate-*: initial;
+  --blur-*: initial;
+
+  /* ---- ink ---- */
+  --color-ink: #18181b;
+  --color-ink-2: #3f3f46;
+  --color-ink-3: #52525b;
+  --color-ink-4: #71717a;
+  --color-shadow: #18181b; /* hard-shadow ink: always ink, never themed */
+  --color-on-fill: #18181b; /* the only text colour allowed on any saturated fill */
+  --color-on-ink: #ffffff;
+
+  /* ---- surfaces ---- */
+  --color-white: #ffffff;
+  --color-card: #ffffff;
+  --color-sticker: #ffffff; /* die-cut margin: always white, never graded by time of day */
+  --color-mat: #f0fdf4;
+  --color-mat-deep: #dcfce7;
+  --color-mat-line: #d3f5df;
+  --color-mat-line-major: #bdeecd;
+  --color-paper: #fffbeb;
+  --color-line: #e4e4e7;
+  --color-kraft: #e7c9a0;
+  --color-kraft-deep: #d4a373;
+  --color-kraft-dark: #b98652;
+  --color-bark: #c08457;
+  --color-bark-deep: #96633a;
+  --color-moss: #22c55e;
+
+  /* ---- hues: fill (carries ink text) / deep (text + icons on light) / tint (quiet surface) ---- */
+  --color-green: #4ade80;
+  --color-green-deep: #166534;
+  --color-green-tint: #dcfce7;
+  --color-blue: #60a5fa;
+  --color-blue-deep: #1d4ed8;
+  --color-blue-tint: #dbeafe;
+  --color-yellow: #facc15;
+  --color-yellow-deep: #854d0e;
+  --color-yellow-tint: #fef9c3;
+  --color-pink: #f472b6;
+  --color-pink-deep: #be185d;
+  --color-pink-tint: #fce7f3;
+  --color-orange: #fb923c;
+  --color-orange-deep: #9a3412;
+  --color-orange-tint: #ffedd5;
+  --color-teal: #2dd4bf;
+  --color-teal-deep: #115e59;
+  --color-teal-tint: #ccfbf1;
+  --color-violet: #9974f8;
+  --color-violet-deep: #5b21b6;
+  --color-violet-tint: #ede9fe;
+  --color-tomato: #ff6b4a;
+  --color-tomato-deep: #b91c1c;
+  --color-tomato-tint: #fee2e2;
+
+  /* ---- semantic ---- */
+  --color-primary: #4ade80;
+  --color-selected: #facc15;
+  --color-focus: #facc15;
+  --color-success: #4ade80;
+  --color-success-deep: #166534;
+  --color-success-tint: #dcfce7;
+  --color-info: #60a5fa;
+  --color-info-deep: #1d4ed8;
+  --color-info-tint: #dbeafe;
+  --color-warning: #facc15;
+  --color-warning-deep: #854d0e;
+  --color-warning-tint: #fef9c3;
+  --color-danger: #ff6b4a;
+  --color-danger-deep: #b91c1c;
+  --color-danger-tint: #fee2e2;
+
+  /* ---- the 7 action categories (ids = PRODUCT_SPEC ids). mark = chart ink, >= 3:1 on white ---- */
+  --color-cat-move: #9974f8;
+  --color-cat-move-deep: #5b21b6;
+  --color-cat-move-tint: #ede9fe;
+  --color-cat-move-mark: #9974f8;
+  --color-cat-eat: #fb923c;
+  --color-cat-eat-deep: #9a3412;
+  --color-cat-eat-tint: #ffedd5;
+  --color-cat-eat-mark: #f26611;
+  --color-cat-power: #facc15;
+  --color-cat-power-deep: #854d0e;
+  --color-cat-power-tint: #fef9c3;
+  --color-cat-power-mark: #a16207;
+  --color-cat-water: #60a5fa;
+  --color-cat-water-deep: #1d4ed8;
+  --color-cat-water-tint: #dbeafe;
+  --color-cat-water-mark: #1d4ed8;
+  --color-cat-stuff: #f472b6;
+  --color-cat-stuff-deep: #be185d;
+  --color-cat-stuff-tint: #fce7f3;
+  --color-cat-stuff-mark: #ec4899;
+  --color-cat-waste: #2dd4bf;
+  --color-cat-waste-deep: #115e59;
+  --color-cat-waste-tint: #ccfbf1;
+  --color-cat-waste-mark: #0891b2;
+  --color-cat-nature: #4ade80;
+  --color-cat-nature-deep: #166534;
+  --color-cat-nature-tint: #dcfce7;
+  --color-cat-nature-mark: #16a34a;
+
+  /* ---- fonts (the three installed families; fallbacks are metric-matched below) ---- */
+  --font-sans:
+    'Space Grotesk Variable', 'Space Grotesk Fallback', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Tilt Warp Variable', 'Tilt Warp Fallback', 'Space Grotesk Variable', sans-serif;
+  --font-mono: 'Martian Mono Variable', 'Martian Mono Fallback', ui-monospace, monospace;
+
+  /* ---- type scale: text-<name> sets size + line-height + tracking + weight ---- */
+  --text-display-hero: clamp(2.875rem, 1.529rem + 5.524vw, 6.5rem);
+  --text-display-hero--line-height: 0.95;
+  --text-display-hero--font-weight: 400;
+  --text-display-xl: clamp(2.5rem, 1.757rem + 3.048vw, 4.5rem);
+  --text-display-xl--line-height: 0.96;
+  --text-display-xl--font-weight: 400;
+  --text-display-lg: clamp(2rem, 1.629rem + 1.524vw, 3rem);
+  --text-display-lg--line-height: 1;
+  --text-display-lg--font-weight: 400;
+  --text-display-md: 1.875rem;
+  --text-display-md--line-height: 1;
+  --text-display-md--font-weight: 400;
+  --text-display-sm: 1.5rem;
+  --text-display-sm--line-height: 1;
+  --text-display-sm--font-weight: 400;
+  --text-display-xs: 1.25rem;
+  --text-display-xs--line-height: 1;
+  --text-display-xs--font-weight: 400;
+  --text-h1: clamp(1.75rem, 1.471rem + 1.143vw, 2.5rem);
+  --text-h1--line-height: 1.08;
+  --text-h1--letter-spacing: -0.02em;
+  --text-h1--font-weight: 700;
+  --text-h2: clamp(1.375rem, 1.236rem + 0.571vw, 1.75rem);
+  --text-h2--line-height: 1.12;
+  --text-h2--letter-spacing: -0.015em;
+  --text-h2--font-weight: 700;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.2;
+  --text-h3--letter-spacing: -0.01em;
+  --text-h3--font-weight: 700;
+  --text-h4: 1.0625rem;
+  --text-h4--line-height: 1.25;
+  --text-h4--letter-spacing: -0.005em;
+  --text-h4--font-weight: 700;
+  --text-reading: 1.125rem;
+  --text-reading--line-height: 1.65;
+  --text-reading--font-weight: 400;
+  --text-lead: 1.125rem;
+  --text-lead--line-height: 1.5;
+  --text-lead--font-weight: 500;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5;
+  --text-body--font-weight: 500;
+  --text-body-sm: 0.875rem;
+  --text-body-sm--line-height: 1.45;
+  --text-body-sm--font-weight: 500;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.4;
+  --text-caption--font-weight: 500;
+  --text-label: 0.9375rem;
+  --text-label--line-height: 1.2;
+  --text-label--font-weight: 600;
+  --text-button-sm: 0.875rem;
+  --text-button-sm--line-height: 1;
+  --text-button-sm--font-weight: 700;
+  --text-button: 1rem;
+  --text-button--line-height: 1;
+  --text-button--font-weight: 700;
+  --text-button-lg: 1.125rem;
+  --text-button-lg--line-height: 1;
+  --text-button-lg--font-weight: 700;
+  --text-tab: 0.6875rem;
+  --text-tab--line-height: 1;
+  --text-tab--letter-spacing: 0.01em;
+  --text-tab--font-weight: 600;
+  --text-data-lg: 1.0625rem;
+  --text-data-lg--line-height: 1.2;
+  --text-data-lg--font-weight: 600;
+  --text-data: 0.8125rem;
+  --text-data--line-height: 1.45;
+  --text-data--font-weight: 500;
+  --text-data-sm: 0.75rem;
+  --text-data-sm--line-height: 1.6;
+  --text-data-sm--font-weight: 500;
+  --text-slug: 0.6875rem;
+  --text-slug--line-height: 1;
+  --text-slug--letter-spacing: 0.08em;
+  --text-slug--font-weight: 500;
+  --text-tick: 0.625rem;
+  --text-tick--line-height: 1;
+  --text-tick--letter-spacing: 0.06em;
+  --text-tick--font-weight: 500;
+
+  /* ---- radii: the radius says what kind of thing it is ---- */
+  --radius-paper: 4px;
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-ctl: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* ---- hard shadows: one lamp, top-left; +x +y; no blur, no spread, ever ---- */
+  --shadow-1: 2px 2px 0 0 var(--color-shadow);
+  --shadow-2: 3px 3px 0 0 var(--color-shadow);
+  --shadow-3: 5px 5px 0 0 var(--color-shadow);
+  --shadow-4: 8px 8px 0 0 var(--color-shadow);
+  --shadow-5: 12px 12px 0 0 var(--color-shadow);
+  --shadow-carry: 20px 20px 0 0 var(--color-shadow);
+  --shadow-plate:
+    4px 4px 0 0 var(--plate, #facc15), 8px 8px 0 0 var(--color-shadow); /* second colour plate: hero object only */
+  --shadow-key: 0 2px 0 0 var(--color-shadow); /* a key cap: the one shadow that points straight down */
+  --shadow-tooltip: 3px 3px 0 0 var(--color-yellow);
+  --shadow-thumb: 2px 0 0 0 var(--color-shadow); /* the switch thumb leans toward where it can go */
+  --shadow-thumb-on: -2px 0 0 0 var(--color-shadow);
+  --inset-shadow-deboss: inset 3px 3px 0 0 var(--color-line);
+  --inset-shadow-misreg: inset -2px -2px 0 0 var(--color-white);
+
+  /* ---- easings ---- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* arrivals */
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0); /* exits, the stamp coming down */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* moves on a path, the world carry */
+  --ease-stick: cubic-bezier(0.34, 1.56, 0.64, 1); /* CSS-only overshoot: "stuck" */
+  --ease-peel: cubic-bezier(0.3, 0, 0.1, 1); /* lift-offs */
+  --ease-mech: cubic-bezier(0.2, 0, 0, 1); /* numbers, meters, toggles: decisive, never bouncy */
+
+  /* ---- breakpoints ---- */
+  --breakpoint-sm: 30rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+
+  /* ---- animations ---- */
+  --animate-stick: stick 220ms var(--ease-stick) both;
+  --animate-peel: peel 140ms var(--ease-peel) both;
+  --animate-stamp: stamp 320ms var(--ease-in) both;
+  --animate-pop: pop 260ms var(--ease-stick) both; /* a check sticking into place */
+  --animate-caret: caret 1s steps(2, jump-none) infinite;
+  --animate-puppet: puppet 2s steps(24) infinite alternate; /* 12 fps stop-motion bob */
+  --animate-colorbar: colorbar 1.2s steps(6, jump-none) infinite; /* the loader */
+  --animate-hatch: hatch-pulse 1.6s steps(2, jump-none) infinite; /* skeletons: they step, never shimmer */
+  --animate-sheet-in: sheet-in 360ms var(--ease-out) both;
+  --animate-sheet-out: sheet-out 220ms var(--ease-in) both;
+  --animate-drawer-in: drawer-in 360ms var(--ease-out) both;
+  --animate-drawer-out: drawer-out 140ms var(--ease-peel) both;
+  --animate-scrim-in: scrim-in 220ms linear both;
+  --animate-scrim-out: scrim-out 140ms linear both;
+  --animate-tear: tear 420ms var(--ease-peel) both;
+  --animate-sweep: sweep 520ms var(--ease-stick) both; /* lettering entrance: one sweep, then still */
+  --animate-ticker: ticker var(--ticker-dur, 30s) steps(var(--ticker-steps, 360)) infinite; /* 12 fps */
+  --animate-timer: timer var(--timer-dur, 8s) steps(32, jump-none) both; /* the Undo bar shortens in steps */
+  --animate-strike: strike 140ms var(--ease-mech) both;
+  --animate-leader: leader 220ms var(--ease-mech) both; /* a callout's line draws out from its dot */
+
+  @keyframes stick {
+    from {
+      opacity: 0;
+      transform: translate(-6px, -6px) scale(1.06) rotate(var(--stick-rot, 2deg));
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes peel {
+    to {
+      opacity: 0;
+      transform: translate(-8px, -10px) rotate(-4deg) scale(1.04);
+    }
+  }
+  @keyframes stamp {
+    0% {
+      opacity: 0;
+      transform: scale(1.7) rotate(var(--stamp-rot, -6deg));
+    }
+    55% {
+      opacity: 1;
+      transform: scale(0.94) rotate(var(--stamp-rot, -6deg));
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) rotate(var(--stamp-rot, -6deg));
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes caret {
+    50% {
+      opacity: 0;
+    }
+  }
+  @keyframes puppet {
+    from {
+      transform: translateY(-3px);
+    }
+    to {
+      transform: translateY(3px);
+    }
+  }
+  @keyframes colorbar {
+    from {
+      --bar: 0;
+    }
+    to {
+      --bar: 5;
+    }
+  }
+  @keyframes hatch-pulse {
+    50% {
+      opacity: 0.6;
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @keyframes sheet-out {
+    to {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes drawer-in {
+    from {
+      opacity: 0;
+      transform: translateX(40px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes drawer-out {
+    to {
+      opacity: 0;
+      transform: translateX(40px);
+    }
+  }
+  @keyframes scrim-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes scrim-out {
+    to {
+      opacity: 0;
+    }
+  }
+  /* The stub swings around its top notch and pulls away from the perforation. */
+  @keyframes tear {
+    0% {
+      opacity: 1;
+      transform: none;
+    }
+    60% {
+      opacity: 1;
+      transform: translate(16px, -6px) rotate(14deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(40px, -28px) rotate(20deg) scale(0.5);
+    }
+  }
+  @keyframes sweep {
+    from {
+      opacity: 0;
+      --xrot: 20;
+      --yrot: -45;
+      transform: translate(-8px, -8px) scale(1.06);
+    }
+  }
+  @keyframes ticker {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes timer {
+    to {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes strike {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes leader {
+    from {
+      transform: scale(0);
+    }
+  }
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Root variables
+ * ---------------------------------------------------------------------------------------------- */
+
+@property --sky-0 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #bfdbfe;
+}
+@property --sky-1 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #cfe8fb;
+}
+@property --sky-2 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #dff3ee;
+}
+@property --sky-3 {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #f0fdf4;
+}
+@property --bar {
+  syntax: '<integer>';
+  inherits: true;
+  initial-value: 0;
+}
+/* Tilt Warp's tilt axes, registered so they can animate (one sweep on entrance). */
+@property --xrot {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --yrot {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+:root {
+  color-scheme: light;
+  /* border weights: weight says how important the edge is */
+  --bw-hair: 1.5px;
+  --bw-thin: 2px;
+  --bw: 3px;
+  --bw-bold: 4px;
+  --bw-mega: 6px;
+  /* durations */
+  --dur-press: 80ms;
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 360ms;
+  --dur-scene: 640ms;
+  --dur-ceremony: 1200ms;
+  /* z-index scale */
+  --z-sky: 0;
+  --z-world: 1;
+  --z-content: 10;
+  --z-sticky: 20;
+  --z-nav: 30;
+  --z-fab: 31;
+  --z-scrim: 39;
+  --z-drawer: 40;
+  --z-modal-scrim: 49;
+  --z-modal: 50;
+  --z-palette: 60;
+  --z-toast: 70;
+  --z-tooltip: 80;
+  --z-fx: 90;
+  --z-skip: 100;
+  /* layout */
+  --nav-h: 64px;
+  --tabbar-h: 64px;
+  --gutter: 16px;
+  --content-max: 1392px;
+  --measure: 42.5rem;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+
+  /* sky ramps, zenith (0) to horizon (3). JS (world owner) writes --sky-0..3, --orb, --cloud, --stage-mark once a minute. */
+  --sky-dawn-0: #c7d2fe;
+  --sky-dawn-1: #fbcfe8;
+  --sky-dawn-2: #fed7aa;
+  --sky-dawn-3: #fef3c7;
+  --sky-day-0: #bfdbfe;
+  --sky-day-1: #cfe8fb;
+  --sky-day-2: #dff3ee;
+  --sky-day-3: #f0fdf4;
+  --sky-dusk-0: #a5b4fc;
+  --sky-dusk-1: #f9a8d4;
+  --sky-dusk-2: #fdba74;
+  --sky-dusk-3: #fde68a;
+  --sky-night-0: #0f1535;
+  --sky-night-1: #18204a;
+  --sky-night-2: #232f66;
+  --sky-night-3: #31407f;
+  --orb-dawn: #fb923c;
+  --orb-day: #facc15;
+  --orb-dusk: #ff6b4a;
+  --orb-night: #fef9c3;
+  --cloud-dawn: #ffffff;
+  --cloud-day: #ffffff;
+  --cloud-dusk: #fff7ed;
+  --cloud-night: #c7d2fe;
+  --grade-dawn: #ffe8d6;
+  --grade-day: #ffffff;
+  --grade-dusk: #ffd2b8;
+  --grade-night: #aab4f0; /* multiply on world fills */
+  --star: #fde68a;
+  --orb: var(--orb-day);
+  --cloud: var(--cloud-day);
+  --stage-mark: var(--color-ink); /* threads, crop marks: ink by dawn/day/dusk, #c7d2fe at night */
+  transition:
+    --sky-0 60s linear,
+    --sky-1 60s linear,
+    --sky-2 60s linear,
+    --sky-3 60s linear;
+}
+@media (min-width: 48rem) {
+  :root {
+    --gutter: 24px;
+  }
+}
+@media (min-width: 64rem) {
+  :root {
+    --tabbar-h: 0px;
+  }
+}
+
+/* Metric-matched fallbacks (measured, Chrome/Windows) so text does not jump when the web fonts swap in. */
+@font-face {
+  font-family: 'Space Grotesk Fallback';
+  src: local('Arial');
+  size-adjust: 108.2%;
+  ascent-override: 90.6%;
+  descent-override: 26.8%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Tilt Warp Fallback';
+  src: local('Arial Black'), local('Arial-Black');
+  size-adjust: 84.3%;
+  ascent-override: 117.4%;
+  descent-override: 32%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Martian Mono Fallback';
+  src: local('Courier New');
+  size-adjust: 116.7%;
+  ascent-override: 85.7%;
+  descent-override: 17.1%;
+  line-gap-override: 0%;
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Base layer
+ * ---------------------------------------------------------------------------------------------- */
 
 @layer base {
   html {
-    color-scheme: light;
+    background: var(--color-mat);
+    scroll-padding: calc(var(--nav-h) + 28px) 0 calc(var(--tabbar-h) + 48px);
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply graph-paper font-sans text-body text-ink antialiased;
+    min-height: 100dvh;
+    font-optical-sizing: auto;
+  }
+  ::selection {
+    background: var(--color-yellow);
+    color: var(--color-ink);
+  }
+  button,
+  [role='button'],
+  summary,
+  label[for],
+  select {
+    cursor: pointer;
+  }
+  :where(h1, h2, h3, h4) {
+    text-wrap: balance;
+  }
+  :where(p, li, figcaption, blockquote) {
+    text-wrap: pretty;
+  }
+  :where(code, kbd, samp, pre, .font-mono) {
+    font-stretch: 85%;
+    font-variant-numeric: tabular-nums;
+  }
+  sub {
+    font-size: 0.7em;
+    line-height: 0;
+    position: relative;
+    top: 0.22em;
+    vertical-align: baseline;
+  }
+  abbr[title] {
+    text-decoration: none;
   }
 
-  body {
-    @apply bg-mint font-sans text-ink antialiased;
+  /* THE focus ring: 5 px yellow halo hugging the element + 2 px ink keyline outside it. Works on mat, card and night sky. */
+  :where(
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    summary,
+    [role='button'],
+    [role='tab'],
+    [role='switch'],
+    [role='checkbox'],
+    [role='radio'],
+    [role='slider'],
+    [role='option'],
+    [role='menuitem'],
+    [tabindex]
+  ):focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 5px;
+    --focus-halo: 0 0 0 5px var(--color-focus);
+    box-shadow: var(--focus-halo), var(--own-shadow, 0 0 #0000);
+  }
+
+  /* Chunky legacy scrollbar, desktop fine pointers only. */
+  @media (min-width: 64rem) and (pointer: fine) {
+    html {
+      scrollbar-color: var(--color-ink) var(--color-white);
+    }
+    ::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--color-white);
+      border-left: 3px solid var(--color-ink);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--color-ink);
+      border: 2px solid var(--color-white);
+      border-radius: 999px;
+    }
+  }
+
+  /* Reduced motion: the OS setting unless Settings → Motion says "Full"; or Settings → Motion says "Reduced". */
+  @media (prefers-reduced-motion: reduce) {
+    :root:not([data-motion='full']),
+    :root:not([data-motion='full']) *,
+    :root:not([data-motion='full']) *::before,
+    :root:not([data-motion='full']) *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 150ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  :root[data-motion='reduced'],
+  :root[data-motion='reduced'] *,
+  :root[data-motion='reduced'] *::before,
+  :root[data-motion='reduced'] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 150ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Nothing may depend on a shadow for meaning. */
+  @media (forced-colors: active) {
+    * {
+      box-shadow: none !important;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Recipes
+ * ---------------------------------------------------------------------------------------------- */
+
+/* ---- EMBOSS: hard shadow + press physics. Every pressable thing. Size with lift-2 / lift-3 / lift-5 / lift-8. ---- */
+@utility lift-* {
+  --lift: calc(--value(integer) * 1px);
+}
+@utility hard {
+  --own-shadow: var(--lift, 5px) var(--lift, 5px) 0 0 var(--color-shadow);
+  box-shadow: var(--focus-halo, 0 0 #0000), var(--own-shadow);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) linear;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled, [aria-disabled='true'], [aria-busy='true']) {
+      transform: translate(-1px, -1px);
+      --own-shadow: calc(var(--lift, 5px) + 1px) calc(var(--lift, 5px) + 1px) 0 0
+        var(--color-shadow);
+    }
+  }
+  &:active:not(:disabled, [aria-disabled='true'], [aria-busy='true']),
+  &[data-pressed='true'],
+  &[aria-pressed='true'] {
+    transform: translate(var(--lift, 5px), var(--lift, 5px));
+    --own-shadow: 0 0 0 0 var(--color-shadow);
+    transition-duration: var(--dur-press);
+  }
+  &:disabled,
+  &[aria-disabled='true'] {
+    --own-shadow: 0 0 #0000;
+    transform: none;
+    cursor: not-allowed;
+  }
+}
+/* Interactive cards lift further: translate(-2px,-2px) and one shadow level up. Add next to `hard`. */
+@utility hard-card {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled, [aria-disabled='true']) {
+      transform: translate(-2px, -2px);
+      --own-shadow: calc(var(--lift, 5px) + 3px) calc(var(--lift, 5px) + 3px) 0 0
+        var(--color-shadow);
+    }
+  }
+}
+/* A static hard shadow on something focusable (selected chip, current nav link): keeps the focus halo, no press physics. flat-2, flat-3. */
+@utility flat-* {
+  --own-shadow: calc(--value(integer) * 1px) calc(--value(integer) * 1px) 0 0 var(--color-shadow);
+  box-shadow: var(--focus-halo, 0 0 #0000), var(--own-shadow);
+}
+
+/* ---- DEBOSS: things you fill (inputs, wells, tracks). ---- */
+@utility deboss {
+  --own-shadow: inset 3px 3px 0 0 var(--deboss, var(--color-line));
+  box-shadow: var(--focus-halo, 0 0 #0000), var(--own-shadow);
+}
+
+/* ---- Focus inside tight containers (segmented items, tabs, list rows, palette items): the ring goes inward. ---- */
+@utility focus-inset {
+  &:focus-visible {
+    outline-offset: -6px;
+    --focus-halo: inset 0 0 0 4px var(--color-focus);
+  }
+}
+/* The same ring for a wrapper whose (visually hidden or borderless) control holds the focus. */
+@utility focus-within-ring {
+  &:has(:is(input, textarea, select):focus-visible) {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 5px;
+    --focus-halo: 0 0 0 5px var(--color-focus);
+    box-shadow: var(--focus-halo), var(--own-shadow, 0 0 #0000);
+  }
+}
+
+/* ---- DIE-CUT: white margin + 1.5 px kiss-cut line + hard shadow that follows the radius. Margin: dc-3 (<=32 px things), dc-4 (default), dc-6 (hero). ---- */
+@utility dc-* {
+  --dc-m: calc(--value(integer) * 1px);
+}
+@utility diecut {
+  --own-shadow:
+    0 0 0 var(--dc-m, 4px) var(--color-sticker),
+    0 0 0 calc(var(--dc-m, 4px) + 1.5px) var(--color-shadow),
+    var(--dc-off, 4px) var(--dc-off, 4px) 0 calc(var(--dc-m, 4px) + 1.5px) var(--color-shadow);
+  box-shadow: var(--own-shadow), var(--focus-halo, 0 0 #0000);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+  &:focus-visible {
+    outline-offset: calc(var(--dc-m, 4px) + 6.5px);
+    --focus-halo: 0 0 0 calc(var(--dc-m, 4px) + 6.5px) var(--color-focus);
+  }
+  &:active:is(button, a):not(:disabled, [aria-disabled='true']),
+  &[data-pressed='true'] {
+    transform: translate(var(--dc-off, 4px), var(--dc-off, 4px));
+    --dc-off: 0px;
+    transition-duration: var(--dur-press);
+  }
+}
+
+/* ---- HALFTONE: the only way to draw a gradient. ---- */
+@utility halftone {
+  background-image: radial-gradient(
+    circle,
+    var(--ht-color, var(--color-ink)) 0 var(--ht-dot, 1.6px),
+    #0000 calc(var(--ht-dot, 1.6px) + 0.5px)
+  );
+  background-size: var(--ht-pitch, 7px) var(--ht-pitch, 7px);
+}
+/* A 49 px dither strip above an element: seven staggered dot rows in the element's own colour, shrinking as they climb. Sky bands, section seams. */
+@utility halftone-fade-t {
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 49px;
+    pointer-events: none;
+    --c: var(--ht-color, currentColor);
+    background-image:
+      radial-gradient(circle, var(--c) 0 7.8px, #0000 8.3px),
+      radial-gradient(circle, var(--c) 0 6.2px, #0000 6.7px),
+      radial-gradient(circle, var(--c) 0 5px, #0000 5.5px),
+      radial-gradient(circle, var(--c) 0 3.9px, #0000 4.4px),
+      radial-gradient(circle, var(--c) 0 2.9px, #0000 3.4px),
+      radial-gradient(circle, var(--c) 0 1.9px, #0000 2.4px),
+      radial-gradient(circle, var(--c) 0 1px, #0000 1.5px);
+    background-size: 14px 14px;
+    background-repeat: repeat-x;
+    background-position:
+      0 38.5px,
+      7px 31.5px,
+      0 24.5px,
+      7px 17.5px,
+      0 10.5px,
+      7px 3.5px,
+      0 -3.5px;
+  }
+}
+/* Hatch = projected / loading / not measured. Never on "disabled" (that is the die line). */
+@utility hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--hatch, var(--color-line)) 0 2px,
+    #0000 2px 7px
+  );
+}
+
+/* ---- PINKED EDGE: 16 px zigzag, 8 px deep, 3 px ink stroke. Pure gradients, so it takes token colours. Set --edge-fill to the surface it belongs to. ---- */
+@utility edge-pinked-t {
+  /* teeth rise from the element's top edge (mat horizon on mobile) */
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% - 1px);
+    height: 12px;
+    pointer-events: none;
+    background:
+      conic-gradient(from 135deg at 50% 0, var(--edge-fill, var(--color-mat)) 90deg, #0000 0) 0
+        4px / 16px 8px repeat-x,
+      linear-gradient(var(--color-ink) 0 0) 0 8px / 100% 4px no-repeat,
+      conic-gradient(from 135deg at 50% 0, var(--color-ink) 90deg, #0000 0) 0 0 / 16px 8px repeat-x;
+  }
+}
+@utility edge-pinked-l {
+  /* teeth point left from the element's left edge (the desk on desktop) */
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: calc(100% - 1px);
+    width: 12px;
+    pointer-events: none;
+    background:
+      conic-gradient(from 45deg at 0 50%, var(--edge-fill, var(--color-mat)) 90deg, #0000 0) 4px 0 /
+        8px 16px repeat-y,
+      linear-gradient(var(--color-ink) 0 0) 8px 0 / 4px 100% no-repeat,
+      conic-gradient(from 45deg at 0 50%, var(--color-ink) 90deg, #0000 0) 0 0 / 8px 16px repeat-y;
+  }
+}
+@utility edge-pinked-b {
+  /* teeth hang below (receipts). Element has border-bottom: 0. --edge-bw = its side border width */
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--edge-bw, 3px) * -1);
+    right: calc(var(--edge-bw, 3px) * -1);
+    top: calc(100% - 1px);
+    height: 11px;
+    pointer-events: none;
+    background:
+      conic-gradient(from -45deg at 50% 100%, var(--edge-fill, var(--color-paper)) 90deg, #0000 0) 0
+        0 / 14px 7px repeat-x,
+      linear-gradient(var(--color-ink) 0 0) 0 0 / 100% 4px no-repeat,
+      conic-gradient(from -45deg at 50% 100%, var(--color-ink) 90deg, #0000 0) 0 4px / 14px 7px
+        repeat-x;
+  }
+}
+
+/* ---- PERFORATION: a line you can tear. Dashed ink + two half-moon notches. --notch-bg = the surface the ticket sits on (mat by default), so tickets sit only on flat surfaces. ---- */
+@utility perf-l {
+  position: relative;
+  border-left: 2px dashed var(--color-ink);
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: -9px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--notch-bg, var(--color-mat));
+    border: var(--notch-bw, 3px) solid var(--color-ink);
+  }
+  &::before {
+    top: calc(-8px - var(--notch-bw, 3px));
+    clip-path: inset(8px -2px -2px -2px);
+  }
+  &::after {
+    bottom: calc(-8px - var(--notch-bw, 3px));
+    clip-path: inset(-2px -2px 8px -2px);
+  }
+}
+@utility perf-t {
+  position: relative;
+  border-top: 2px dashed var(--color-ink);
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -9px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--notch-bg, var(--color-mat));
+    border: var(--notch-bw, 3px) solid var(--color-ink);
+  }
+  &::before {
+    left: calc(-8px - var(--notch-bw, 3px));
+    clip-path: inset(-2px -2px -2px 8px);
+  }
+  &::after {
+    right: calc(-8px - var(--notch-bw, 3px));
+    clip-path: inset(-2px 8px -2px -2px);
+  }
+}
+
+/* ---- TAPE: washi strip holding a note. Put an empty <i class="tape"> inside a relative parent. --tape-color: pink (default), yellow, blue, green. ---- */
+@utility tape {
+  position: absolute;
+  left: 50%;
+  top: -13px;
+  width: 92px;
+  height: 26px;
+  margin-left: -46px;
+  rotate: -3deg;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--tape-color, var(--color-pink)) 86%, transparent);
+  border-block: 2px solid var(--color-ink);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - 4px) 12.5%,
+    100% 25%,
+    calc(100% - 4px) 37.5%,
+    100% 50%,
+    calc(100% - 4px) 62.5%,
+    100% 75%,
+    calc(100% - 4px) 87.5%,
+    100% 100%,
+    0 100%,
+    4px 87.5%,
+    0 75%,
+    4px 62.5%,
+    0 50%,
+    4px 37.5%,
+    0 25%,
+    4px 12.5%
+  );
+}
+
+/* ---- GRAPH PAPER: the cutting mat. Major 80 px, minor 16 px. A texture, not a layout grid. Minor lines appear from md up. ---- */
+@utility graph-paper {
+  background-color: var(--color-mat);
+  background-image:
+    linear-gradient(var(--color-mat-line-major) 1.5px, #0000 1.5px),
+    linear-gradient(90deg, var(--color-mat-line-major) 1.5px, #0000 1.5px);
+  background-size:
+    80px 80px,
+    80px 80px;
+  background-position: -1px -1px;
+  @media (min-width: 48rem) {
+    background-image:
+      linear-gradient(var(--color-mat-line-major) 1.5px, #0000 1.5px),
+      linear-gradient(90deg, var(--color-mat-line-major) 1.5px, #0000 1.5px),
+      linear-gradient(var(--color-mat-line) 1px, #0000 1px),
+      linear-gradient(90deg, var(--color-mat-line) 1px, #0000 1px);
+    background-size:
+      80px 80px,
+      80px 80px,
+      16px 16px,
+      16px 16px;
+  }
+}
+
+/* ---- CROP MARKS: four printer's corners. On an absolutely positioned, pointer-events-none child that insets the stage by 12 px (mobile) / 28 px (lg). ---- */
+@utility crop-marks {
+  --c: var(--stage-mark, var(--color-ink));
+  opacity: 0.7;
+  background-repeat: no-repeat;
+  background-image:
+    linear-gradient(var(--c) 0 0), linear-gradient(var(--c) 0 0), linear-gradient(var(--c) 0 0),
+    linear-gradient(var(--c) 0 0), linear-gradient(var(--c) 0 0), linear-gradient(var(--c) 0 0),
+    linear-gradient(var(--c) 0 0), linear-gradient(var(--c) 0 0);
+  background-size:
+    var(--crop, 14px) 1.5px,
+    1.5px var(--crop, 14px),
+    var(--crop, 14px) 1.5px,
+    1.5px var(--crop, 14px),
+    var(--crop, 14px) 1.5px,
+    1.5px var(--crop, 14px),
+    var(--crop, 14px) 1.5px,
+    1.5px var(--crop, 14px);
+  background-position:
+    0 0,
+    0 0,
+    100% 0,
+    100% 0,
+    0 100%,
+    0 100%,
+    100% 100%,
+    100% 100%;
+}
+
+/* ---- DIE LINE: dashed grey = not there yet (empty slot, locked, disabled). ---- */
+@utility dieline {
+  border: 2px dashed var(--color-ink-4);
+  background-color: transparent;
+  box-shadow: none;
+}
+
+/* ---- SCRIM: a mint veil with halftone dots. The world is veiled, never dimmed to grey. No blur. ---- */
+@utility scrim {
+  background:
+    radial-gradient(circle, rgb(24 24 27 / 0.3) 0 1.1px, #0000 1.6px) 0 0 / 8px 8px,
+    rgb(240 253 244 / 0.8);
+}
+
+/* ---- STAMP INK: uneven inking for rubber stamps (static, <= 160 px wide). Pure gradient masks, no data URIs. ---- */
+@utility stamp-ink {
+  --sp:
+    radial-gradient(circle at 30% 40%, #0000 0 1.1px, #000 1.5px),
+    radial-gradient(circle at 70% 65%, #0000 0 0.9px, #000 1.3px),
+    radial-gradient(circle at 45% 80%, #0000 0 1.3px, #000 1.7px);
+  mask-image: var(--sp);
+  mask-size:
+    13px 13px,
+    17px 17px,
+    23px 23px;
+  mask-composite: intersect;
+  -webkit-mask-image: var(--sp);
+  -webkit-mask-size:
+    13px 13px,
+    17px 17px,
+    23px 23px;
+  -webkit-mask-composite: source-in;
+}
+
+/* ---- PAPER STACK: up to two extra sheets peeking 4 px (quest deck, lesson deck, sticker pad). Parent needs `relative isolate`. ---- */
+@utility stack {
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--color-card);
+    border: inherit;
+    border-radius: inherit;
+  }
+  &::before {
+    transform: translate(4px, 4px) rotate(1.5deg);
+  }
+  &::after {
+    transform: translate(8px, 7px) rotate(-1deg);
+    z-index: -2;
+    box-shadow: var(--shadow-3);
+  }
+}
+
+/* ---- STICKER LETTERING: Tilt Warp with die-cut. Markup: <span class="lettering" data-text="Fix this.">Fix this.</span> ---- */
+@utility lettering {
+  --fill: var(--color-ink);
+  --m: 0.11em;
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.035em;
+  color: var(--fill);
+  font-variation-settings:
+    'XROT' var(--xrot, 0),
+    'YROT' var(--yrot, 0);
+  -webkit-text-stroke: 0.045em var(--color-ink);
+  paint-order: stroke fill;
+  &::before,
+  &::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    color: var(--color-sticker);
+    -webkit-text-stroke: calc(var(--m) * 2) var(--color-sticker);
+    paint-order: stroke fill;
+  }
+  &::after {
+    z-index: -2;
+    color: var(--color-ink);
+    -webkit-text-stroke: calc(var(--m) * 2 + 3px) var(--color-ink);
+    filter: drop-shadow(0.05em 0.05em 0 var(--color-ink));
+  }
+  @media (forced-colors: active) {
+    -webkit-text-stroke: 0;
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+}
+
+/* ---- TYPE HELPERS that need more than a text-* token. ---- */
+@utility type-slug {
+  font-family: var(--font-mono);
+  font-stretch: 75%;
+  font-size: var(--text-slug);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+@utility type-tick {
+  font-family: var(--font-mono);
+  font-stretch: 75%;
+  font-size: var(--text-tick);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+@utility type-figure {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Highlighter slab: the only emphasis allowed inside a headline (never coloured type). ---- */
+@utility highlighter {
+  display: inline-block;
+  rotate: -1deg;
+  border: 3px solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  background-color: var(--slab, var(--color-green));
+  padding-inline: 0.14em;
+}
+
+/* ---- Inline link: the one coloured text in running copy, always underlined. ---- */
+@utility link {
+  color: var(--color-blue-deep);
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  border-radius: var(--radius-paper);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: var(--color-ink);
+      background-color: var(--color-yellow-tint);
+    }
+  }
+}
+
+/* ---- Hit-area extenders: a control drawn smaller than 44 px still gets a 44 px target. ---- */
+@utility hit-1 {
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
+}
+@utility hit-2 {
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+  }
+}
+@utility hit-3 {
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -12px;
+  }
+}
+
+/* ---- Horizontal rows (sticker rows, chip rows, tab lists): snap, no scrollbar, room for shadows and focus rings. ---- */
+@utility scroll-row {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  & > * {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+}
+
+/* ---- Safe areas (bible 3.7). ---- */
+@utility pt-safe {
+  padding-top: var(--safe-t);
+}
+@utility pb-safe {
+  padding-bottom: var(--safe-b);
+}
+@utility pb-sheet {
+  padding-bottom: max(16px, var(--safe-b));
+}
+@utility px-gutter {
+  padding-left: max(var(--gutter), var(--safe-l));
+  padding-right: max(var(--gutter), var(--safe-r));
+}
+/* Bottom padding that clears the tab bar and the Log sticker on mobile. */
+@utility pb-tabbar {
+  padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 48px);
+}
+
+/* ---- PROSE: lessons, methodology, privacy and the coach's markdown. Use with the typography plugin: `prose prose-eco`. ---- */
+@utility prose-eco {
+  --tw-prose-body: var(--color-ink);
+  --tw-prose-headings: var(--color-ink);
+  --tw-prose-lead: var(--color-ink-2);
+  --tw-prose-links: var(--color-blue-deep);
+  --tw-prose-bold: var(--color-ink);
+  --tw-prose-counters: var(--color-ink-3);
+  --tw-prose-bullets: var(--color-ink);
+  --tw-prose-hr: var(--color-ink);
+  --tw-prose-quotes: var(--color-ink);
+  --tw-prose-quote-borders: var(--color-ink);
+  --tw-prose-captions: var(--color-ink-3);
+  --tw-prose-kbd: var(--color-ink);
+  --tw-prose-kbd-shadows: 24 24 27;
+  --tw-prose-code: var(--color-ink);
+  --tw-prose-pre-code: var(--color-ink);
+  --tw-prose-pre-bg: var(--color-paper);
+  --tw-prose-th-borders: var(--color-ink);
+  --tw-prose-td-borders: var(--color-line);
+  max-width: var(--measure);
+  font-size: var(--text-reading);
+  line-height: 1.65;
+  font-weight: 400;
+
+  & :where(h1, h2, h3, h4) {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    text-wrap: balance;
+  }
+  & :where(h1) {
+    font-size: var(--text-h1);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.6em;
+  }
+  & :where(h2) {
+    font-size: var(--text-h2);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    margin-top: 1.8em;
+    margin-bottom: 0.6em;
+  }
+  & :where(h3) {
+    font-size: var(--text-h3);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    margin-top: 1.6em;
+    margin-bottom: 0.5em;
+  }
+  & :where(h4) {
+    font-size: var(--text-h4);
+    line-height: 1.25;
+    margin-top: 1.4em;
+    margin-bottom: 0.4em;
+  }
+  & :where(p, ul, ol) {
+    margin-top: 0.9em;
+    margin-bottom: 0.9em;
+  }
+  & :where(strong) {
+    font-weight: 700;
+  }
+  & :where(a) {
+    font-weight: 600;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+    border-radius: var(--radius-paper);
+  }
+  & :where(mark) {
+    background-color: var(--color-yellow);
+    color: var(--color-ink);
+    padding-inline: 0.14em;
+    border-radius: var(--radius-paper);
+  }
+  & :where(ul > li)::marker {
+    color: var(--color-ink);
+  }
+  & :where(ol > li)::marker {
+    font-family: var(--font-mono);
+    font-stretch: 85%;
+    font-size: 0.8em;
+    font-weight: 600;
+  }
+  /* A pull quote is a taped note, not a grey bar. */
+  & :where(blockquote) {
+    margin-block: 1.4em;
+    padding: 0.75rem 1rem;
+    border: 3px solid var(--color-ink);
+    border-radius: var(--radius-paper);
+    background-color: var(--color-yellow-tint);
+    box-shadow: var(--shadow-3);
+    font-style: normal;
+    font-weight: 500;
+    quotes: none;
+  }
+  & :where(blockquote p) {
+    margin-block: 0.25em;
+  }
+  & :where(blockquote p)::before,
+  & :where(blockquote p)::after {
+    content: none;
+  }
+  & :where(hr) {
+    margin-block: 2em;
+    border: 0;
+    border-top: 2px dashed var(--color-ink);
+  }
+  & :where(code):not(:where(pre code)) {
+    font-family: var(--font-mono);
+    font-size: 0.78em;
+    font-weight: 600;
+    padding: 0.15em 0.4em;
+    border: 2px solid var(--color-ink);
+    border-radius: var(--radius-xs);
+    background-color: var(--color-white);
+  }
+  & :where(code)::before,
+  & :where(code)::after {
+    content: none;
+  }
+  & :where(pre) {
+    border: 3px solid var(--color-ink);
+    border-radius: var(--radius-paper);
+    font-size: var(--text-data);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  & :where(kbd) {
+    font-family: var(--font-mono);
+    font-size: 0.7em;
+    font-weight: 600;
+    border: 2px solid var(--color-ink);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-white);
+    box-shadow: var(--shadow-key);
+  }
+  & :where(table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-stretch: 85%;
+    font-size: var(--text-data);
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+  }
+  & :where(thead th) {
+    font-size: var(--text-slug);
+    font-stretch: 75%;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+    border-bottom-width: 1.5px;
+    white-space: nowrap;
+  }
+  & :where(tbody td) {
+    border-bottom-width: 1px;
+  }
+  & :where(figcaption) {
+    font-size: var(--text-caption);
+    line-height: 1.4;
+  }
+  & :where(img, svg, video) {
+    border-radius: var(--radius-sm);
+  }
+  & > :first-child {
+    margin-top: 0;
+  }
+  & > :last-child {
+    margin-bottom: 0;
+  }
+}
+/* Chat-sized prose (coach slips, toasts with markdown): body metrics instead of reading metrics. */
+@utility prose-compact {
+  font-size: var(--text-body);
+  line-height: 1.5;
+  font-weight: 500;
+  & :where(p, ul, ol) {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
+  & :where(h1, h2, h3, h4) {
+    font-size: var(--text-h4);
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+    margin-top: 1em;
+    margin-bottom: 0.3em;
   }
 }
