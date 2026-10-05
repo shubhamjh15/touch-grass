@@ -53,6 +53,8 @@ export interface Clump {
   bloom: number;
   /** A clump of the second foliage family (cherry leaves among the blossom). */
   alt: boolean;
+  /** A resting tree hides this clump when vitality falls below this. -1 = never hidden. */
+  hideBelow: number;
 }
 
 export type AccentKind = 'leaf' | 'blossom';
@@ -107,9 +109,6 @@ export interface Skeleton {
   /** Turns a pipe-model load into a radius. */
   radiusScale: number;
   minRadius: number;
-  /** Trunk tip schedule: finished at `trunkEnd`, eased by `trunkEase`. */
-  trunkEnd: number;
-  trunkEase: number;
   metrics: TreeMetrics;
 }
 
@@ -149,7 +148,7 @@ export interface Pose {
 export interface PoseOptions {
   /** 0..1 transient overshoot of parts that have just appeared. Render-only. */
   pop?: number;
-  /** 0..1. Low vitality drops accents; it never changes the wood or the clumps. */
+  /** 0..1. Low vitality drops accents and some outer clumps; it never changes the wood. */
   vitality?: number;
   /** Days the user has shown up: each ring thickens the wood a little. */
   ageDays?: number;

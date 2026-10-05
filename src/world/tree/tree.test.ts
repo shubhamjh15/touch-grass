@@ -143,9 +143,15 @@ describe('poseTree', () => {
     const tree = generateTree(12, 'oak');
     const thriving = poseTree(tree, 0.8, createPose(tree), { vitality: 1 });
     const dormant = poseTree(tree, 0.8, createPose(tree), { vitality: 0 });
-    expect(Array.from(dormant.clumpMatrix)).toEqual(Array.from(thriving.clumpMatrix));
     expect(Array.from(dormant.nodeRadius)).toEqual(Array.from(thriving.nodeRadius));
-    expect(dormant.stats.top).toBe(thriving.stats.top);
+    expect(Array.from(dormant.nodePosition)).toEqual(Array.from(thriving.nodePosition));
+    // Never smaller: the measured tree is the same, only outer clumps and accents rest.
+    expect(dormant.stats).toEqual(thriving.stats);
+    const hidden = tree.clumps.filter((clump) => clump.hideBelow >= 0);
+    expect(hidden.length).toBeGreaterThan(0);
+    expect(hidden.length).toBeLessThanOrEqual(tree.clumps.length * 0.35);
+    // The core, the first clump to be born, is never among them.
+    expect(tree.clumps[0]?.hideBelow).toBe(-1);
   });
 });
 
@@ -198,13 +204,16 @@ describe('budgets at growth 1', () => {
     expect(low.accents / high.accents).toBeLessThan(0.45);
     expect(low.triangles).toBeLessThan(medium.triangles);
     expect(medium.triangles).toBeLessThan(high.triangles);
-    expect(QUALITY.low.dpr).toBe(1);
+    expect(QUALITY.low.dpr).toBeLessThan(QUALITY.medium.dpr);
+    expect(QUALITY.medium.dpr).toBeLessThan(QUALITY.high.dpr);
   });
 });
 
 describe('buildIsland', () => {
   it('is deterministic from the seed', () => {
     const a = buildIsland(9, 30);
+    expect(a.normals.length).toBe(a.positions.length);
+    expect(a.ticks.length).toBe(13 * 6 * 3);
     const b = buildIsland(9, 30);
     expect(Array.from(a.positions)).toEqual(Array.from(b.positions));
     expect(a.rocks).toEqual(b.rocks);

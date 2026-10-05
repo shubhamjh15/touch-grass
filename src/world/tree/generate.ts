@@ -1,5 +1,6 @@
 import { clamp01, lerp } from '@/lib/math';
 import { createRng, type Rng } from '@/lib/rng';
+import { VITALITY } from '../config';
 import type { Species } from '../contract';
 import { branchPhaseAt, trunkGrowthAt } from './curves';
 import { solveFrameEase } from './frame';
@@ -69,8 +70,6 @@ class Builder {
     readonly species: Species,
     readonly seed: number,
     readonly shape: ClumpShape,
-    readonly trunkEnd: number,
-    readonly trunkEase: number,
   ) {}
 
   stream(name: string): Rng {
@@ -128,7 +127,7 @@ class Builder {
     const total = draft.cumulative.at(-1) ?? 1;
     if (branch === 0) {
       const share = (distance - draft.buried) / (total - draft.buried);
-      return trunkGrowthAt(share, this.trunkEnd, this.trunkEase);
+      return trunkGrowthAt(share);
     }
     return draft.t0 + (draft.t1 - draft.t0) * branchPhaseAt(distance / total);
   }
@@ -140,7 +139,7 @@ class Builder {
       attachLength: 0,
       points,
       t0: 0,
-      t1: this.trunkEnd,
+      t1: 1,
       tipLoad,
       taper: WOOD.trunkTaper,
       buried: WOOD.buried,
@@ -178,7 +177,10 @@ class Builder {
   /** Adds a clump riding the tip of `branch`; its weight thickens the wood that carries it. */
   clump(
     branch: number,
-    clump: Omit<Clump, 'branch' | 'station' | 'birth' | 'bloom' | 'alt' | 'rotation'> &
+    clump: Omit<
+      Clump,
+      'branch' | 'station' | 'birth' | 'bloom' | 'alt' | 'rotation' | 'hideBelow'
+    > &
       Partial<Pick<Clump, 'station' | 'birth' | 'bloom' | 'alt' | 'rotation'>>,
   ): number {
     const draft = this.drafts[branch] as Draft;
@@ -188,6 +190,7 @@ class Builder {
       station: this.lengthOf(branch),
       birth: draft.t0 + 0.012,
       bloom: 2,
+      hideBelow: -1,
       alt: false,
       rotation: [0, 0, 0, 1],
       ...clump,
@@ -320,6 +323,19 @@ class Builder {
     });
 
     // Birth order: whatever is alive at a given growth is a prefix of each list.
+    // A resting tree looks sparse: some outer clumps (never the core, the crown or a
+    // main limb's) are marked to be hidden as vitality runs out.
+    const rest = this.stream('rest');
+    const outer = this.clumps
+      .filter((clump) => {
+        const draft = drafts[clump.branch] as Draft;
+        return draft.level >= 2 || (draft.level === 1 && draft.t0 >= 0.75);
+      })
+      .map((clump) => ({ clump, order: rest() }))
+      .sort((a, b) => a.order - b.order);
+    const quota = Math.floor(this.clumps.length * VITALITY.dormantHidden);
+    for (const { clump } of outer.slice(0, quota)) clump.hideBelow = lerp(0.06, 0.4, rest());
+
     const clumpOrder = this.clumps.map((_, index) => index);
     clumpOrder.sort(
       (a, b) => (this.clumps[a] as Clump).birth - (this.clumps[b] as Clump).birth || a - b,
@@ -348,8 +364,6 @@ class Builder {
       pipeExponent,
       radiusScale: 1,
       minRadius: WOOD.minRadius,
-      trunkEnd: this.trunkEnd,
-      trunkEase: this.trunkEase,
       metrics: {
         top: 0,
         halfWidth: 0,
@@ -420,7 +434,7 @@ const flatOutward = (azimuth: number, rise: number): Vec3 =>
 
 function growOak(seed: number): Skeleton {
   const p = OAK;
-  const b = new Builder('oak', seed, 'blob', p.trunkEnd, p.trunkEase);
+  const b = new Builder('oak', seed, 'blob');
   const wood = b.stream('wood');
   const leaf = b.stream('leaves');
   const drift = [wood() * TAU, wood() * TAU];
@@ -563,9 +577,9 @@ function growOak(seed: number): Skeleton {
         attachLength: b.trunkLengthAt(lateY[i] as number),
         azimuth,
         elevation: within(wood, p.late.elevation),
-        lift: deg(32),
+        lift: p.late.lift,
         bend: 0.4,
-        length: within(wood, p.late.length) + 0.75,
+        length: within(wood, p.late.length),
         steps: 3,
         wobble: 0.1,
         delay: 0,
@@ -591,7 +605,7 @@ function growOak(seed: number): Skeleton {
 
 function growCherry(seed: number): Skeleton {
   const p = CHERRY;
-  const b = new Builder('cherry', seed, 'blob', p.trunkEnd, p.trunkEase);
+  const b = new Builder('cherry', seed, 'blob');
   const wood = b.stream('wood');
   const leaf = b.stream('leaves');
   const petals = b.stream('blossom');
@@ -759,9 +773,9 @@ function growCherry(seed: number): Skeleton {
         attachLength: b.trunkLengthAt(lateY[i] as number),
         azimuth,
         elevation: within(wood, p.late.elevation),
-        lift: deg(40),
+        lift: p.late.lift,
         bend: 0.4,
-        length: within(wood, p.late.length) + 0.5,
+        length: within(wood, p.late.length),
         steps: 3,
         wobble: 0.1,
         delay: 0,
@@ -789,7 +803,7 @@ function growCherry(seed: number): Skeleton {
 
 function growPine(seed: number): Skeleton {
   const p = PINE;
-  const b = new Builder('pine', seed, 'tier', p.trunkEnd, p.trunkEase);
+  const b = new Builder('pine', seed, 'tier');
   const wood = b.stream('wood');
   const leaf = b.stream('leaves');
   const drift = [wood() * TAU, wood() * TAU];

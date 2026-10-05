@@ -11,14 +11,30 @@ const smooth01 = (t: number) => {
   return x * x * (3 - 2 * x);
 };
 
-/** Share of the trunk that is revealed: fast while young, complete at `end`. */
-export function trunkProgress(growth: number, end: number, ease: number): number {
-  return 1 - (1 - clamp01(growth / end)) ** ease;
+/** Growth by which the sprout has pushed out of the seed. */
+const SPROUT = 0.02;
+
+/**
+ * Share of the trunk that is revealed. The design bible's height curve
+ * `h(g) = H * (0.06 + 0.94 * g^0.8)`, with the first 6 % (the sprout) rising out of
+ * the seed over the first 0.02 of growth so that growth 0 really is a bare seed.
+ */
+export function trunkProgress(growth: number): number {
+  const g = clamp01(growth);
+  return 0.06 * Math.min(1, g / SPROUT) + 0.94 * g ** 0.8;
 }
 
 /** Growth at which the trunk has revealed `share` of itself. Inverse of {@link trunkProgress}. */
-export function trunkGrowthAt(share: number, end: number, ease: number): number {
-  return end * (1 - (1 - clamp01(share)) ** (1 / ease));
+export function trunkGrowthAt(share: number): number {
+  const target = clamp01(share);
+  let low = 0;
+  let high = 1;
+  for (let i = 0; i < 40; i += 1) {
+    const middle = (low + high) / 2;
+    if (trunkProgress(middle) < target) low = middle;
+    else high = middle;
+  }
+  return high;
 }
 
 const BRANCH_EASE = 1.25;
@@ -36,6 +52,8 @@ export function branchPhaseAt(share: number): number {
 export const CLUMP_POP_SPAN = 0.05;
 /** Growth span over which a leaf or blossom unfolds. */
 export const ACCENT_POP_SPAN = 0.035;
+/** Growth span over which a clump turns from leaf to blossom. */
+export const BLOOM_SPAN = 0.012;
 
 /**
  * Scale of a clump, 0..1. It pops in quickly to `startScale` and then keeps swelling
@@ -50,6 +68,11 @@ export function clumpScale(growth: number, birth: number, startScale: number): n
 
 export function accentScale(growth: number, birth: number): number {
   return growth <= birth ? 0 : smooth01((growth - birth) / ACCENT_POP_SPAN);
+}
+
+/** 0 = leaf tone, 1 = blossom. A quick flip, so a clump is never seen half-way (grey). */
+export function bloomShare(growth: number, bloom: number): number {
+  return bloom > 1 ? 0 : smooth01((growth - bloom) / BLOOM_SPAN);
 }
 
 /**
@@ -73,9 +96,14 @@ export function popBump(growth: number, birth: number, span: number): number {
   return x <= 0 || x >= 1 ? 0 : Math.sin(Math.PI * x) ** 2;
 }
 
-/** Ring bonus: every day the user shows up thickens the wood a touch, saturating gently. */
+/** Ring bonus: every day the user shows up thickens the wood, up to a quarter more girth. */
 export function ringFactor(ageDays: number): number {
-  return 1 + 0.12 * (1 - Math.exp(-Math.max(0, ageDays) / 120));
+  return 1 + 0.25 * (1 - Math.exp(-Math.max(0, ageDays) / 240));
+}
+
+/** 1 while vitality is above a part's threshold, easing to 0 just below it. */
+export function vitalityShare(vitality: number, hideBelow: number): number {
+  return hideBelow < 0 ? 1 : clamp01((vitality - hideBelow) / 0.08 + 1);
 }
 
 export { smooth01 };

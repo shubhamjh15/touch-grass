@@ -6,8 +6,9 @@ import type { Skeleton } from './types';
 /**
  * Predicts what the renderer will be asked to draw for a full-grown tree, without
  * touching WebGL: the numbers a test can hold against the tier budgets. The triangle
- * counts per part mirror the builders in `scene/geometry.ts`; the world lab shows the
- * measured `renderer.info` values next to them.
+ * counts per part and the passes per solid mirror `scene/geometry.ts` and
+ * `scene/GroveRig.ts`; the world lab shows the measured `renderer.info` values, and
+ * the two agree to the triangle.
  */
 
 const PARTS = {
@@ -18,10 +19,6 @@ const PARTS = {
   tuft: 12,
   emblem: 64,
 } as const;
-
-/** Passes a solid is drawn in: shadow, keyline, white, fill, ink. Or just fill and ink. */
-const STICKER_PASSES = 5;
-const PLAIN_PASSES = 2;
 
 export interface BudgetEstimate {
   drawCalls: number;
@@ -48,22 +45,27 @@ export function estimateBudget(skeleton: Skeleton, quality: WorldQuality): Budge
   const drawn = skeleton.accents.filter((accent) => accent.rank < tier.accentShare);
   const leaves = drawn.filter((accent) => accent.kind === 'leaf').length;
   const blossoms = drawn.length - leaves;
-  const clumpTriangles = skeleton.shape === 'tier' ? PARTS.tier : 20 * (tier.clumpDetail + 1) ** 2;
+  const clump = skeleton.shape === 'tier' ? PARTS.tier : 20 * (tier.clumpDetail + 1) ** 2;
 
-  const sticker =
-    island.triangles +
-    wood +
-    skeleton.clumps.length * clumpTriangles +
-    leaves * PARTS.leaf +
-    blossoms * PARTS.blossom +
-    (island.rocks.length + 1) * PARTS.rock;
-  const plain = island.tufts.length * PARTS.tuft + PARTS.emblem;
-
-  // island, wood, clumps, rocks + seed, then leaves and blossoms when the tree has any.
-  const stickerSolids = 4 + (leaves > 0 ? 1 : 0) + (blossoms > 0 ? 1 : 0);
+  // Passes per solid: fill + ink, plus white and shadow for sticker solids, plus the
+  // kiss-cut line where the tier draws it, plus the sundial shadow for wood and clumps.
+  const sticker = 4 + (tier.keyline ? 1 : 0);
+  const cast = tier.castShadow ? 1 : 0;
+  const solids: Array<[triangles: number, passes: number]> = [
+    [island.triangles, sticker],
+    [island.ticks.length / 9, 1],
+    [(island.rocks.length + 1) * PARTS.rock, 2],
+    [island.tufts.length * PARTS.tuft, 2],
+    [PARTS.emblem, 2],
+    [wood, (tier.woodSticker ? sticker : 2) + cast],
+    [skeleton.clumps.length * clump, sticker + cast],
+    [leaves * PARTS.leaf, sticker],
+    [blossoms * PARTS.blossom, sticker],
+  ];
+  const used = solids.filter(([triangles]) => triangles > 0);
   return {
-    drawCalls: stickerSolids * STICKER_PASSES + 2 * PLAIN_PASSES,
-    triangles: sticker * STICKER_PASSES + plain * PLAIN_PASSES,
+    drawCalls: used.reduce((sum, [, passes]) => sum + passes, 0),
+    triangles: used.reduce((sum, [triangles, passes]) => sum + triangles * passes, 0),
     clumps: skeleton.clumps.length,
     accents: drawn.length,
   };

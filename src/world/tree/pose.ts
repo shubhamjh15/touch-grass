@@ -7,7 +7,8 @@ import {
   clumpScale,
   popBump,
   ringFactor,
-  smooth01,
+  bloomShare,
+  vitalityShare,
   tipLoadShare,
   tipTaper,
   trunkProgress,
@@ -104,7 +105,7 @@ export function poseTree(
     const branch = branches[i];
     if (!branch) continue;
     if (branch.parent < 0) {
-      const progress = trunkProgress(growth, skeleton.trunkEnd, skeleton.trunkEase);
+      const progress = trunkProgress(growth);
       tipLength[i] = branch.buried + (branch.length - branch.buried) * progress;
     } else {
       const phase = (growth - branch.t0) / Math.max(1e-6, branch.t1 - branch.t0);
@@ -179,10 +180,12 @@ export function poseTree(
   for (let i = 0; i < clumps.length; i += 1) {
     const clump = clumps[i];
     if (!clump) continue;
-    let size = clumpScale(growth, clump.birth, clump.startScale);
-    pose.clumpScale[i] = size;
-    foliage += size;
-    if (size > 0) clumpCount = i + 1;
+    const grown = clumpScale(growth, clump.birth, clump.startScale);
+    pose.clumpScale[i] = grown;
+    foliage += grown;
+    if (grown > 0) clumpCount = i + 1;
+    // Pop and rest are dressing: they change what is drawn, never what is measured.
+    let size = grown * vitalityShare(vitality, clump.hideBelow);
     if (pop > 0) size *= 1 + pop * popBump(growth, clump.birth, CLUMP_POP_SPAN * 1.6);
     const anchor = pointAlong(
       skeleton,
@@ -203,12 +206,14 @@ export function poseTree(
       clump.size[1] * size,
       clump.size[2] * size,
     );
-    pose.clumpBloom[i] = clump.bloom > 1 ? 0 : smooth01((growth - clump.bloom + 0.03) / 0.06);
-    if (size > 0) {
-      top = Math.max(top, y + clump.size[1] * size);
+    pose.clumpBloom[i] = bloomShare(growth, clump.bloom);
+    if (grown > 0) {
+      const cx = anchor[0] + clump.offset[0] * grown;
+      const cz = anchor[2] + clump.offset[2] * grown;
+      top = Math.max(top, anchor[1] + (clump.offset[1] + clump.size[1]) * grown);
       halfWidth = Math.max(
         halfWidth,
-        Math.hypot(x, z) + Math.max(clump.size[0], clump.size[2]) * size,
+        Math.hypot(cx, cz) + Math.max(clump.size[0], clump.size[2]) * grown,
       );
     }
   }
@@ -254,7 +259,8 @@ export function poseTree(
       (m[base + 6] as number) * ly +
       (m[base + 10] as number) * lz +
       (m[base + 14] as number);
-    const hidden = accent.hideBelow < 0 ? 1 : clamp01((vitality - accent.hideBelow) / 0.08 + 1);
+    const hidden =
+      vitalityShare(vitality, accent.hideBelow) * vitalityShare(vitality, clump.hideBelow);
     let size = accent.size * unfolded * hidden;
     if (pop > 0) size *= 1 + pop * 1.5 * popBump(growth, accent.birth, ACCENT_POP_SPAN * 2.2);
     const outward = normalize(rotate(clump.rotation, dir));

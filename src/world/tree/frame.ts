@@ -1,5 +1,5 @@
 import { clamp01 } from '@/lib/math';
-import { CAMERA } from '../config';
+import { CAMERA, ISLAND } from '../config';
 import type { SubjectFrame } from '../framing';
 import { TREE_BASE, islandFrame } from './island';
 import type { PoseStats, TreeMetrics } from './types';
@@ -19,7 +19,10 @@ export function frameProgress(growth: number, ease: number): number {
 
 /** Screen-space height of a tree whose top and reach are given, seen from `pitch`. */
 function projectedTop(top: number, halfWidth: number, pitch: number): number {
-  return (TREE_BASE + top + CROWN_MARGIN) * Math.cos(pitch) + halfWidth * DEPTH_SHARE * Math.sin(pitch);
+  return (
+    (TREE_BASE + top + CROWN_MARGIN) * Math.cos(pitch) +
+    (halfWidth * DEPTH_SHARE + ISLAND.treeBack) * Math.sin(pitch)
+  );
 }
 
 /**
@@ -35,6 +38,7 @@ export function subjectFrame(metrics: TreeMetrics, growth: number, pitch: number
   const elder = projectedTop(metrics.top, metrics.halfWidth, pitch);
   return {
     halfWidth: Math.max(island.halfWidth, (metrics.halfWidth + CROWN_MARGIN) * eased),
+    lawn: island.lawn,
     top: young + Math.max(0, elder - young) * eased,
     bottom: island.bottom,
   };
@@ -45,7 +49,10 @@ export function subjectFrame(metrics: TreeMetrics, growth: number, pitch: number
  * Solved once per skeleton from a sweep of poses, so the frame stays a smooth analytic
  * curve and still never crops this particular tree.
  */
-export function solveFrameEase(metrics: TreeMetrics, statsAt: (growth: number) => PoseStats): number {
+export function solveFrameEase(
+  metrics: TreeMetrics,
+  statsAt: (growth: number) => PoseStats,
+): number {
   const pitch = CAMERA.pitch;
   const island = islandFrame(pitch);
   const young = island.top + YOUNG_HEADROOM;

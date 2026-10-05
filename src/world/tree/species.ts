@@ -1,7 +1,11 @@
 /**
- * Proportions of the three species, in world units (the island's grass top has
- * radius 3). This is the tuning sheet for silhouettes: change numbers here, not in
- * the generator. Angles are radians; "elevation" is measured above the horizon.
+ * Proportions of the three species, in world units (the lawn has radius 3, so the
+ * design bible's island diameter D is 6). This is the tuning sheet for silhouettes:
+ * change numbers here, not in the generator. Angles are radians; "elevation" is
+ * measured above the horizon.
+ *
+ * Targets at growth 1 (bible 5.5): oak 0.82 D tall with a 0.95 D ball; cherry 0.66 D
+ * tall with a 1.10 D flat umbrella; pine 0.95 D tall with a 0.46 D stack of cones.
  */
 
 const deg = (value: number) => (value * Math.PI) / 180;
@@ -17,24 +21,22 @@ export const WOOD = {
 
 export const OAK = {
   /** Broad and round: a generous ball of bubbles on a stout trunk. */
-  trunkHeight: 4.1,
+  trunkHeight: 3.9,
   trunkNodes: 12,
-  trunkEnd: 0.85,
-  trunkEase: 2.2,
-  baseRadius: 0.4,
+  baseRadius: 0.38,
   flare: 0.5,
   pipeExponent: 1.8,
   wander: 0.13,
-  core: { height: 3.0, radius: 1.5, squash: 0.95, birth: 0.055, startScale: 0.16 },
-  crown: { height: 3.5, radius: 0.72, startScale: 0.45 },
+  core: { height: 2.95, radius: 1.5, squash: 0.95, birth: 0.06, startScale: 0.16 },
+  crown: { height: 3.2, radius: 0.72, startScale: 0.45 },
   lower: {
     count: 5,
-    attach: [1.2, 1.85],
-    length: [1.75, 2.0],
+    attach: [1.0, 1.45],
+    length: [1.8, 2.05],
     elevation: [deg(14), deg(26)],
     lift: deg(42),
     bend: 0.55,
-    radius: [0.84, 0.97],
+    radius: [0.86, 0.98],
     duration: 0.6,
     side: {
       at: [0.5, 0.62],
@@ -47,7 +49,7 @@ export const OAK = {
   },
   upper: {
     count: 4,
-    attach: [2.35, 2.95],
+    attach: [2.2, 2.9],
     length: [1.2, 1.45],
     elevation: [deg(42), deg(58)],
     lift: deg(72),
@@ -59,8 +61,9 @@ export const OAK = {
   late: {
     count: 4,
     attach: [2.4, 3.0],
-    length: [1.1, 1.3],
+    length: [1.85, 2.05],
     elevation: [deg(4), deg(24)],
+    lift: deg(32),
     radius: [0.52, 0.62],
     from: 0.8,
     step: 0.04,
@@ -70,81 +73,78 @@ export const OAK = {
 } as const;
 
 export const CHERRY = {
-  /** Elegant and open: a leaning trunk, long flat limbs, an umbrella of blossom. */
-  trunkHeight: 2.95,
+  /** Elegant and open: a leaning trunk, long flat limbs with visible forks, an umbrella of blossom. */
+  trunkHeight: 3.1,
   trunkNodes: 9,
-  trunkEnd: 0.8,
-  trunkEase: 1.7,
   baseRadius: 0.3,
   flare: 0.4,
-  pipeExponent: 2.4,
-  lean: 0.55,
-  leanBack: 0.28,
+  pipeExponent: 2.1,
+  lean: 0.5,
+  leanBack: 0.3,
   /** Clumps are wide, flat ellipsoids. */
-  stretch: 1.18,
-  squash: 0.74,
-  core: { height: 2.7, radius: 1.0, birth: 0.055, startScale: 0.22 },
+  stretch: 1.2,
+  squash: 0.7,
+  core: { height: 2.95, radius: 1.0, birth: 0.06, startScale: 0.2 },
   limbs: {
     count: 4,
-    attach: [1.15, 1.75],
-    length: [1.9, 2.25],
-    elevation: [deg(38), deg(50)],
-    lift: deg(12),
-    bend: 0.8,
-    radius: [0.8, 0.94],
-    duration: 0.36,
+    attach: [1.1, 1.7],
+    length: [2.35, 2.7],
+    elevation: [deg(26), deg(36)],
+    lift: deg(4),
+    bend: 0.85,
+    radius: [0.8, 0.92],
+    duration: 0.62,
     rise: {
-      at: 0.42,
-      elevation: [deg(55), deg(68)],
-      length: [0.85, 1.0],
-      radius: [0.56, 0.66],
+      at: 0.45,
+      elevation: [deg(58), deg(70)],
+      length: [0.9, 1.1],
+      radius: [0.62, 0.72],
     },
     reach: {
-      at: 0.72,
-      swing: [0.8, 1.05],
-      elevation: [deg(8), deg(22)],
-      length: [0.75, 0.9],
+      at: 0.74,
+      swing: [0.85, 1.1],
+      elevation: [deg(4), deg(16)],
+      length: [0.8, 0.95],
       radius: [0.5, 0.6],
     },
-    sideDuration: 0.26,
+    sideDuration: 0.4,
   },
   late: {
     count: 2,
     attach: [2.5, 2.9],
-    length: [0.8, 0.95],
-    elevation: [deg(35), deg(55)],
-    radius: [0.5, 0.58],
+    length: [1.4, 1.6],
+    elevation: [deg(25), deg(40)],
+    lift: deg(20),
+    radius: [0.55, 0.62],
     from: 0.82,
     step: 0.06,
     duration: 0.12,
   },
   /** Every n-th clump stays a green leaf clump among the pink. */
   greenEvery: 4,
-  bloom: [0.42, 0.52],
-  blossoms: { perClump: [3, 4], size: [0.2, 0.27] },
-  leaves: { perClump: [1, 2], size: [0.24, 0.32] },
+  bloom: [0.4, 0.54],
+  blossoms: { perClump: [2, 4], size: [0.22, 0.3] },
+  leaves: { perClump: [0, 1], size: [0.28, 0.36] },
 } as const;
 
 export const PINE = {
   /** Conical: a straight mast with stacked, scalloped tiers. */
-  trunkHeight: 4.6,
-  trunkNodes: 12,
-  trunkEnd: 0.9,
-  trunkEase: 1.5,
-  baseRadius: 0.27,
+  trunkHeight: 5.45,
+  trunkNodes: 13,
+  baseRadius: 0.26,
   flare: 0.35,
   pipeExponent: 2.3,
-  wander: 0.03,
+  wander: 0.025,
   tiers: {
-    count: 6,
-    firstBase: 0.62,
-    spacing: 0.6,
-    height: [1.25, 1.05],
-    radius: [1.62, 0.66],
+    count: 7,
+    firstBase: 0.72,
+    spacing: 0.63,
+    height: [1.3, 1.02],
+    radius: [1.38, 0.5],
     startScale: 0.35,
     /** A tier appears when the tip has climbed this share of its height above its base. */
-    birthLead: 0.25,
+    birthLead: 0.2,
     topBirth: 0.05,
   },
-  tufts: { perTier: [2, 4], size: [0.22, 0.3] },
+  tufts: { perTier: [0, 2], size: [0.16, 0.22] },
 } as const;
