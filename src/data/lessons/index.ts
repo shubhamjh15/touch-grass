@@ -1,6 +1,11 @@
 import { BIG_LEVERS } from './bigLevers';
 import { FOOD_WE_NEVER_EAT } from './foodWeNeverEat';
+import { GETTING_AROUND } from './gettingAround';
+import { GOOD_NEWS } from './goodNews';
 import { ON_YOUR_PLATE } from './onYourPlate';
+import { POWER_AT_HOME } from './powerAtHome';
+import { RECYCLING_HONESTLY } from './recyclingHonestly';
+import { STUFF } from './stuff';
 import { THE_BLANKET } from './theBlanket';
 import { WHERE_IT_COMES_FROM } from './whereItComesFrom';
 import type { Lesson, LessonCategory, LessonCategoryId } from './types';
@@ -33,6 +38,11 @@ export const LESSONS: readonly Lesson[] = [
   BIG_LEVERS,
   ON_YOUR_PLATE,
   FOOD_WE_NEVER_EAT,
+  GETTING_AROUND,
+  POWER_AT_HOME,
+  STUFF,
+  RECYCLING_HONESTLY,
+  GOOD_NEWS,
 ];
 
 export const LESSON_IDS: readonly string[] = LESSONS.map((lesson) => lesson.id);

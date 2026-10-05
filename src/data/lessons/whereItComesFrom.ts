@@ -225,7 +225,7 @@ export const WHERE_IT_COMES_FROM: Lesson = {
     },
     {
       id: 'where-top10-ipcc',
-      figure: '34 to 45%',
+      figure: 'highest-emitting 10% of households cause 34 to 45%',
       statement:
         'The 10% of households with the highest per-capita emissions contribute 34–45% of consumption-based household emissions.',
       source: 'ipccAR6wg3',
@@ -234,7 +234,7 @@ export const WHERE_IT_COMES_FROM: Lesson = {
     },
     {
       id: 'where-top10-oxfam',
-      figure: 'about half',
+      figure: 'richest 10% at about half',
       statement:
         'The richest 10% were responsible for about 50% of consumption CO2 emissions in 2019.',
       source: 'oxfamSei2023',
