@@ -1,5 +1,8 @@
-import { PagePlaceholder } from '@/features/system/PagePlaceholder';
+'use client';
 
+import { KitchenSink } from '@/ui/kitchen';
+
+/** `/__ui` (development builds only): the design system's living reference. */
 export default function UiKitPage() {
-  return <PagePlaceholder title="UI kit" />;
+  return <KitchenSink />;
 }
