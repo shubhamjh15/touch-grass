@@ -118,6 +118,22 @@ export function resolveTones(
   fixed(TONE.seed, FIXED_TONES.seed);
   fixed(TONE.plaque, FIXED_TONES.plaque);
   fixed(TONE.ink, FIXED_TONES.ink);
+  fixed(TONE.paper, FIXED_TONES.paper);
+  fixed(TONE.white, FIXED_TONES.white);
+  fixed(TONE.pink, FIXED_TONES.pink);
+  fixed(TONE.yellow, FIXED_TONES.yellow);
+  fixed(TONE.violet, FIXED_TONES.violet);
+  fixed(TONE.tomato, FIXED_TONES.tomato);
+  fixed(TONE.blue, FIXED_TONES.blue);
+  fixed(TONE.orange, FIXED_TONES.orange);
+  fixed(TONE.teal, FIXED_TONES.teal);
+  fixed(TONE.moss, FIXED_TONES.moss);
+  fixed(TONE.lime, FIXED_TONES.lime);
+  fixed(TONE.kraftDark, FIXED_TONES.kraftDark);
+  fixed(TONE.green, FIXED_TONES.green);
+  fixed(TONE.glow, FIXED_TONES.glow);
+  fixed(TONE.glass, FIXED_TONES.glass);
+  fixed(TONE.spark, FIXED_TONES.spark);
   return table;
 }
 

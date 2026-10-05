@@ -99,6 +99,8 @@ export const MOTION = {
   graceMs: 400,
   /** Displayed growth, vitality and hour ease towards the snapshot at these rates (1/s). */
   growthLambda: 3.2,
+  /** A previewed species change regrows this many times faster than ordinary growth. */
+  regrowBoost: 2.6,
   vitalityLambda: 2.4,
   hourLambda: 5,
   pitchLambda: 6,
@@ -206,8 +208,29 @@ export const TONE = {
   seed: 15,
   plaque: 16,
   ink: 17,
+  // Props, landmarks, Moss and loose paper bits (bible 5.3 fixed materials, 5.6, 5.7).
+  paper: 18,
+  white: 19,
+  pink: 20,
+  yellow: 21,
+  violet: 22,
+  tomato: 23,
+  blue: 24,
+  orange: 25,
+  teal: 26,
+  moss: 27,
+  lime: 28,
+  kraftDark: 29,
+  green: 30,
+  /** From here on tones are emissive: never graded by the time of day. */
+  glow: 31,
+  /** Lantern glass: plain yellow by day, `glow` once it is lit. */
+  glass: 32,
+  spark: 33,
 } as const;
-export const TONE_COUNT = 18;
+export const TONE_COUNT = 34;
+/** First emissive tone: this one and every later tone ignore the time-of-day grade. */
+export const EMISSIVE_FROM = 31;
 
 /** base, shade, highlight */
 export type ToneTriple = readonly [string, string, string];
@@ -283,6 +306,22 @@ export const FIXED_TONES = {
   seed: ['#e7c9a0', '#d4a373', '#f3dcb8'],
   plaque: ['#fffbeb', INK, '#ffffff'],
   ink: [INK, INK, INK],
+  paper: ['#fffbeb', '#f1e4bf', '#ffffff'],
+  white: ['#ffffff', '#dfe3ea', '#ffffff'],
+  pink: ['#f472b6', '#db2777', '#fce7f3'],
+  yellow: ['#facc15', '#e0a800', '#fef9c3'],
+  violet: ['#9974f8', '#7450e0', '#ede9fe'],
+  tomato: ['#ff6b4a', '#dc3b21', '#fee2e2'],
+  blue: ['#60a5fa', '#3b82f6', '#ffffff'],
+  orange: ['#fb923c', '#ea6a12', '#ffedd5'],
+  teal: ['#2dd4bf', '#0d9488', '#ccfbf1'],
+  moss: ['#22c55e', '#16a34a', '#86efac'],
+  lime: ['#bef264', '#84cc16', '#ecfccb'],
+  kraftDark: ['#b98652', '#96633a', '#d4a373'],
+  green: ['#4ade80', '#22c55e', '#bbf7d0'],
+  glow: ['#fef9c3', '#fef9c3', '#ffffff'],
+  glass: ['#facc15', '#e0a800', '#fef9c3'],
+  spark: ['#fde68a', '#fde68a', '#fef9c3'],
 } as const satisfies Record<string, ToneTriple>;
 
 /** Colour jitter between clumps: B leans to the shade, C to the highlight. */
@@ -436,4 +475,53 @@ export const ISLAND = {
   emblem: { width: 0.225, height: 0.155, depth: 0.07, rings: [1, 7, 30, 100, 365] },
   /** Hour ticks of the sundial: distance inside the rim, length and width. */
   ticks: { inset: 0.04, length: 0.18, width: 0.04 },
+} as const;
+
+// --- Loose paper bits, creatures and props (bible 5.6, 5.9, 5.10, 5.11) --------------------
+
+/** Instance budgets of the three loose-bit pools, by tier. */
+export const LIFE: Record<
+  WorldQuality,
+  { chips: number; balls: number; motes: number; burstShare: number; creatures: boolean }
+> = {
+  low: { chips: 40, balls: 20, motes: 10, burstShare: 0.5, creatures: false },
+  medium: { chips: 84, balls: 36, motes: 28, burstShare: 0.8, creatures: true },
+  high: { chips: 150, balls: 48, motes: 40, burstShare: 1, creatures: true },
+};
+
+/** Puppets (creatures, blades, ripples, blinks) are stepped like stop-motion. */
+export const PUPPET_FPS = 12;
+/** Outline of loose bits in CSS pixels, whatever the stage size. */
+export const LOOSE_INK_PX = 1.5;
+
+/** Drag, hover and idle rotation (bible 5.8, 5.9). Angles in radians, times in seconds. */
+export const ORBIT = {
+  /** Dragging across one stage width turns the island this far. */
+  perStageWidth: deg(216),
+  inertia: 0.35,
+  maxSpeed: 6,
+  /** Hub: the island eases back to its rest pose this long after release, over `returnTime`. */
+  resumeAfter: 4,
+  returnTime: 0.72,
+  /** Vertical drag tilts the camera a little, with rubber-banding beyond the limit. */
+  maxTilt: deg(10),
+  /** Hover parallax on fine pointers. */
+  hoverYaw: deg(3),
+  hoverPitch: deg(2),
+  hoverSmoothing: 0.25,
+  /** One arrow-key press. */
+  keyStep: deg(30),
+} as const;
+
+/** Runtime adaptation of the `auto` preference (bible 5.11): DPR first, then the tier. */
+export const GOVERNOR = {
+  /** Shares of the tier's DPR cap that are tried before the tier is dropped. */
+  dprSteps: [1, 0.8, 0.65],
+  /** Average frame time above this is "slow"; samples are averaged over `window` frames. */
+  slowMs: 26,
+  window: 120,
+  /** Frames ignored after any change, while shaders compile and buffers resize. */
+  settle: 60,
+  /** A single frame longer than this is a hiccup (tab switch, GC), not a slow device. */
+  hiccupMs: 250,
 } as const;
