@@ -105,6 +105,12 @@ export interface WorldStageProps {
   fit?: number;
   /** Where the island sits inside the box. Default: `bottom`. */
   anchor?: 'center' | 'bottom';
+  /**
+   * Draw the printed sky (halftone bands, sun or moon, clouds, crop marks) inside this
+   * stage box, behind the tree. Default: true for `hero`, `hub` and `ceremony`, false for
+   * `companion` (a bare sticker on whatever the page puts behind the box).
+   */
+  sky?: boolean;
   /** When several stages are visible the highest priority wins; ties go to the most visible. */
   priority?: number;
   /** Text alternative for the scene, e.g. "Juniper, a 12-day-old oak sapling, thriving". */
@@ -126,3 +132,9 @@ export type WorldQuality = 'low' | 'medium' | 'high';
 
 /** User preference for 3D. `auto` picks a quality tier from the device and degrades if needed. */
 export type WorldPreference = 'auto' | WorldQuality | 'off';
+
+/**
+ * Motion setting for the world. `system` follows the OS "reduce motion" preference;
+ * `reduced` freezes wind and replaces flights with a short cross-fade.
+ */
+export type WorldMotion = 'system' | 'reduced' | 'full';

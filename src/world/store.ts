@@ -3,6 +3,7 @@ import {
   DEFAULT_SNAPSHOT,
   type LandmarkId,
   type StageMode,
+  type WorldMotion,
   type WorldPreference,
   type WorldPulse,
   type WorldQuality,
@@ -20,6 +21,8 @@ export interface StageOptions {
   fit: number;
   anchor: 'center' | 'bottom';
   priority: number;
+  /** Whether the printed sky is drawn inside this stage box. */
+  sky: boolean;
 }
 
 export interface StageRecord {
@@ -36,6 +39,8 @@ interface WorldState {
   status: WorldStatus;
   preference: WorldPreference;
   quality: WorldQuality;
+  /** App-level motion setting. `system` follows the OS "reduce motion" preference. */
+  motion: WorldMotion;
   snapshot: WorldSnapshot;
   stages: Record<string, StageRecord>;
   activeStageId: string | null;
@@ -48,6 +53,7 @@ interface WorldState {
   setStatus: (status: WorldStatus) => void;
   setPreference: (preference: WorldPreference) => void;
   setQuality: (quality: WorldQuality) => void;
+  setMotion: (motion: WorldMotion) => void;
 }
 
 let registrations = 0;
@@ -75,6 +81,7 @@ export const useWorldStore = create<WorldState>()((set) => ({
   status: 'idle',
   preference: 'auto',
   quality: 'medium',
+  motion: 'system',
   snapshot: DEFAULT_SNAPSHOT,
   stages: {},
   activeStageId: null,
@@ -117,6 +124,7 @@ export const useWorldStore = create<WorldState>()((set) => ({
   setStatus: (status) => set({ status }),
   setPreference: (preference) => set({ preference }),
   setQuality: (quality) => set({ quality }),
+  setMotion: (motion) => set({ motion }),
 }));
 
 /** Replace parts of the live snapshot. Called by the game bridge whenever game state changes. */
@@ -161,4 +169,39 @@ export function registerCapturer(fn: Capturer | null): void {
 /** Renders the current world to a PNG. Resolves to `null` when 3D is unavailable. */
 export function captureWorld(options: CaptureOptions = {}): Promise<Blob | null> {
   return capturer ? capturer(options) : Promise.resolve(null);
+}
+
+// --- Stats: what the renderer is doing, for the world lab and performance checks. ---
+
+export interface WorldStats {
+  /** Draw calls and triangles of the last rendered frame (`renderer.info`). */
+  drawCalls: number;
+  triangles: number;
+  /** Smoothed frames per second and frame time of the render loop. */
+  fps: number;
+  frameMs: number;
+  /** Device pixel ratio the canvas is actually rendering at. */
+  dpr: number;
+  /** Growth currently on screen (the snapshot value, eased). */
+  growth: number;
+  /** CSS pixels per world unit of the last placement. */
+  scale: number;
+  frames: number;
+}
+
+/** Mutated in place by the scene every frame; never React state. */
+export const worldStats: WorldStats = {
+  drawCalls: 0,
+  triangles: 0,
+  fps: 0,
+  frameMs: 0,
+  dpr: 1,
+  growth: 0,
+  scale: 0,
+  frames: 0,
+};
+
+/** A copy of the live render statistics. All zeros while 3D is off. */
+export function getWorldStats(): WorldStats {
+  return { ...worldStats };
 }
