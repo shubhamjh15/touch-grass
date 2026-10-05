@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { hexToRgb } from '../color';
 import {
+  EMISSIVE_FROM,
   INK,
   ISLAND,
   PAPER,
@@ -10,6 +11,7 @@ import {
   TONE_COUNT,
   type StickerSpec,
 } from '../config';
+import { SLOT_COUNT } from '../props/slots';
 
 /**
  * The paint system of the Grove: one small shader family that makes a 3D model read
@@ -56,6 +58,26 @@ attribute vec3 aSway;
 attribute vec3 aTone;
 attribute float aPart;
 
+#ifdef USE_PROPS
+  // Props share one mesh. Each vertex names two "slots": a moving part of its prop (blades,
+  // a lid, an eye) and the prop itself. A slot is (scale, lift, roll, stretch) about a pivot.
+  uniform vec4 uSlot[${SLOT_COUNT}];
+  attribute vec4 aProp;
+  attribute vec4 aBase;
+
+  vec3 slotTurn(vec3 v, vec4 pose) {
+    float c = cos(pose.z);
+    float s = sin(pose.z);
+    return vec3(c * v.x - s * v.y, s * v.x + c * v.y, v.z);
+  }
+
+  vec3 slotMove(vec3 q, vec3 pivot, vec4 pose) {
+    vec3 rel = q - pivot;
+    rel.y *= 1.0 + pose.w;
+    return pivot + slotTurn(rel, pose) * pose.x + vec3(0.0, pose.y, 0.0);
+  }
+#endif
+
 varying vec3 vView;
 varying vec3 vNormal;
 varying vec3 vTone;
@@ -90,6 +112,16 @@ void main() {
   float alive = 1.0;
   vec3 sway = groveSway(aSway);
 
+  #ifdef USE_PROPS
+    vec4 inner = uSlot[int(aProp.w + 0.5)];
+    vec4 outer = uSlot[int(aBase.w + 0.5)];
+    p = slotMove(slotMove(p, aProp.xyz, inner), aBase.xyz, outer);
+    hull = slotTurn(slotTurn(hull, inner), outer);
+    shading = slotTurn(slotTurn(shading, inner), outer);
+    // A hidden or arriving part takes its outline with it.
+    alive = clamp(inner.x * outer.x * 3.0, 0.0, 1.0);
+  #endif
+
   #ifdef USE_INSTANCING
     mat3 basis = mat3(instanceMatrix);
     vec3 scale2 = max(vec3(dot(basis[0], basis[0]), dot(basis[1], basis[1]), dot(basis[2], basis[2])), vec3(1e-8));
@@ -106,7 +138,9 @@ void main() {
 
   #ifdef CAST
     // Planar projection along the sun onto the lawn: a hard, flat sundial shadow.
-    p += uCastPlane.xyz;
+    #ifndef CAST_ISLAND
+      p += uCastPlane.xyz;
+    #endif
     float t = max(p.y - uCastPlane.w, 0.0) / uSun.y;
     p -= uSun * t;
     p.y = uCastPlane.w;
@@ -172,6 +206,7 @@ uniform vec3 uGrade;
 uniform vec3 uLight;
 uniform vec2 uLight2;
 uniform float uGloss;
+uniform float uFlash;
 uniform vec4 uDecal;
 ${DOTS}
 varying vec3 vView;
@@ -221,11 +256,22 @@ void main() {
     float oval = along * along / ${(SHADING.glossLength ** 2).toFixed(5)}
       + across * across / ${(SHADING.glossWidth ** 2).toFixed(5)};
     float rim = fwidth(oval) + 1e-4;
-    float gloss = (1.0 - smoothstep(1.0 - rim, 1.0 + rim, oval)) * uGloss * step(0.0, n.z);
+    float gloss = (1.0 - smoothstep(1.0 - rim, 1.0 + rim, oval)) * step(0.0, n.z);
+    #ifdef GLOSS_BY_MIX
+      // A merged mesh marks its glossy parts in the tone mix, which it does not otherwise use.
+      gloss *= step(0.5, vTone.z);
+    #else
+      gloss *= uGloss;
+    #endif
     color = mix(color, mix(uHighlight[toneA], uHighlight[toneB], vTone.z), gloss);
   #endif
 
-  gl_FragColor = vec4(color * uGrade, 1.0);
+  // A pulse washes the foliage towards its highlight tone for a moment (new growth).
+  float foliage = step(${TONE.canopyA}.0 - 0.5, vTone.x) * step(vTone.x, ${TONE.petal}.0 + 0.5);
+  color = mix(color, mix(uHighlight[toneA], uHighlight[toneB], vTone.z), uFlash * foliage);
+
+  // Lit glass, fireflies and sparks are emissive: the time of day never tints them.
+  gl_FragColor = vec4(toneA >= ${EMISSIVE_FROM} ? color : color * uGrade, 1.0);
 }
 `;
 
@@ -292,6 +338,10 @@ export interface SharedUniforms {
   uDotPitch: Uniform<number>;
   uDotTurn: Uniform<THREE.Vector2>;
   uGloss: Uniform<number>;
+  /** 0..1 wash of the highlight tone over the foliage (pulses). */
+  uFlash: Uniform<number>;
+  /** Poses of the prop slots: scale, lift, roll, stretch. */
+  uSlot: Uniform<Float32Array>;
   uDecal: Uniform<THREE.Vector4>;
   uRings: Uniform<number>;
   uEmblem: Uniform<THREE.Vector4>;
@@ -321,6 +371,8 @@ export function createSharedUniforms(): SharedUniforms {
     uDotPitch: { value: SHADING.dotPitchPx },
     uDotTurn: { value: new THREE.Vector2(Math.cos(SHADING.dotAngle), Math.sin(SHADING.dotAngle)) },
     uGloss: { value: 1 },
+    uFlash: { value: 0 },
+    uSlot: { value: createSlotPoses() },
     uDecal: { value: new THREE.Vector4(0, 0, 0, 0) },
     uRings: { value: 1 },
     uEmblem: { value: new THREE.Vector4(0, 0, 1, 1) },
@@ -329,6 +381,13 @@ export function createSharedUniforms(): SharedUniforms {
     uCoast: { value: new THREE.Vector4(0, 0, 0, 0) },
     uCast: { value: 1 },
   };
+}
+
+/** Every slot at rest: full size, no lift, no roll, no stretch. */
+export function createSlotPoses(): Float32Array {
+  const poses = new Float32Array(SLOT_COUNT * 4);
+  for (let slot = 0; slot < SLOT_COUNT; slot += 1) poses[slot * 4] = 1;
+  return poses;
 }
 
 export type ShadeMode = 'smooth' | 'facet' | 'emblem';
@@ -343,6 +402,12 @@ export interface LayerOptions {
   flatten?: number;
   /** Share of the full ink width this solid's outline gets (props 0.75, loose bits finer). 0 = none. */
   ink?: number;
+  /** Outline in CSS pixels at any stage size (loose bits). Overrides the `ink` share. */
+  inkPx?: number;
+  /** The mesh carries prop slots (`aProp`, `aBase`): parts that arrive, wiggle, spin or blink. */
+  props?: boolean;
+  /** Gloss only where the tone mix is 1 (a merged mesh with some glossy parts). */
+  glossByMix?: boolean;
   /** Whether the solid joins the union passes (white margin and shadow). */
   sticker?: boolean;
   /** Kiss-cut hairline around the margin (off on the low tier). */
@@ -388,6 +453,9 @@ export function createLayer(shared: SharedUniforms, input: LayerOptions): Layer 
     halftone: true,
     flatten: 1,
     ink: 1,
+    inkPx: 0,
+    props: false,
+    glossByMix: false,
     sticker: true,
     keyline: true,
     decal: false,
@@ -400,6 +468,10 @@ export function createLayer(shared: SharedUniforms, input: LayerOptions): Layer 
   if (options.gloss) defines.USE_GLOSS = '';
   if (options.halftone) defines.USE_HALFTONE = '';
   if (options.decal) defines.USE_DECAL = '';
+  if (options.glossByMix) defines.GLOSS_BY_MIX = '';
+  // The vertex stage of every pass must move the same way, or the outline leaves its fill.
+  const moving: Record<string, string> = options.props ? { USE_PROPS: '' } : {};
+  Object.assign(defines, moving);
 
   const fill = new THREE.ShaderMaterial({
     vertexShader: VERTEX,
@@ -414,6 +486,7 @@ export function createLayer(shared: SharedUniforms, input: LayerOptions): Layer 
       vertexShader: VERTEX,
       fragmentShader: FLAT_FRAGMENT,
       uniforms: passUniforms(shared, options.flatten, color),
+      defines: { ...moving },
       toneMapped: false,
       // Union passes paint the whole swollen solid, whichever way its faces point.
       side: union ? THREE.DoubleSide : THREE.BackSide,
@@ -421,7 +494,7 @@ export function createLayer(shared: SharedUniforms, input: LayerOptions): Layer 
       depthWrite: !union,
     });
 
-  const ink = options.ink > 0 ? flat(inkColor, false) : null;
+  const ink = options.ink > 0 || options.inkPx > 0 ? flat(inkColor, false) : null;
   // Keeps a solid's own outline from z-fighting its fill where the two nearly touch.
   if (ink) (ink.uniforms.uDepthBias as Uniform<number>).value = 0.6;
 
@@ -436,12 +509,16 @@ export function createLayer(shared: SharedUniforms, input: LayerOptions): Layer 
 }
 
 /** The sundial shadow of a tree solid: its geometry, flattened onto the lawn along the sun. */
-export function createCastMaterial(shared: SharedUniforms): THREE.ShaderMaterial {
+export function createCastMaterial(
+  shared: SharedUniforms,
+  /** `island`: the geometry is already in island space (props), not tree space. */
+  space: 'tree' | 'island' = 'tree',
+): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     vertexShader: VERTEX,
     fragmentShader: CAST_FRAGMENT,
     uniforms: passUniforms(shared, 1),
-    defines: { CAST: '' },
+    defines: space === 'island' ? { CAST: '', CAST_ISLAND: '', USE_PROPS: '' } : { CAST: '' },
     toneMapped: false,
     side: THREE.DoubleSide,
     depthTest: false,
@@ -453,19 +530,19 @@ export function createCastMaterial(shared: SharedUniforms): THREE.ShaderMaterial
  * Sets the pixel widths of a layer's passes. `lift` (0..1) is how far the sticker is
  * peeled off the page while it is carried between stages: the shadow lengthens.
  */
-export function weighLayer(layer: Layer, spec: StickerSpec, lift = 0): void {
+export function weighLayer(layer: Layer, spec: StickerSpec, lift = 0, shadowScale = 1): void {
   const set = (material: THREE.ShaderMaterial | null, expand: number, shift = 0) => {
     if (!material) return;
     (material.uniforms.uExpand as Uniform<number>).value = expand;
     (material.uniforms.uShift as Uniform<THREE.Vector2>).value.set(shift, -shift);
   };
-  const ink = spec.ink * layer.options.ink;
+  const ink = layer.options.inkPx > 0 ? layer.options.inkPx : spec.ink * layer.options.ink;
   const margin = ink + spec.margin;
   const outer = margin + spec.keyline;
   set(layer.ink, ink);
   set(layer.white, margin);
   set(layer.keyline, outer);
-  set(layer.shadow, outer, spec.shadow * (1 + (STICKER.carriedShadow - 1) * lift));
+  set(layer.shadow, outer, spec.shadow * (1 + (STICKER.carriedShadow - 1) * lift) * shadowScale);
 }
 
 export function disposeLayer(layer: Layer): void {

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mulberry32 } from '@/lib/rng';
+import type { ModelData } from '../props/kit';
 import type { Pose, Skeleton } from '../tree/types';
 
 /**
@@ -295,7 +296,59 @@ export function tuftGeometry(): THREE.BufferGeometry {
     }
     soup.push(...(base[0] as number[]), ...(base[1] as number[]), ...(base[2] as number[]));
   });
-  return soupGeometry(soup, 1);
+  const geometry = soupGeometry(soup, 1);
+  // Blades lean in the gusts: nothing at the root, fully at the tip.
+  const sway = new Float32Array(soup.length);
+  for (let i = 0; i < soup.length / 3; i += 1) {
+    const height = Math.max(0, soup[i * 3 + 1] as number);
+    sway[i * 3] = height * 0.35;
+    sway[i * 3 + 1] = height * height * 0.3;
+  }
+  geometry.setAttribute('aSway', new THREE.BufferAttribute(sway, 3));
+  return geometry;
+}
+
+/**
+ * A paper chip: a flat diamond with a slight bevel, one unit across. Stretched it is a
+ * leaf, a petal, a wing or a blade; turned 45 degrees it is a confetti square.
+ */
+export function chipGeometry(): THREE.BufferGeometry {
+  const soup: Triangles = [];
+  const rim: Array<[number, number, number]> = [
+    [0.5, 0, 0],
+    [0, 0.5, 0],
+    [-0.5, 0, 0],
+    [0, -0.5, 0],
+  ];
+  for (let i = 0; i < 4; i += 1) {
+    const a = rim[i] as [number, number, number];
+    const b = rim[(i + 1) % 4] as [number, number, number];
+    soup.push(0, 0, 0.07, ...a, ...b);
+    soup.push(0, 0, -0.07, ...b, ...a);
+  }
+  return soupGeometry(soup, 1.2);
+}
+
+/** The merged prop mesh: tones, shading normals, gloss marks, wind weights and the two slots. */
+export function propsGeometry(model: ModelData): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry();
+  const count = model.positions.length / 3;
+  const tones = new Float32Array(count * 3);
+  for (let i = 0; i < count; i += 1) {
+    tones[i * 3] = model.tones[i] as number;
+    tones[i * 3 + 1] = model.tones[i] as number;
+    tones[i * 3 + 2] = model.gloss[i] as number;
+  }
+  const attribute = (data: ArrayLike<number>, size: number) =>
+    new THREE.BufferAttribute(Float32Array.from(data), size);
+  geometry.setAttribute('position', attribute(model.positions, 3));
+  geometry.setAttribute('aHull', new THREE.BufferAttribute(hullVectors(model.positions, 1.3), 3));
+  geometry.setAttribute('aNormal', attribute(model.normals, 3));
+  geometry.setAttribute('aTone', new THREE.BufferAttribute(tones, 3));
+  geometry.setAttribute('aSway', attribute(model.sway, 3));
+  geometry.setAttribute('aProp', attribute(model.inner, 4));
+  geometry.setAttribute('aBase', attribute(model.outer, 4));
+  return geometry;
 }
 
 /** The ring plaque: a short elliptical plug facing +z, centred on the origin. */
