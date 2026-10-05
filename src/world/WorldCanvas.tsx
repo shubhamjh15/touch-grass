@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Component,
   lazy,
@@ -38,8 +40,9 @@ class SceneBoundary extends Component<
 }
 
 /**
- * Mounted once by the root layout and never unmounted: the fixed backdrop (page tint
- * and printed sky) and, on capable devices, the WebGL canvas that renders the Grove.
+ * Mounted once by the root layout and never unmounted: the fixed backdrop (the printed
+ * sky plate; the mat itself is the page background) and, on capable devices, the WebGL
+ * canvas that renders the Grove.
  * It decides between 3D and the illustrated fallback; everything heavy is lazy.
  */
 export function WorldCanvas() {
@@ -82,7 +85,7 @@ export function WorldCanvas() {
       aria-hidden="true"
       // `lvh`, not `inset-0`: the box must not resize (and reallocate the drawing buffer)
       // every time a mobile URL bar slides away.
-      className="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh overflow-hidden bg-(--sky-page)"
+      className="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh overflow-hidden"
     >
       <WorldSky ref={sky} />
       <div ref={scene} className="absolute inset-0 opacity-0">

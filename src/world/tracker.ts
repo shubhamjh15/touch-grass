@@ -34,6 +34,8 @@ export interface WorldFrame {
   opacity: number;
   /** Scale multiplier of the first-appearance pop: settles at 1. */
   appear: number;
+  /** 0..1: how far the sticker is peeled off the page while it is carried between stages. */
+  lift: number;
   /** Velocity of the box centre in px/s while flying. Zero when locked to a stage. */
   velocityX: number;
   velocityY: number;
@@ -96,6 +98,8 @@ export function startTracker(layers: TrackerLayers): () => void {
   let presence = 0;
   let absentMs = 0;
   let stageId: string | null = null;
+  /** 0..1: short hops are carried flat, long flights lift off and arc. */
+  let carry = 0;
   let skyHour = Number.NaN;
   let cachedSnapshot: WorldSnapshot | null = null;
   let cachedPreview: Partial<WorldSnapshot> | null = null;
@@ -119,6 +123,7 @@ export function startTracker(layers: TrackerLayers): () => void {
     mode: 'companion',
     opacity: 0,
     appear: 1,
+    lift: 0,
     velocityX: 0,
     velocityY: 0,
     flying: false,
@@ -212,12 +217,15 @@ export function startTracker(layers: TrackerLayers): () => void {
           Object.assign(from, shown);
           blend.x = 1;
           blend.v = 0;
+          carry = Math.min(1, Math.hypot(offset.cx.x, offset.cy.x) / 200);
         }
       }
       if (fresh || changed) {
         stageId = stage.id;
         const radius = getComputedStyle(stage.el).borderRadius;
         if (radius !== written.radius) layers.sky.style.borderRadius = written.radius = radius;
+        // A companion stage with a sky is a printed plate; the others bleed to the edges.
+        layers.sky.dataset.frame = options.mode === 'companion' ? 'plate' : 'bleed';
       }
 
       // While the stage stays the same every offset is at rest, so the box IS the
@@ -228,14 +236,17 @@ export function startTracker(layers: TrackerLayers): () => void {
       stepSpring(blend, dt, MOTION.flightOmega, 1);
       const width = target.width * Math.exp(offset.w.x);
       const height = target.height * Math.exp(offset.h.x);
+      // Peel, carry, press: mid-flight the sticker is off the page and rides a shallow arc.
+      const k = Math.min(1, Math.max(0, blend.x));
+      frame.lift = 4 * k * (1 - k) * carry;
       box.x = target.x + target.width / 2 + offset.cx.x - width / 2;
-      box.y = target.y + target.height / 2 + offset.cy.x - height / 2;
+      box.y =
+        target.y + target.height / 2 + offset.cy.x - height / 2 - MOTION.flightArc * frame.lift;
       box.width = width;
       box.height = height;
-      const k = blend.x;
-      shown.fit = options.fit + (from.fit - options.fit) * k;
-      shown.anchor = wantsAnchor + (from.anchor - wantsAnchor) * k;
-      shown.sky = wantsSky + (from.sky - wantsSky) * k;
+      shown.fit = options.fit + (from.fit - options.fit) * blend.x;
+      shown.anchor = wantsAnchor + (from.anchor - wantsAnchor) * blend.x;
+      shown.sky = wantsSky + (from.sky - wantsSky) * blend.x;
       frame.mode = options.mode;
       frame.velocityX = offset.cx.v;
       frame.velocityY = offset.cy.v;
@@ -266,6 +277,7 @@ export function startTracker(layers: TrackerLayers): () => void {
       frame.velocityX = 0;
       frame.velocityY = 0;
       frame.flying = false;
+      frame.lift = 0;
     }
     stepSpring(appear, dt, MOTION.appearOmega, MOTION.appearZeta);
 
@@ -277,7 +289,9 @@ export function startTracker(layers: TrackerLayers): () => void {
     }
     if (!(Math.abs(merged.hour - skyHour) < 0.004)) {
       skyHour = merged.hour;
-      applySkyVars(document.documentElement, skyAt(skyHour));
+      const sky = skyAt(skyHour);
+      applySkyVars(document.documentElement, sky);
+      applySkyVars(layers.backdrop, sky);
     }
 
     const opacity = presence * dipOpacity;
@@ -286,7 +300,7 @@ export function startTracker(layers: TrackerLayers): () => void {
     frame.fit = shown.fit;
     frame.anchor = shown.anchor;
     frame.opacity = opacity;
-    frame.appear = 1 - 0.16 * appear.x;
+    frame.appear = 1 - (1 - MOTION.appearFrom) * appear.x;
     frame.reducedMotion = reduced;
     frame.snapshot = merged;
     frame.stage = stage;

@@ -1,3 +1,5 @@
+'use client';
+
 import type { WorldSnapshot } from './contract';
 
 interface FallbackTreeProps {
