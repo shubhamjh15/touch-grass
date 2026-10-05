@@ -1,0 +1,103 @@
+{
+  "ecoquest:game": {
+    "state": {
+      "schemaVersion": 1,
+      "contentVersion": "2026.10",
+      "factorsVersion": "2026.10",
+      "profile": {
+        "name": "Maya",
+        "treeName": "Fern",
+        "species": "oak",
+        "userSeed": 101,
+        "plantedDay": "2026-10-06",
+        "region": "WORLD",
+        "heat": "unknown",
+        "units": "metric",
+        "focus": ["eat", "move"]
+      },
+      "onboarding": {
+        "step": 8,
+        "completedAt": 1791262800000,
+        "coachMarksSeen": false,
+        "legacy": "none"
+      },
+      "settings": {
+        "restDays": [],
+        "restDaysPending": null,
+        "restDaysFrom": null,
+        "hiddenActions": [],
+        "sound": true,
+        "haptics": true,
+        "motion": "system",
+        "graphics": "auto",
+        "sky": "local",
+        "celebrations": "full",
+        "shareStatsWithCoach": true
+      },
+      "clock": { "today": "2026-10-06", "lastEventTs": 1791262800000 },
+      "xp": 35,
+      "tree": { "gp": 8, "rings": 1, "fullRings": 0, "vitality": "thriving", "missed": 0 },
+      "streak": { "current": 1, "best": 1, "milestones": [] },
+      "rain": { "bank": 1, "progress": 0, "lastRefillWeek": "W2026-10-05", "gifts": [] },
+      "marks": { "2026-10-06": "ring" },
+      "days": {
+        "2026-10-06": {
+          "checkInTs": 1791262800000,
+          "ringClosed": false,
+          "cleanSweep": false,
+          "breakRewarded": false,
+          "journalRewarded": false,
+          "returnedFrom": null,
+          "ringCelebrated": false,
+          "ringRain": "none"
+        }
+      },
+      "logs": [],
+      "breaks": [],
+      "activeBreak": null,
+      "quests": {
+        "daily": {
+          "key": "2026-10-06",
+          "slots": ["d_early_bird", "d_muscle_power", "d_brain_food"],
+          "swapsUsed": 0,
+          "swapOffsets": [0, 0, 0]
+        },
+        "weekly": {
+          "key": "W2026-10-05",
+          "slots": ["w_five_alive", "w_two_plant_days", "w_cool_cycle_week"],
+          "swapsUsed": 0,
+          "swapOffsets": [0, 0, 0]
+        },
+        "claims": [],
+        "epics": {},
+        "pinnedEpic": null,
+        "lastSelfAttestedTs": null
+      },
+      "badges": {},
+      "learn": { "lessons": {}, "mythsFlipped": [], "opens": [] },
+      "baseline": { "current": null, "history": [] },
+      "journal": [],
+      "reactions": {},
+      "customActions": [],
+      "challenge": { "active": null, "lastRewardWeek": null, "history": [] },
+      "activity": [
+        {
+          "ts": 1791262800000,
+          "day": "2026-10-06",
+          "kind": "planted",
+          "text": "Day 1 · Fern planted"
+        }
+      ],
+      "notices": [],
+      "seen": {
+        "messages": [],
+        "recapWeek": null,
+        "coachPrivacyNotice": false,
+        "maxLevel": 1,
+        "maxStage": 1,
+        "shareExports": 0
+      }
+    },
+    "version": 1
+  }
+}
