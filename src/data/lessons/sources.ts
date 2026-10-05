@@ -150,7 +150,7 @@ const INPUT = {
     title:
       'The climate mitigation gap: education and government recommendations miss the most effective individual actions. Environmental Research Letters 12:074024',
     publisher: 'Wynes and Nicholas',
-    url: 'https://doi.org/10.1088/1748-9326/aa7541',
+    url: 'https://iopscience.iop.org/article/10.1088/1748-9326/aa7541',
     year: 2017,
   },
   pnFoodKg: {
@@ -311,7 +311,7 @@ const INPUT = {
   warmOrganics: {
     title: 'Documentation for the Waste Reduction Model (WARM) v16: Organic Materials',
     publisher: 'US Environmental Protection Agency',
-    url: 'https://www.epa.gov/warm',
+    url: 'https://www.epa.gov/system/files/documents/2023-12/warm_organic_materials_v16_dec.pdf',
     year: 2023,
   },
   ukEABags: {
