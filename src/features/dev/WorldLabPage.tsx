@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import {
@@ -125,7 +127,7 @@ function writeUrl(state: LabState): void {
 }
 
 const fieldClass =
-  'h-11 w-full rounded-lg border-4 border-ink bg-white px-2 font-medium focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-neo-blue';
+  'h-11 w-full rounded-lg border-4 border-ink bg-white px-2 font-medium focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus';
 
 function Field({
   label,
@@ -139,7 +141,7 @@ function Field({
   const id = useId();
   return (
     <div className="grid gap-1">
-      <label htmlFor={id} className="flex items-baseline justify-between text-sm font-bold">
+      <label htmlFor={id} className="text-sm flex items-baseline justify-between font-bold">
         <span>{label}</span>
         {hint !== undefined && <span className="font-medium tabular-nums">{hint}</span>}
       </label>
@@ -206,7 +208,7 @@ function Slider({
           max={max}
           step={step}
           value={value}
-          className="h-11 w-full accent-neo-green"
+          className="h-11 w-full accent-green"
           onChange={(event) => onChange(Number(event.target.value))}
         />
       )}
@@ -238,7 +240,7 @@ function Readout() {
   return (
     <dl
       data-world-readout
-      className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border-4 border-ink bg-mint p-3 text-sm tabular-nums"
+      className="text-sm grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border-4 border-ink bg-mat p-3 tabular-nums"
     >
       {rows.map(([name, value]) => (
         <div key={name} className="contents">
@@ -311,7 +313,7 @@ export default function WorldLabPage() {
           ['Scroll', 'locking', 'test', 'area'].map((word) => (
             <div
               key={word}
-              className="grid h-96 place-items-center rounded-xl border-4 border-ink bg-white text-4xl font-bold shadow-neo"
+              className="text-4xl grid h-96 place-items-center rounded-xl border-4 border-ink bg-white font-bold shadow-3"
             >
               {word}
             </div>
@@ -320,7 +322,7 @@ export default function WorldLabPage() {
 
       <aside
         aria-label="Controls"
-        className="grid content-start gap-4 rounded-xl border-4 border-ink bg-white p-4 shadow-neo lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
+        className="grid content-start gap-4 rounded-xl border-4 border-ink bg-white p-4 shadow-3 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
       >
         <h1 className="text-2xl font-bold">World lab</h1>
         <Readout />
@@ -435,7 +437,7 @@ export default function WorldLabPage() {
             type="button"
             aria-pressed={lab.second}
             data-lab="second"
-            className="min-h-11 rounded-lg border-4 border-ink bg-neo-yellow px-3 font-bold shadow-neo-sm active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+            className="min-h-11 rounded-lg border-4 border-ink bg-yellow px-3 font-bold shadow-2 active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
             onClick={() => change({ second: !lab.second })}
           >
             {lab.second ? 'Remove 2nd stage' : 'Mount 2nd stage'}
@@ -444,7 +446,7 @@ export default function WorldLabPage() {
             type="button"
             aria-pressed={lab.tall}
             data-lab="tall"
-            className="min-h-11 rounded-lg border-4 border-ink bg-neo-blue px-3 font-bold shadow-neo-sm active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+            className="min-h-11 rounded-lg border-4 border-ink bg-blue px-3 font-bold shadow-2 active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
             onClick={() => change({ tall: !lab.tall })}
           >
             {lab.tall ? 'Short page' : 'Tall page'}
@@ -452,13 +454,13 @@ export default function WorldLabPage() {
         </div>
 
         <fieldset className="grid gap-2">
-          <legend className="mb-1 text-sm font-bold">Island props (unlocked)</legend>
+          <legend className="text-sm mb-1 font-bold">Island props (unlocked)</legend>
           <div className="grid grid-cols-2 gap-x-3">
             {ISLAND_PROPS.map((prop) => (
-              <label key={prop} className="flex min-h-11 items-center gap-2 text-sm font-medium">
+              <label key={prop} className="text-sm flex min-h-11 items-center gap-2 font-medium">
                 <input
                   type="checkbox"
-                  className="size-5 accent-neo-green"
+                  className="size-5 accent-green"
                   checked={lab.props.includes(prop)}
                   onChange={(event) =>
                     change({
