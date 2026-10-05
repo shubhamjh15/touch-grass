@@ -87,14 +87,14 @@ function findFunctionFile(root: string, pathname: string): string | null {
 
 export function devApi(): Plugin {
   return {
-    name: 'ecoquest:dev-api',
+    name: 'touch-grass:dev-api',
     apply: 'serve',
     config(_, { mode }) {
       // Functions read secrets from process.env, exactly like they do on Vercel.
       // Vite restarts when a .env file changes; drop what we injected last time so
       // an edited or removed key takes effect without restarting `npm run dev`.
-      const store = globalThis as { __ecoquestEnvKeys?: Set<string> };
-      const injected = (store.__ecoquestEnvKeys ??= new Set<string>());
+      const store = globalThis as { __touchGrassEnvKeys?: Set<string> };
+      const injected = (store.__touchGrassEnvKeys ??= new Set<string>());
       for (const key of injected) delete process.env[key];
       injected.clear();
 
