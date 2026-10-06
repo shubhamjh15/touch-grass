@@ -210,7 +210,8 @@ export default function LandingPage() {
         variant="ticker"
         title="How Touch Grass works, in four paper verbs: peel, stick, stamp, tear"
         items={[...TICKER]}
-        className="relative z-(--z-content)"
+        // The words are a moving repeat of the label above: nothing in the strip is a target.
+        className="relative z-(--z-content) *:pointer-events-none"
       />
 
       {/* The desk: opaque, so the grove never shows through the reading sections. */}
