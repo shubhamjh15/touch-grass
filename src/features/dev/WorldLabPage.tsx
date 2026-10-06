@@ -8,6 +8,7 @@ import {
   WorldStage,
   captureWorld,
   emitPulse,
+  openExplore,
   getStickingPoint,
   getWorldStats,
   measureWorld,
@@ -37,6 +38,10 @@ import {
  *   /__world?props=all&landmarks=1     every prop, landmark callouts on
  *   /__world?preview=0.9               the stage previews that growth over the live snapshot
  *   /__world?capture=1                 runs captureWorld() once ready and shows the PNG
+ *   /__world?explore=1                 opens Explore mode (full screen) once the world is ready
+ *
+ * Pulse buttons play the pulse's own sound (`emitPulse(pulse, { sound: true })`); "Earn the
+ * next prop" adds one prop to the island, which drops in the way an earned one does.
  */
 
 const PULSES: ReadonlyArray<{ id: string; label: string; pulse: WorldPulse }> = [
@@ -469,6 +474,15 @@ export default function WorldLabPage() {
     return () => window.clearTimeout(timer);
   }, [status]);
 
+  // `?explore=1` opens Explore mode once the world is ready (for screenshots).
+  const explored = useRef(false);
+  useEffect(() => {
+    if (explored.current || status !== 'ready') return;
+    if (new URLSearchParams(window.location.search).get('explore') !== '1') return;
+    explored.current = true;
+    openExplore();
+  }, [status]);
+
   const change = (patch: Partial<LabState>) => {
     const next = { ...lab, ...patch };
     setLab(next);
@@ -509,6 +523,7 @@ export default function WorldLabPage() {
           interactive={interactive}
           landmarks={lab.landmarks}
           preview={preview}
+          explore
           label={`${lab.species} at growth ${lab.growth.toFixed(2)}`}
           className="size-full"
         />
@@ -526,6 +541,7 @@ export default function WorldLabPage() {
           sky={sky}
           interactive={interactive}
           landmarks={lab.landmarks}
+          explore
           onLandmark={setLastLandmark}
           landmarkMeta={{ quests: '1/3', impact: `${lab.age} rings` }}
           preview={preview}
@@ -574,13 +590,36 @@ export default function WorldLabPage() {
                 type="button"
                 data-pulse={item.id}
                 className={cn(labButton, 'text-sm bg-green px-1')}
-                onClick={() => emitPulse(item.pulse)}
+                onClick={() => emitPulse(item.pulse, { sound: true })}
               >
                 {item.label}
               </button>
             ))}
           </div>
         </fieldset>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            data-lab="explore"
+            className={cn(labButton, 'bg-pink')}
+            onClick={() => openExplore()}
+          >
+            Open Explore
+          </button>
+          <button
+            type="button"
+            data-lab="props-next"
+            disabled={lab.props.length === ISLAND_PROPS.length}
+            className={cn(labButton, 'bg-green disabled:opacity-50')}
+            onClick={() => {
+              const next = ISLAND_PROPS.find((prop) => !lab.props.includes(prop));
+              if (next) change({ props: [...lab.props, next] });
+            }}
+          >
+            Earn the next prop
+          </button>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <button
