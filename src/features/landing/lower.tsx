@@ -73,7 +73,10 @@ function LogMini() {
         <Sticker category="move" label="Move" size={44} />
         <Sticker category="eat" label="Eat" size={44} />
         <Sticker category="power" label="Power" size={44} />
-        <Sticker category="water" label="Water" size={44} />
+        {/* Five stickers do not fit the tray of a 320 px phone: the fourth sits out there. */}
+        <span className="max-[359px]:hidden">
+          <Sticker category="water" label="Water" size={44} />
+        </span>
         <Sticker category="nature" ghost size={44} />
       </div>
       <p className="flex flex-wrap items-center gap-2">
@@ -130,7 +133,7 @@ function KeepGoingMini() {
         />
       ) : null}
       <div className="flex items-center gap-4">
-        <RingProgress value={DAILY_GOAL - 1} max={DAILY_GOAL} size={48} label={HOW.ringLabel}>
+        <RingProgress value={DAILY_GOAL - 1} max={DAILY_GOAL} size={64} label={HOW.ringLabel}>
           {DAILY_GOAL - 1}/{DAILY_GOAL}
         </RingProgress>
         <CloudGlyph size={64} role="img" aria-label={HOW.rainLabel} aria-hidden={undefined} />
@@ -154,9 +157,10 @@ export function HowItWorks() {
   return (
     <Band id="how-it-works" aria-labelledby="how-title" className="scroll-mt-20">
       <SectionHead id="how-title" slug={HOW.slug} title={HOW.title} />
-      <ol className="mt-8 grid gap-5 lg:grid-cols-3">
+      {/* One shrinkable column: a sample must fit the card, never widen all three. */}
+      <ol className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-3">
         {HOW.steps.map((step, index) => (
-          <Reveal as="li" key={step.id} delay={index * 28}>
+          <Reveal as="li" key={step.id} delay={index * 28} className="min-w-0">
             <Panel variant="graph" className="flex h-full flex-col p-5 shadow-3 md:border-4">
               <div className="flex items-center gap-3">
                 <StickerPill hue="yellow" rotate={index % 2 === 0 ? -2 : 2} aria-hidden="true">
