@@ -555,11 +555,9 @@
   --orb: var(--orb-day);
   --cloud: var(--cloud-day);
   --stage-mark: var(--color-ink); /* threads, crop marks: ink by dawn/day/dusk, #c7d2fe at night */
-  transition:
-    --sky-0 60s linear,
-    --sky-1 60s linear,
-    --sky-2 60s linear,
-    --sky-3 60s linear;
+  /* No transition on the sky tokens: an inherited custom property easing on the root restyles the
+     whole document every frame (measured: 50 ms per frame on Today at dusk). The world writes them
+     in small steps instead. */
 }
 @media (min-width: 48rem) {
   :root {
