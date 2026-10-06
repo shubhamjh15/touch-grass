@@ -206,7 +206,8 @@ export const COPY = {
   },
   ceremony: {
     slug: 'The seed',
-    hold: (tree: string) => `Press and hold to plant ${tree}.`,
+    // A name that ends in a full stop ("Moss Jr.") already closes the sentence.
+    hold: (tree: string) => `Press and hold to plant ${tree}${tree.endsWith('.') ? '' : '.'}`,
     holdHint: 'Hold for one and a half seconds. Or use the Plant button.',
     plant: 'Plant',
     planting: 'Planting…',
