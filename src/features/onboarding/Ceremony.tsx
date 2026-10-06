@@ -114,7 +114,7 @@ export function Ceremony({ flow }: { flow: OnboardingFlow }) {
             ? `${name}'s seed, hanging on a thread above the soil.`
             : `${name}, a freshly planted ${species} sprout with its first ring.`
         }
-        className="h-[calc(100%-13rem)] w-full lg:h-full"
+        className="h-full w-full"
       />
 
       {phase === 'ready' && flow.canGoBack ? (

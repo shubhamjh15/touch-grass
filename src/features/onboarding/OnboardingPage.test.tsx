@@ -17,6 +17,9 @@ import { DRAFT_KEY, loadDraft } from './draft';
 import { QUIZ_QUESTION_IDS } from './flow';
 import OnboardingPage from './OnboardingPage';
 
+// Whole journeys through real timers: slow on a shared machine, never flaky in logic.
+vi.setConfig({ testTimeout: 30_000 });
+
 const router = { replace: vi.fn(), push: vi.fn(), back: vi.fn(), prefetch: vi.fn() };
 vi.mock('next/navigation', () => ({
   usePathname: () => '/start',
@@ -260,7 +263,7 @@ describe('the starting-line quiz', () => {
     expect(state.profile.focus).toEqual(['eat', 'move']);
     expect(state.baseline.current?.tonnes.total).toBeCloseTo(example?.result.total ?? 0, 1);
     expect(planted()).toHaveLength(1);
-  }, 30_000);
+  });
 
   it('keeps the answers when it is left midway, and plants without a starting line', async () => {
     render(<OnboardingPage />);

@@ -2,7 +2,7 @@
 
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { BRAND } from '@/lib/brand';
+import { usePageTitle } from '@/app/shell';
 import { ColorBar, IconButton, Panel, TapeNote } from '@/ui';
 import { Ceremony } from './Ceremony';
 import { GroveStage } from './components/GroveStage';
@@ -99,9 +99,7 @@ export default function OnboardingPage() {
   const { screen } = flow;
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  useEffect(() => {
-    document.title = `${titleOf(screen)} · ${BRAND.name}`;
-  }, [screen]);
+  usePageTitle(titleOf(screen));
 
   // A new screen starts at the top with its question in focus, so it is announced and the
   // next Tab lands on its first control. The very first screen is left to the browser.
@@ -141,7 +139,7 @@ export default function OnboardingPage() {
 
       <Panel
         variant="mat"
-        className="flex min-h-[60dvh] min-w-0 flex-1 flex-col pt-7 px-gutter pb-[max(32px,var(--safe-b))] lg:edge-pinked-l lg:min-h-dvh lg:px-11 lg:pt-10 lg:pb-12"
+        className="flex min-h-[60dvh] min-w-0 flex-1 flex-col pt-7 px-gutter pb-0 lg:edge-pinked-l lg:min-h-dvh lg:px-11 lg:pt-10 lg:pb-12"
       >
         <div aria-hidden="true" className="absolute inset-x-0 top-0 lg:hidden">
           <div className="edge-pinked-t" />

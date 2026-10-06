@@ -45,6 +45,9 @@ export function GroveStage({ screen, draft, className }: GroveStageProps) {
   return (
     <WorldStage
       mode="hero"
+      // A bare island has no tree to fill the box, so it is shown whole, with its seed spot.
+      fit={bare ? 0.62 : undefined}
+      anchor={bare ? 'center' : undefined}
       preview={stagePreview(screen, draft)}
       label={stageLabel(screen, draft)}
       className={className}

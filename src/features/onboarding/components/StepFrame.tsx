@@ -58,7 +58,7 @@ export function StepFrame({
           ref={headingRef}
           tabIndex={-1}
           className={cn(
-            'mt-2.5 text-balance text-ink outline-hidden',
+            'mt-2.5 text-balance text-ink outline-hidden focus-visible:shadow-none',
             titleSize === 'h1' ? 'text-h1' : 'text-h2',
           )}
         >
@@ -78,6 +78,8 @@ export function StepActions({ children, className }: { children: ReactNode; clas
     <div
       className={cn(
         'mt-8 flex flex-col gap-3 sm:flex-row-reverse sm:items-center sm:justify-start',
+        // On a phone the way on stays under the thumb, however long the screen is.
+        'max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:-mx-(--gutter) max-sm:mt-6 max-sm:bg-linear-to-t max-sm:from-mat max-sm:from-75% max-sm:to-transparent max-sm:pt-5 max-sm:px-gutter max-sm:pb-[max(16px,var(--safe-b))]',
         className,
       )}
     >
