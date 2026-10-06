@@ -139,6 +139,36 @@ describe('tracker', () => {
     unsubscribe();
   });
 
+  it('keeps a previewed hour on its stage: the page-wide sky stays on the real clock', () => {
+    const root = document.documentElement;
+    const { el } = mountStage('a', 'hub');
+    useWorldStore.getState().setStageVisibility('a', 1);
+    run(2);
+    const pageSky = root.style.getPropertyValue('--sky-0');
+    expect(pageSky).not.toBe('');
+    expect(el.style.getPropertyValue('--sky-0')).toBe('');
+
+    // A scrubbed time-lapse: every step previews another hour of the day.
+    const realHour = useWorldStore.getState().snapshot.hour;
+    const seen = new Set<string>();
+    for (const offset of [5, 9, 13]) {
+      useWorldStore
+        .getState()
+        .updateStage('a', { ...options('hub'), preview: { hour: (realHour + offset) % 24 } });
+      run(2);
+      seen.add(el.style.getPropertyValue('--sky-0'));
+      expect(root.style.getPropertyValue('--sky-0')).toBe(pageSky);
+    }
+    expect(seen.has('')).toBe(false);
+    expect(seen.size).toBeGreaterThan(1);
+
+    // The preview ends: the stage inherits the page's sky again.
+    useWorldStore.getState().updateStage('a', options('hub'));
+    run(2);
+    expect(el.style.getPropertyValue('--sky-0')).toBe('');
+    expect(el.style.getPropertyValue('--sky-orb-x')).toBe('');
+  });
+
   it('gives the layer back to the backdrop when it stops', () => {
     const { host } = mountStage('a', 'hub');
     expect(layer.parentElement).toBe(host);

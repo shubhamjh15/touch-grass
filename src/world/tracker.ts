@@ -1,6 +1,6 @@
 import type { StageMode, WorldSnapshot } from './contract';
 import { MOTION } from './config';
-import { applySkyVars, skyAt } from './daylight';
+import { applySkyVars, clearSkyVars, skyAt } from './daylight';
 import { stepSpring, type Spring } from './framing';
 import { invalidateStageRects, orbit } from './interaction';
 import { useWorldStore, type StageRecord } from './store';
@@ -118,6 +118,8 @@ export function startTracker(layers: TrackerLayers): () => void {
   let stageId: string | null = null;
   let skyHour = Number.NaN;
   let pageHour = Number.NaN;
+  /** The stage that carries a previewed hour's sky on its own element, and that hour. */
+  const previewSky: { el: HTMLElement | null; hour: number } = { el: null, hour: Number.NaN };
   let cachedSnapshot: WorldSnapshot | null = null;
   let cachedPreview: Partial<WorldSnapshot> | null = null;
   let merged: WorldSnapshot = useWorldStore.getState().snapshot;
@@ -287,11 +289,21 @@ export function startTracker(layers: TrackerLayers): () => void {
       applySkyVars(layer, skyAt(skyHour));
     }
     // The page's own sky tokens live on the root element, where a change restyles the
-    // whole document: they follow in five-minute steps, a handful of writes per hour.
-    const pageStep = Math.round(merged.hour * ROOT_SKY_STEPS);
+    // whole document: they follow the real clock in five-minute steps, a handful of writes
+    // per hour. An hour that a stage only previews (the landing's time-lapse scrubs a year of
+    // them while the page scrolls) is written on that stage instead, so its own chips match
+    // the sky behind them and nothing outside the stage is restyled.
+    const pageStep = Math.round(state.snapshot.hour * ROOT_SKY_STEPS);
     if (pageStep !== pageHour) {
       pageHour = pageStep;
       applySkyVars(document.documentElement, skyAt(pageStep / ROOT_SKY_STEPS));
+    }
+    const previewEl = stage && cachedPreview?.hour !== undefined ? stage.el : null;
+    if (previewEl !== previewSky.el || (previewEl && previewSky.hour !== skyHour)) {
+      if (previewSky.el && previewSky.el !== previewEl) clearSkyVars(previewSky.el);
+      if (previewEl) applySkyVars(previewEl, skyAt(skyHour));
+      previewSky.el = previewEl;
+      previewSky.hour = skyHour;
     }
 
     // The island's yaw belongs to the frame.
@@ -391,6 +403,8 @@ export function startTracker(layers: TrackerLayers): () => void {
     // React still believes the layer is the backdrop's child: give it back.
     layer.style.transform = '';
     backdrop.appendChild(layer);
+    if (previewSky.el) clearSkyVars(previewSky.el);
+    previewSky.el = null;
     host = null;
     stageId = null;
   };

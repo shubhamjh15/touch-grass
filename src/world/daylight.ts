@@ -111,6 +111,21 @@ export function skyAt(hour: number): SkyLook {
   };
 }
 
+const SKY_VARS = [
+  '--sky-0',
+  '--sky-1',
+  '--sky-2',
+  '--sky-3',
+  '--orb',
+  '--cloud',
+  '--stage-mark',
+  '--star',
+  '--sky-stars',
+  '--sky-orb-x',
+  '--sky-orb-y',
+  '--sky-moon',
+] as const;
+
 /**
  * Publishes the sky as custom properties. On `:root` these are the public tokens the UI
  * may read (`--sky-0..3`, `--orb`, `--cloud`, `--stage-mark`); the world's own layer sets
@@ -127,6 +142,12 @@ export function applySkyVars(target: HTMLElement, sky: SkyLook): void {
   style.setProperty('--sky-orb-x', `${(sky.orbX * 100).toFixed(2)}%`);
   style.setProperty('--sky-orb-y', `${(sky.orbY * 100).toFixed(2)}%`);
   style.setProperty('--sky-moon', String(sky.moon));
+}
+
+/** Takes back what `applySkyVars` wrote, so the element inherits the page's sky again. */
+export function clearSkyVars(target: HTMLElement): void {
+  const style = target.style;
+  for (const name of SKY_VARS) style.removeProperty(name);
 }
 
 export interface LightLook {
