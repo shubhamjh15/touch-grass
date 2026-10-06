@@ -20,6 +20,14 @@ type TabId = 'journal' | 'share' | 'challenge' | 'team';
 
 const COPY = COMMUNITY_COPY;
 
+const TAB_IDS: readonly TabId[] = ['journal', 'share', 'challenge', 'team'];
+
+/** `/community?tab=share` opens that tab, so a section can be linked to and checked on its own. */
+function tabFromAddress(): TabId | null {
+  const wanted = new URLSearchParams(window.location.search).get('tab');
+  return TAB_IDS.find((id) => id === wanted) ?? null;
+}
+
 /**
  * `/community`, in local mode: a private journal, a short shelf of notes from the team, a share card
  * of your tree and stateless challenge links. Nothing here pretends other people are present.
@@ -32,7 +40,9 @@ export default function CommunityPage() {
   const link = readLink(hash, today.day);
 
   // A visitor who arrived by a link wants the challenge first; everyone else wants the journal.
-  const [tab, setTab] = useState<TabId>(() => (link.kind === 'none' ? 'journal' : 'challenge'));
+  const [tab, setTab] = useState<TabId>(
+    () => tabFromAddress() ?? (link.kind === 'none' ? 'journal' : 'challenge'),
+  );
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const textarea = useRef<HTMLTextAreaElement | null>(null);
 
@@ -68,8 +78,14 @@ export default function CommunityPage() {
           />
         ) : null}
 
-        <Tabs value={tab} onValueChange={setTab} tabs={tabs} aria-label={COPY.tabsLabel}>
-          <TabPanel value="journal" bare className="grid gap-8">
+        <Tabs
+          value={tab}
+          onValueChange={setTab}
+          tabs={tabs}
+          aria-label={COPY.tabsLabel}
+          className="min-w-0"
+        >
+          <TabPanel value="journal" bare className="grid grid-cols-1 gap-8">
             <Composer
               prompt={promptOfTheWeek(today.day)}
               draft={draft}

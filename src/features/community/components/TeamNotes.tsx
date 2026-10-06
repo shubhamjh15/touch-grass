@@ -3,7 +3,7 @@
 import { ArrowRight, Bookmark, BookmarkCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import { CONTENT_VERSION, EDITORIAL_POSTS, type EditorialPost } from '@/data/editorial';
+import { EDITORIAL_POSTS, type EditorialPost } from '@/data/editorial';
 import { logLink } from '@/app/shell';
 import { gameActions, useGameState } from '@/game';
 import { Button, Card, Chip, Tag } from '@/ui';
@@ -16,7 +16,7 @@ const FIRST = 4;
 function TeamCard({ post, saved }: { post: EditorialPost; saved: boolean }) {
   const href = post.tryActionId ? logLink(post.tryActionId) : (post.tryRoute ?? '/today');
   return (
-    <Card as="article" tone="blue" className="grid content-start gap-3">
+    <Card as="article" tone="blue" className="grid grid-cols-1 content-start gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <Tag hue="white">{COPY.label}</Tag>
         <span className="type-slug text-ink-3">{COPY.version(post.contentVersion)}</span>
@@ -25,10 +25,10 @@ function TeamCard({ post, saved }: { post: EditorialPost; saved: boolean }) {
       <p className="max-w-prose text-body leading-relaxed">{post.body}</p>
       {post.sources.length > 0 ? (
         <details className="group text-body-sm text-ink-2">
-          <summary className="cursor-pointer py-1 font-semibold underline decoration-2 underline-offset-4">
+          <summary className="flex min-h-11 cursor-pointer items-center font-semibold underline decoration-2 underline-offset-4">
             {COPY.sources}
           </summary>
-          <ul className="mt-1 grid gap-1 pl-4">
+          <ul className="mt-1 grid grid-cols-1 gap-1 pl-4">
             {post.sources.map((source) => (
               <li key={source.key} className="list-disc">
                 <a
@@ -81,7 +81,7 @@ export function TeamNotes() {
   const shown = all || savedOnly ? pool : pool.slice(0, FIRST);
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <Chip
           selected={!savedOnly}
@@ -98,9 +98,8 @@ export function TeamNotes() {
         >
           {COPY.saved}
         </Chip>
-        <span className="ml-auto type-slug text-ink-3">{COPY.version(CONTENT_VERSION)}</span>
       </div>
-      <ul className="grid items-start gap-4 @3xl:grid-cols-2">
+      <ul className="grid grid-cols-1 items-start gap-4 @3xl:grid-cols-2">
         {shown.map((post) => (
           <li key={post.id} className="min-w-0">
             <TeamCard post={post} saved={isSaved(post.id)} />

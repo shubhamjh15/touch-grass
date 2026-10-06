@@ -1,3 +1,4 @@
+import { formatCo2Estimate } from '@/lib/format';
 import { clamp01 } from '@/lib/math';
 
 /**
@@ -187,16 +188,16 @@ interface Pen {
   measure: Measure;
 }
 
-function chip(pen: Pen, x: number, y: number, label: string, fill: Tone): number {
-  const size = 36;
+function chip(pen: Pen, x: number, y: number, label: string, fill: Tone, size: number): number {
+  const height = Math.round(size * 2.1);
   const width = Math.ceil(pen.measure(label, size, 'sans', 700)) + 56;
   pen.shapes.push(
-    { t: 'rect', x: x + 6, y: y + 6, w: width, h: 76, r: 38, fill: 'ink' },
-    { t: 'rect', x, y, w: width, h: 76, r: 38, fill, stroke: 'ink', sw: 6 },
+    { t: 'rect', x: x + 6, y: y + 6, w: width, h: height, r: height / 2, fill: 'ink' },
+    { t: 'rect', x, y, w: width, h: height, r: height / 2, fill, stroke: 'ink', sw: 6 },
     {
       t: 'text',
       x: x + width / 2,
-      y: y + 51,
+      y: y + height / 2 + size * 0.35,
       text: label,
       size,
       font: 'sans',
@@ -367,19 +368,19 @@ export function layoutCard(
     },
   );
 
-  const picture = { x: MARGIN, y: 172, w: inner, h: story ? 1010 : 360 };
+  const picture = { x: MARGIN, y: 172, w: inner, h: story ? 860 : 280 };
   shapes.push({ t: 'rect', ...picture, r: 44, fill: ['blueTint', 'paper'] });
   if (hasImage) shapes.push({ t: 'image', ...picture, r: 44 });
   else illustration(shapes, picture, facts.species, facts.growth);
   shapes.push({ t: 'rect', ...picture, r: 44, stroke: 'ink', sw: 8 });
 
-  let y = picture.y + picture.h + (story ? 140 : 112);
+  let y = picture.y + picture.h + (story ? 132 : 96);
   shapes.push({
     t: 'text',
     x: MARGIN,
     y,
     text: facts.treeName,
-    size: story ? 128 : 92,
+    size: story ? 128 : 80,
     font: 'display',
     fill: 'ink',
     maxW: inner,
@@ -398,20 +399,22 @@ export function layoutCard(
       maxW: inner,
     });
   }
-  y += story ? 62 : 50;
+  y += story ? 62 : 44;
   shapes.push({
     t: 'text',
     x: MARGIN,
     y,
     text: `${facts.speciesLabel} · ${facts.stage}`,
-    size: story ? 46 : 38,
+    size: story ? 46 : 36,
     font: 'sans',
     weight: 500,
     fill: 'ink3',
     maxW: inner,
   });
 
-  y += story ? 54 : 36;
+  y += story ? 54 : 30;
+  const chipSize = story ? 36 : 30;
+  const chipHeight = Math.round(chipSize * 2.1);
   const labels: { text: string; fill: Tone }[] = [
     { text: `Ring ${facts.rings}`, fill: 'yellow' },
     { text: `Level ${facts.level} · ${facts.levelTitle}`, fill: 'white' },
@@ -420,23 +423,26 @@ export function layoutCard(
     labels.push({ text: `${facts.streak}-day streak`, fill: 'greenTint' });
   }
   if (options.kg && facts.kg > 0) {
-    labels.push({ text: `≈ ${formatKg(facts.kg)} estimated CO2e avoided`, fill: 'blueTint' });
+    labels.push({
+      text: `≈ ${formatCo2Estimate(facts.kg)} estimated CO2e avoided`,
+      fill: 'blueTint',
+    });
   }
   let x = MARGIN;
   for (const label of labels) {
-    const w = Math.ceil(measure(label.text, 36, 'sans', 700)) + 56;
+    const w = Math.ceil(measure(label.text, chipSize, 'sans', 700)) + 56;
     if (x > MARGIN && x + w > MARGIN + inner) {
       x = MARGIN;
-      y += 96;
+      y += chipHeight + 20;
     }
-    x += chip(pen, x, y, label.text, label.fill) + 22;
+    x += chip(pen, x, y, label.text, label.fill, chipSize) + 22;
   }
-  y += 76;
+  y += chipHeight;
 
   if (options.week && facts.week.length > 0) {
-    const radius = story ? 38 : 30;
+    const radius = story ? 38 : 26;
     const step = inner / facts.week.length;
-    const cy = y + (story ? 96 : 64);
+    const cy = y + (story ? 96 : 56);
     facts.week.forEach((day, index) => {
       const cx = MARGIN + step * index + step / 2;
       shapes.push({
@@ -452,7 +458,7 @@ export function layoutCard(
       shapes.push({
         t: 'text',
         x: cx,
-        y: cy + radius + (story ? 42 : 36),
+        y: cy + radius + (story ? 42 : 32),
         text: day.letter,
         size: story ? 28 : 24,
         font: 'mono',
@@ -489,12 +495,6 @@ export function layoutCard(
   );
 
   return { width, height, shapes, picture };
-}
-
-function formatKg(kg: number): string {
-  if (kg >= 100) return `${Math.round(kg / 10) * 10} kg`;
-  if (kg >= 10) return `${Math.round(kg)} kg`;
-  return `${Math.round(kg * 10) / 10} kg`;
 }
 
 // ── Canvas renderer ────────────────────────────────────────────────────────

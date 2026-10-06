@@ -56,8 +56,8 @@ export function JournalList({ notes, today, onWrite }: JournalListProps) {
   const filtering = query.trim() !== '' || activeTag !== null;
 
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-3">
+    <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-3">
         <SearchInput
           value={query}
           onValueChange={(next) => {
@@ -116,7 +116,7 @@ export function JournalList({ notes, today, onWrite }: JournalListProps) {
           }
         />
       ) : (
-        <ul className="grid items-start gap-4 @3xl:grid-cols-2">
+        <ul className="grid grid-cols-1 items-start gap-4 @3xl:grid-cols-2">
           {shown.map((note) => (
             <li key={note.id} className="min-w-0">
               <NoteCard note={note} today={today} />

@@ -50,7 +50,7 @@ function ResultLink({ today }: { today: DayKey }) {
   const make = () => setEncoded(challengeResultFor(getGameState(), today, includeName));
 
   return (
-    <div className="grid gap-3 border-t-[1.5px] border-ink pt-4">
+    <div className="grid grid-cols-1 gap-3 border-t-[1.5px] border-ink pt-4">
       <p className="text-body-sm text-ink-2">{COPY.resultHint}</p>
       <Switch
         label={COPY.resultInclude}
@@ -99,7 +99,7 @@ function ActiveChallenge({
   const dare = challengeTemplate(state.templateId)?.dare(state.category) ?? '';
 
   return (
-    <Card as="section" aria-labelledby="active-challenge-title" className="grid gap-4">
+    <Card as="section" aria-labelledby="active-challenge-title" className="grid grid-cols-1 gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="mb-1.5 type-slug text-ink-3">
@@ -125,7 +125,7 @@ function ActiveChallenge({
         </TapeNote>
       ) : null}
 
-      <div className="grid gap-2">
+      <div className="grid grid-cols-1 gap-2">
         <Meter
           value={progress.current}
           max={progress.target}
@@ -143,14 +143,14 @@ function ActiveChallenge({
       </div>
 
       {finished ? (
-        <div className="grid gap-1">
+        <div className="grid grid-cols-1 gap-1">
           <p className="text-h3">{COPY.finishedTitle}</p>
           <p className="text-body-sm text-ink-2">{COPY.finishedBody}</p>
         </div>
       ) : null}
 
       {link ? (
-        <div className="grid gap-3 border-t-[1.5px] border-ink pt-4">
+        <div className="grid grid-cols-1 gap-3 border-t-[1.5px] border-ink pt-4">
           <LinkBox label={COPY.linkLabel} url={link} shareText={COPY.shareText(dare)} />
           <Switch
             label={COPY.includeName}
@@ -207,7 +207,7 @@ function CreateChallenge({ includeName, onIncludeNameChange }: NameChoice) {
   };
 
   return (
-    <Card as="section" aria-labelledby="create-challenge-title" className="grid gap-4">
+    <Card as="section" aria-labelledby="create-challenge-title" className="grid grid-cols-1 gap-4">
       <div>
         <h2 id="create-challenge-title" className="text-h3">
           {COPY.title}
@@ -215,7 +215,7 @@ function CreateChallenge({ includeName, onIncludeNameChange }: NameChoice) {
         <p className="mt-1 max-w-prose text-body-sm text-ink-2">{COPY.lead}</p>
       </div>
 
-      <div className="grid gap-4 @xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 @xl:grid-cols-2">
         <Field label={COPY.templateLabel}>
           <Select value={templateId} onValueChange={setTemplateId} options={TEMPLATE_OPTIONS} />
         </Field>
@@ -272,11 +272,11 @@ function History() {
   if (history.length === 0) return null;
   const rows = [...history].reverse().slice(0, 5);
   return (
-    <section aria-labelledby="challenge-history" className="grid gap-2">
+    <section aria-labelledby="challenge-history" className="grid grid-cols-1 gap-2">
       <h2 id="challenge-history" className="text-label text-ink">
         {COPY.historyTitle}
       </h2>
-      <ul className="grid gap-2">
+      <ul className="grid grid-cols-1 gap-2">
         {rows.map((row) => (
           <li
             key={`${row.templateId}-${row.startDay}`}
@@ -309,7 +309,7 @@ export function ChallengePanel({ today }: ChallengePanelProps) {
   // One choice for the whole tab: the switch on the form and the one by the link are the same setting.
   const [includeName, setIncludeName] = useState(false);
   return (
-    <div className="grid gap-5">
+    <div className="grid grid-cols-1 gap-5">
       <ActiveChallenge
         today={today}
         includeName={includeName}

@@ -62,7 +62,7 @@ export function Composer({ prompt, draft, onDraftChange, textareaRef }: Composer
   const left = JOURNAL_MAX_CHARS - draft.text.length;
 
   return (
-    <Card as="section" aria-labelledby={`${moreId}-title`} className="grid gap-4">
+    <Card as="section" aria-labelledby={`${moreId}-title`} className="grid grid-cols-1 gap-4">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <h2 id={`${moreId}-title`} className="text-h3">
           {COPY.title}
@@ -87,7 +87,7 @@ export function Composer({ prompt, draft, onDraftChange, textareaRef }: Composer
           onChange={(event) => patch({ text: event.target.value.slice(0, JOURNAL_MAX_CHARS) })}
           maxLength={JOURNAL_MAX_CHARS}
           rows={4}
-          placeholder={prompt}
+          placeholder={COPY.placeholder}
           aria-describedby={counterId}
         />
       </Field>
@@ -101,7 +101,7 @@ export function Composer({ prompt, draft, onDraftChange, textareaRef }: Composer
         {COPY.counter(draft.text.length)}
       </p>
 
-      <fieldset className="grid gap-2">
+      <fieldset className="grid grid-cols-1 gap-2">
         <legend className="mb-1 text-label text-ink">{COPY.tagsLabel}</legend>
         <div className="flex flex-wrap gap-2" id={moreId}>
           {tags.map((tag) => (

@@ -23,8 +23,8 @@ export const CAPTURE_TIMEOUT_MS = 6000;
 
 /** The picture box of each format, so the capture is taken at the shape it will be cropped to. */
 export const PICTURE_BOX: Readonly<Record<CardFormat, { width: number; height: number }>> = {
-  story: { width: 888, height: 1010 },
-  square: { width: 888, height: 360 },
+  story: { width: 888, height: 860 },
+  square: { width: 888, height: 280 },
 };
 
 function timeout<T>(ms: number, value: T): Promise<T> {

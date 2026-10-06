@@ -166,8 +166,8 @@ export function ShareStudio() {
   };
 
   return (
-    <div className="grid items-start gap-6 @3xl:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] @3xl:gap-8">
-      <div className="mx-auto grid w-full max-w-72 gap-3 @3xl:mx-0 @3xl:max-w-none">
+    <div className="grid grid-cols-1 items-start gap-6 @3xl:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] @3xl:gap-8">
+      <div className="mx-auto grid w-full max-w-72 grid-cols-1 gap-3 @3xl:mx-0 @3xl:max-w-none">
         <TiltCard disabled={reduced} className="w-full">
           <div
             className="relative w-full overflow-hidden rounded-md border-3 border-ink bg-paper shadow-3"
@@ -194,7 +194,7 @@ export function ShareStudio() {
         {!pngPossible ? <p className="text-caption text-ink-3">{COPY.noWorldNote}</p> : null}
       </div>
 
-      <Card className="grid gap-5">
+      <Card className="grid grid-cols-1 gap-5">
         <Segmented
           value={format}
           onValueChange={setFormat}
@@ -203,7 +203,7 @@ export function ShareStudio() {
           fullWidth
         />
 
-        <fieldset className="grid gap-1">
+        <fieldset className="grid grid-cols-1 gap-1">
           <legend className="mb-1 text-label text-ink">{COPY.showLabel}</legend>
           <Switch label={COPY.streak} checked={options.streak} onCheckedChange={toggle('streak')} />
           <Switch
@@ -235,7 +235,7 @@ export function ShareStudio() {
             {COPY.copyCaption}
           </Button>
         </div>
-        <div className="grid gap-1">
+        <div className="grid grid-cols-1 gap-1">
           <p className="text-caption text-ink-3">
             {COPY.captionLabel}: <span className="text-ink-2">{caption}</span>
           </p>

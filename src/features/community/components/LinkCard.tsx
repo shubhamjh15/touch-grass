@@ -62,7 +62,12 @@ export function LinkCard({ view, onAccepted, onStartOwn }: LinkCardProps) {
   if (view.kind === 'result') {
     const template = challengeTemplate(view.payload.k);
     return (
-      <Card as="section" tone="paper" aria-labelledby="link-card-title" className="grid gap-3">
+      <Card
+        as="section"
+        tone="paper"
+        aria-labelledby="link-card-title"
+        className="grid grid-cols-1 gap-3"
+      >
         <p className="type-slug text-ink-3">
           {COPY.resultSlug} · {formatLongDate(view.payload.on)}
         </p>
@@ -128,7 +133,7 @@ export function LinkCard({ view, onAccepted, onStartOwn }: LinkCardProps) {
       featured
       plate="yellow"
       aria-labelledby="link-card-title"
-      className="grid gap-4"
+      className="grid grid-cols-1 gap-4"
     >
       <p className="type-slug text-ink-3">{COPY.featuredSlug}</p>
       <h2 id="link-card-title" className="text-h2">
@@ -166,9 +171,11 @@ export function LinkCard({ view, onAccepted, onStartOwn }: LinkCardProps) {
           </Button>
         ) : null}
       </div>
-      <p role="status" className="min-h-5 text-body-sm text-tomato-deep">
-        {error ?? (busy ? COPY.busy : '')}
-      </p>
+      {(error ?? (busy ? COPY.busy : null)) ? (
+        <p role="alert" className="text-body-sm text-tomato-deep">
+          {error ?? COPY.busy}
+        </p>
+      ) : null}
     </Card>
   );
 }

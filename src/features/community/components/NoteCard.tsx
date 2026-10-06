@@ -41,7 +41,7 @@ export function NoteCard({ note, today }: NoteCardProps) {
     <Card
       as="article"
       tone="paper"
-      className="grid content-start gap-3"
+      className="grid grid-cols-1 content-start gap-3"
       aria-label={`Note, ${formatDay(note.day, today)}`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -63,7 +63,7 @@ export function NoteCard({ note, today }: NoteCardProps) {
       </div>
 
       {editing ? (
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <Field label={COPY.editLabel}>
             <Textarea
               value={text}
