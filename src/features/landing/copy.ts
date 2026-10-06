@@ -147,7 +147,9 @@ export const HONEST = {
   slug: 'Honest numbers',
   title: 'An estimate, and it says so',
   lead: 'Every kilogram in the app is compared with something specific, carries a likely range and names its source. Kilograms never turn into points, so a bigger footprint cannot win.',
-  rowMeta: 'Per km not driven',
+  // Short enough to sit beside its figure on a phone; the full action name is on the methodology page.
+  rowTitle: '1 km not driven',
+  rowMeta: 'Bike or walk',
   ledgerLabel: 'One factor from the table',
   openLabel: 'What the ≈ opens',
   rules: [

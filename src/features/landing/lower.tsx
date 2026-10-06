@@ -200,7 +200,7 @@ function factorExample(): {
   const source = action.sources.map((key) => SOURCES[key]).find(Boolean);
   const value = formatCo2Estimate(estimate.kg);
   return {
-    title: action.title,
+    title: HONEST.rowTitle,
     meta: HONEST.rowMeta,
     value,
     source: {
@@ -220,7 +220,7 @@ export function HonestNumbers() {
   const example = factorExample();
   return (
     <Band aria-labelledby="honest-title">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start lg:gap-14">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start lg:gap-14">
         <div>
           <SectionHead
             id="honest-title"
@@ -280,7 +280,7 @@ export function HonestNumbers() {
 export function KindAndPrivate() {
   return (
     <div className="py-14 px-gutter lg:px-6 lg:py-20">
-      <div className="mx-auto grid max-w-[1120px] gap-14 lg:grid-cols-2 lg:gap-12">
+      <div className="mx-auto grid max-w-[1120px] grid-cols-1 gap-14 lg:grid-cols-2 lg:gap-12">
         <section aria-labelledby="kind-title">
           <SectionHead id="kind-title" slug={KIND.slug} title={KIND.title} />
           <TapeNote tape="blue" rotate={-1} className="mt-7 max-w-[26rem] text-h4">
@@ -346,7 +346,7 @@ const FAQ_LINK = { privacy: ROUTES.privacy, methodology: ROUTES.methodology } as
 export function Faq() {
   return (
     <Band aria-labelledby="faq-title">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
         <SectionHead id="faq-title" slug={FAQ.slug} title={FAQ.title} />
         <Card padded={false}>
           <div className="divide-y-[1.5px] divide-ink overflow-hidden rounded-[9px] md:rounded-[12px]">
