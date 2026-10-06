@@ -24,7 +24,6 @@
  * only when the title depends on data.
  */
 export {
-  CUSTOM_LOG_LINK,
   PARAMS,
   ROUTES,
   TOUCH_GRASS_LINK,

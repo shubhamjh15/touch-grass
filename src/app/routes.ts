@@ -54,9 +54,6 @@ export function demoLeaveLink(to: 'home' | 'start'): string {
   return `${ROUTES.demo}?${PARAMS.demoLeave}=${to}`;
 }
 
-/** The custom-action flow of the Log page. */
-export const CUSTOM_LOG_LINK = `${ROUTES.log}?${PARAMS.logCustom}=1`;
-
 /** The Touch grass break, hosted by Today. */
 export const TOUCH_GRASS_LINK = `${ROUTES.today}?${PARAMS.touchGrass}=1`;
 
