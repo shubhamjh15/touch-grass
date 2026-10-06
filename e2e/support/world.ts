@@ -71,3 +71,38 @@ export const worldState = (page: Page) => page.locator('html');
 export async function sceneReady(page: Page): Promise<void> {
   await expect(worldState(page)).toHaveAttribute('data-world', 'ready', { timeout: 90_000 });
 }
+
+/**
+ * Watches one page for its first contentful paint and every request it makes, on the browser's
+ * own monotonic clock (the page's `performance` is replaced by the test clock, so it cannot
+ * be asked). Call it before the page is opened.
+ */
+export async function watchFirstPaint(page: Page) {
+  const client = await page.context().newCDPSession(page);
+  await client.send('Network.enable');
+  await client.send('Page.enable');
+  await client.send('Page.setLifecycleEventsEnabled', { enabled: true });
+  const requests: Array<{ url: string; at: number }> = [];
+  let paintedAt: number | null = null;
+  client.on('Network.requestWillBeSent', (event) => {
+    requests.push({ url: event.request.url, at: event.timestamp });
+  });
+  client.on('Page.lifecycleEvent', (event) => {
+    if (event.name === 'firstContentfulPaint' && paintedAt === null) paintedAt = event.timestamp;
+  });
+  return {
+    painted: () => paintedAt !== null,
+    /** Requests for the three.js chunk that started before the first paint. */
+    sceneBeforePaint: () => {
+      const names = sceneChunks();
+      return requests
+        .filter((request) => names.some((name) => request.url.includes(name)))
+        .filter((request) => paintedAt === null || request.at <= paintedAt)
+        .map((request) => request.url);
+    },
+    sceneRequests: () => {
+      const names = sceneChunks();
+      return requests.filter((request) => names.some((name) => request.url.includes(name))).length;
+    },
+  };
+}

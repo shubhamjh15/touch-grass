@@ -84,7 +84,10 @@ function watch(context: BrowserContext): Health {
   const origin = new URL(ORIGIN).origin;
 
   context.on('console', (message) => {
-    if (message.type() === 'error') found.push(`console error: ${message.text()}`);
+    if (message.type() !== 'error') return;
+    // The test browser has no sound card: the page's first chime makes the browser say so.
+    if (/AudioContext encountered an error from the audio device/.test(message.text())) return;
+    found.push(`console error: ${message.text()}`);
   });
   context.on('weberror', (error) => {
     found.push(`page error: ${error.error().message}`);
