@@ -371,6 +371,13 @@ describe('<LandingPage>', () => {
     expect(closing()).toHaveTextContent(FINAL.grownLines.join(''));
   });
 
+  it('labels the demo tree as a sped-up demo, in full, at every width', () => {
+    render(<LandingPage />);
+    // The second half is only hidden visually on the narrowest phones; it stays in the text.
+    const tags = screen.getAllByText((_, node) => node?.textContent === 'Demo · sped up');
+    expect(tags.length).toBeGreaterThan(0);
+  });
+
   it('sets the unit with a real subscript wherever the copy names it', () => {
     render(<LandingPage />);
     const line = screen.getByText(/Nobody can feel/);
