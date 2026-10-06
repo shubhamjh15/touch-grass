@@ -12,6 +12,9 @@
  *   - `/learn/:lessonId` (frame `reading`) gets one centred column; pass `grove={false}`.
  *   - Bottom padding for the tab bar and the Log sticker is already applied below `lg`.
  *
+ * FRAME PRIMITIVES. A page is `<PageHeader>` then a `<PageStack>` of `<PageSection title=... seeAll=...>`
+ * groups: the same heading size, gaps and "See all" door on every page (directive 4.2, 4.3, 4.8).
+ *
  * FEEDBACK. The shell turns game events into toasts (with Undo), sounds, the XP bar's flash
  * and the level, badge and streak celebrations. A page calls `gameActions.*` and plays only
  * input sounds (`tap`, `toggle`, `tick`, and the `peel`/`stick` of its own flying sticker).
@@ -31,6 +34,7 @@ export {
 export { takeAfterOnboardingDestination } from './guardDecision';
 export { closeCoach, closePalette, openCoach, openPalette } from './shellStore';
 export { PageHeader, type PageHeaderProps } from './page/PageHeader';
+export { PageSection, PageStack, type PageSectionProps } from './page/PageSection';
 export { usePageTitle } from './page/usePageTitle';
 export { useHideChrome } from './page/useHideChrome';
 export { logToastId } from './feedback/eventFeedback';

@@ -6,6 +6,8 @@ import { prefersReducedMotion, useReducedMotion } from '@/lib/hooks';
 import { DURATIONS, EASINGS } from '@/ui';
 
 const PEEL_MS = DURATIONS.fast * 1000;
+/** A very long page is not worth copying: the cost of cloning it would be felt as lag. */
+const PEEL_MAX_NODES = 1500;
 const PEEL_EASING = `cubic-bezier(${EASINGS.peel.join(',')})`;
 
 /**
@@ -20,6 +22,7 @@ function peelAway(page: HTMLElement): void {
   if (typeof page.animate !== 'function') return;
   const rect = page.getBoundingClientRect();
   if (rect.width === 0 || rect.height === 0) return;
+  if (page.getElementsByTagName('*').length > PEEL_MAX_NODES) return;
 
   const frame = document.createElement('div');
   frame.setAttribute('aria-hidden', 'true');
