@@ -110,4 +110,18 @@ describe('WorldStage', () => {
     );
     expect(within(screen.getByRole('img', { name: 'A tree' })).getByText('Day 12')).toBeVisible();
   });
+
+  it('offers the world layer a host as its first child, under everything else in the box', () => {
+    render(
+      <WorldStage mode="hub" label="Your grove">
+        <p>Day 12</p>
+      </WorldStage>,
+    );
+    const stage = screen.getByRole('group', { name: 'Your grove' });
+    const host = stage.firstElementChild;
+    expect(host).toHaveAttribute('data-world-host');
+    expect(host).toHaveAttribute('aria-hidden', 'true');
+    // Nothing of React's lives in it: the tracker may move the canvas in and out freely.
+    expect(host?.childElementCount).toBe(0);
+  });
 });
