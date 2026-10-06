@@ -20,6 +20,8 @@ function focusPageHeading(): () => void {
     // A sheet or the palette may have opened meanwhile: it owns focus.
     if (openDialog()) return true;
     if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+    // A heading is not a control: it takes focus so the move is announced, and needs no ring.
+    heading.style.outline = 'none';
     heading.focus({ preventScroll: true });
     return true;
   };

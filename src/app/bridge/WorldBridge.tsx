@@ -21,7 +21,10 @@ export function WorldBridge() {
   }, [snapshot]);
 
   useEffect(() => {
-    useWorldStore.getState().setPreference(settings.graphics);
+    const world = useWorldStore.getState();
+    world.setPreference(settings.graphics);
+    // The canvas is not mounted while the preview is off, so nobody else says the stage is drawn.
+    if (settings.graphics === 'off') world.setStatus('fallback');
   }, [settings.graphics]);
 
   useEffect(() => {

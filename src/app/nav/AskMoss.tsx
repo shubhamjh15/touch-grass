@@ -13,10 +13,11 @@ export function AskMoss() {
       type="button"
       onClick={() => openCoach()}
       aria-haspopup="dialog"
-      className="fixed right-[max(16px,var(--safe-r))] bottom-[calc(var(--tabbar-h)+var(--safe-b)+12px)] z-(--z-fab) inline-flex h-11 cursor-pointer items-center gap-2 rounded-pill border-2 border-ink bg-white pr-4 pl-2 text-body-sm font-bold text-ink shadow-1 lg:right-6 lg:bottom-6"
+      aria-label="Ask Moss"
+      className="fixed right-[max(16px,var(--safe-r))] bottom-[calc(var(--tabbar-h)+var(--safe-b)+12px)] z-(--z-fab) inline-flex size-12 cursor-pointer items-center justify-center gap-2 rounded-pill border-2 border-ink bg-white text-body-sm font-bold text-ink shadow-1 lg:right-6 lg:bottom-6 lg:h-11 lg:w-auto lg:pr-4 lg:pl-2"
     >
       <MossFace size={26} />
-      Ask Moss
+      <span className="hidden lg:inline">Ask Moss</span>
     </button>
   );
 }
