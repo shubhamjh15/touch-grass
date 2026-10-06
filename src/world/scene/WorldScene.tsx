@@ -33,6 +33,19 @@ import { Sky } from './Sky';
 import { Tree } from './Tree';
 import { Water } from './Water';
 
+/**
+ * Two lines three.js prints that are not about this scene: R3F 9 still constructs the
+ * deprecated `THREE.Clock` (we never read it: time comes from the tracker), and Direct3D
+ * warns about a gradient inside a loop in the ambient-occlusion shader of the high tier.
+ * Everything else three has to say still reaches the console.
+ */
+const NOT_OURS = [/^THREE\.Clock: This module has been deprecated/, /warning X3595/];
+THREE.setConsoleFunction((type: 'log' | 'warn' | 'error', message: string, ...rest: unknown[]) => {
+  if (type === 'warn' && NOT_OURS.some((pattern) => pattern.test(String(message)))) return;
+  if (type === 'error') console.error(message, ...rest);
+  else console.warn(message, ...rest);
+});
+
 /** How long a lost WebGL context may take to come back before 3D is given up for the session. */
 const CONTEXT_GRACE_MS = 3000;
 /** Frame intervals kept for the percentile readout. */

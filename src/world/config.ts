@@ -188,7 +188,7 @@ export const QUALITY: Record<WorldQuality, QualityTier> = {
   high: {
     dpr: 1.5,
     dprTouch: 2,
-    megapixels: 4,
+    megapixels: 2.6,
     shadowMap: 2048,
     shadowEvery: 2,
     antialias: true,
