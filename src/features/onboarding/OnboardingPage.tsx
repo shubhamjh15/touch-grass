@@ -139,7 +139,7 @@ export default function OnboardingPage() {
 
       <Panel
         variant="mat"
-        className="flex min-h-[60dvh] min-w-0 flex-1 flex-col pt-7 px-gutter pb-0 lg:edge-pinked-l lg:min-h-dvh lg:px-11 lg:pt-10 lg:pb-12"
+        className="flex min-h-[60dvh] min-w-0 flex-1 flex-col pt-7 px-gutter pb-0 max-lg:overflow-x-clip lg:edge-pinked-l lg:min-h-dvh lg:px-11 lg:pt-10 lg:pb-12"
       >
         <div aria-hidden="true" className="absolute inset-x-0 top-0 lg:hidden">
           <div className="edge-pinked-t" />
