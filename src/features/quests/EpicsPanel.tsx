@@ -18,7 +18,7 @@ import {
   groupEpics,
   type TicketState,
 } from './model';
-import { ActionChip, TicketTray } from './QuestTicket';
+import { ChipList, TicketTray } from './QuestTicket';
 
 const STUB_HALF = 42;
 
@@ -71,7 +71,7 @@ function EpicTicket({ status, hidden, featured, onClaim, onAnnounce }: EpicTicke
         }
       >
         {actions.length > 0 ? (
-          actions.map((action) => <ActionChip key={action.id} action={action} />)
+          <ChipList actions={actions} />
         ) : step?.kind === 'link' ? (
           <UiLink href={step.href} className={STEP_CHIP}>
             {step.label}

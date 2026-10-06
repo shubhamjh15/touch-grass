@@ -101,62 +101,69 @@ export function QuestBoardPanel({
           }
         />
       ) : (
-        <ol className="grid items-start gap-x-5 gap-y-4 lg:grid-cols-2">
-          {deck.map((quest) => (
-            <QuestTicket
-              key={`${quest.id}:${retry}`}
-              quest={quest}
-              state={ticketState(quest, over)}
-              hint={questHint(quest, hintContext)}
-              timeLeft={ticketLeft}
-              featured={quest.id === firstClaimable}
-              fresh={quest.id === freshId}
-              onClaim={onClaim}
-              onSwap={onSwap}
-              onTab={onTab}
-            />
-          ))}
-        </ol>
+        <div className="grid items-start gap-x-8 gap-y-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
+          <ol className="grid gap-4">
+            {deck.map((quest) => (
+              <QuestTicket
+                key={`${quest.id}:${retry}`}
+                quest={quest}
+                state={ticketState(quest, over)}
+                hint={questHint(quest, hintContext)}
+                timeLeft={ticketLeft}
+                featured={quest.id === firstClaimable}
+                fresh={quest.id === freshId}
+                onClaim={onClaim}
+                onSwap={onSwap}
+                onTab={onTab}
+              />
+            ))}
+          </ol>
+          <Panel variant="well" className="grid gap-3 px-4 py-4 lg:sticky lg:top-28">
+            {kind === 'daily' && swept ? (
+              <>
+                <Stamp label={COPY.daily.sweepStamp} hue="green" rotate={-4} className="my-1" />
+                <p className="text-body-sm font-semibold">
+                  {COPY.daily.sweepDone(XP_CLEAN_SWEEP)}{' '}
+                  <span className="font-medium text-ink-2">{COPY.daily.nextUp}</span>
+                </p>
+              </>
+            ) : swept ? (
+              <p className="text-body-sm font-semibold">{COPY.weekly.nextUp}</p>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <span className="type-slug font-semibold text-ink">
+                    {kind === 'daily' ? COPY.daily.sweepLabel : COPY.weekly.progressLabel}
+                  </span>
+                  <Meter
+                    pips
+                    value={claimed}
+                    max={quests.length}
+                    label={kind === 'daily' ? COPY.daily.sweepLabel : COPY.weekly.progressLabel}
+                    valueText={`${formatNumber(claimed)} of ${formatNumber(quests.length)} claimed`}
+                  />
+                  <span
+                    className="font-mono text-data-sm leading-none text-ink-2"
+                    aria-hidden="true"
+                  >
+                    {formatNumber(claimed)} / {formatNumber(quests.length)}
+                  </span>
+                </div>
+                <p className="text-body-sm text-ink-2">
+                  {kind === 'daily'
+                    ? COPY.daily.sweepHint(XP_CLEAN_SWEEP)
+                    : COPY.weekly.progressHint}
+                </p>
+              </>
+            )}
+            <p className="border-t-2 border-dashed border-ink-4 pt-3 text-caption text-ink-3">
+              {swept
+                ? COPY.honest
+                : `${swapsUsed > 0 ? copy.swapSpent : copy.swapRule} ${COPY.honest}`}
+            </p>
+          </Panel>
+        </div>
       )}
-
-      {kind === 'daily' && deck.length > 0 ? (
-        <Panel variant="well" className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4">
-          {swept ? (
-            <>
-              <Stamp label={COPY.daily.sweepStamp} hue="green" rotate={-4} className="my-1" />
-              <p className="min-w-0 flex-1 text-body-sm font-semibold">
-                {COPY.daily.sweepDone(XP_CLEAN_SWEEP)}{' '}
-                <span className="font-medium text-ink-2">{COPY.daily.nextUp}</span>
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                <span className="type-slug font-semibold text-ink">{COPY.daily.sweepLabel}</span>
-                <Meter
-                  pips
-                  value={claimed}
-                  max={quests.length}
-                  label={COPY.daily.sweepLabel}
-                  valueText={`${formatNumber(claimed)} of ${formatNumber(quests.length)} claimed`}
-                />
-                <span className="font-mono text-data-sm leading-none text-ink-2" aria-hidden="true">
-                  {formatNumber(claimed)} / {formatNumber(quests.length)}
-                </span>
-              </div>
-              <p className="min-w-0 flex-1 text-body-sm text-ink-2">
-                {COPY.daily.sweepHint(XP_CLEAN_SWEEP)}
-              </p>
-            </>
-          )}
-        </Panel>
-      ) : null}
-
-      {kind === 'weekly' && swept ? (
-        <Panel variant="well" className="px-4">
-          <p className="text-body-sm font-semibold">{COPY.weekly.nextUp}</p>
-        </Panel>
-      ) : null}
 
       {autoClaims.length > 0 ? (
         <TapeNote
@@ -167,12 +174,6 @@ export function QuestBoardPanel({
         >
           {autoClaimSentence(autoClaims)}
         </TapeNote>
-      ) : null}
-
-      {deck.length > 0 ? (
-        <p className="text-caption text-ink-3">
-          {swept ? COPY.honest : `${swapsUsed > 0 ? copy.swapSpent : copy.swapRule} ${COPY.honest}`}
-        </p>
       ) : null}
     </PageSection>
   );

@@ -154,8 +154,8 @@ describe('time left', () => {
     expect(weeklyLeft(4)).toBe('4 days left');
     expect(weeklyLeft(2)).toBe('2 days left');
     expect(weeklyLeft(1)).toBe('Ends tonight');
-    expect(headerSlug(4)).toBe('Resets at midnight · 4 days left this week');
-    expect(headerSlug(1)).toBe('Resets at midnight · week ends tonight');
+    expect(headerSlug(4)).toBe('4 days left this week');
+    expect(headerSlug(1)).toBe('Week ends tonight');
   });
 
   it('ends the week at the first moment of next Monday, local time', () => {

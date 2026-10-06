@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowRight, Repeat2 } from 'lucide-react';
-import { useRef, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import type { QuestView } from '@/game';
 import { cn } from '@/lib/cn';
 import { Button, CATEGORY, CATEGORY_ICON, TearStub, UiLink } from '@/ui';
@@ -40,6 +40,33 @@ export function ActionChip({ action }: { action: ActionLink }) {
   );
 }
 
+/** How many qualifying actions a slip shows before "+N more" opens the rest. */
+const CHIPS_SHOWN = 2;
+
+/** The actions that count, two at a time so a long list never swamps its ticket. */
+export function ChipList({ actions }: { actions: readonly ActionLink[] }) {
+  const [all, setAll] = useState(false);
+  const extra = actions.length - CHIPS_SHOWN;
+  const shown = all || extra <= 0 ? actions : actions.slice(0, CHIPS_SHOWN);
+  return (
+    <>
+      {shown.map((action) => (
+        <ActionChip key={action.id} action={action} />
+      ))}
+      {extra > 0 ? (
+        <button
+          type="button"
+          aria-expanded={all}
+          onClick={() => setAll((current) => !current)}
+          className={cn(CHIP, 'pl-3')}
+        >
+          {all ? COPY.fewer : COPY.more(extra)}
+        </button>
+      ) : null}
+    </>
+  );
+}
+
 /**
  * The slip tucked under a ticket: what counts toward it, and the one thing you may do about
  * it (swap, pin). It sits on the mat like the ticket, a sheet lower.
@@ -65,11 +92,9 @@ export function TicketTray({
       )}
     >
       {children ? (
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="flex min-w-0 flex-[1_1_13rem] flex-wrap items-center gap-x-2 gap-y-1.5">
           {label ? <span className="shrink-0 type-slug text-ink-3">{label}</span> : null}
-          <div className="scroll-row min-w-0 flex-1 items-center gap-1.5 [--row-pad:6px]">
-            {children}
-          </div>
+          {children}
         </div>
       ) : (
         <span className="flex-1" />
@@ -121,7 +146,7 @@ export function QuestTicket({
   if (hint.note) {
     counts = <p className="text-caption text-ink-2">{hint.note}</p>;
   } else if (hint.actions.length > 0) {
-    counts = hint.actions.map((action) => <ActionChip key={action.id} action={action} />);
+    counts = <ChipList actions={hint.actions} />;
   } else if (hint.step) {
     const step = hint.step;
     counts =
@@ -169,8 +194,11 @@ export function QuestTicket({
           action={
             canSwap ? (
               <Button variant="ghost" size="sm" icon={Repeat2} onClick={() => onSwap(quest)}>
-                {COPY.swap}
-                <span className="sr-only">: {quest.title}</span>
+                <span>
+                  {COPY.swapShort}
+                  <span className="max-sm:sr-only">{COPY.swapRest}</span>
+                  <span className="sr-only">: {quest.title}</span>
+                </span>
               </Button>
             ) : undefined
           }

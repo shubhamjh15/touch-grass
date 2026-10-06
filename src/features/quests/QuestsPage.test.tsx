@@ -9,6 +9,7 @@ import { resetSfx } from '@/lib/sfx';
 import { installPointerCapture } from '@/ui/testUtils';
 import { HOLD_MS } from './HoldButton';
 import QuestsPage from './QuestsPage';
+import { ChipList } from './QuestTicket';
 
 // A tiny stand-in for the router: `replace` changes the query string and re-renders readers.
 const nav = vi.hoisted(() => {
@@ -579,5 +580,32 @@ describe('epics', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'I actually did this' })).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Epics/ })).toHaveTextContent('0');
+  });
+});
+
+describe('the actions that count', () => {
+  const actions = ['a', 'b', 'c', 'd'].map((id) => ({
+    id,
+    label: `Action ${id}`,
+    title: `Do ${id}`,
+    category: 'eat' as const,
+    href: `/log?action=${id}`,
+  }));
+
+  it('shows two and opens the rest on request', async () => {
+    const user = userEvent.setup();
+    render(<ChipList actions={actions} />);
+    expect(screen.getAllByRole('link')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: '+2 more' }));
+    expect(screen.getAllByRole('link')).toHaveLength(4);
+    await user.click(screen.getByRole('button', { name: 'Show fewer' }));
+    expect(screen.getAllByRole('link')).toHaveLength(2);
+  });
+
+  it('shows a short list as it is', () => {
+    render(<ChipList actions={actions.slice(0, 2)} />);
+    expect(screen.getAllByRole('link')).toHaveLength(2);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

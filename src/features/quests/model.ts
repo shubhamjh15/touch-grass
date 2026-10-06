@@ -120,10 +120,9 @@ export function weekEndsAt(now: number): number {
   return monday.getTime();
 }
 
-/** The page slug: "Resets at midnight · 4 days left this week". */
+/** The page slug: "4 days left this week". The daily reset is on the board itself. */
 export function headerSlug(daysLeft: number): string {
-  const week = daysLeft > 1 ? `${pluralize(daysLeft, 'day')} left this week` : 'week ends tonight';
-  return `Resets at midnight · ${week}`;
+  return daysLeft > 1 ? `${pluralize(daysLeft, 'day')} left this week` : 'Week ends tonight';
 }
 
 // ── What moves a quest forward ──────────────────────────────────────────────

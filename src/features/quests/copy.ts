@@ -28,6 +28,8 @@ export const COPY = {
     idle: 'A week is long. These keep count while you get on with it.',
     swept: 'Week cleared. All three torn off.',
     nextUp: 'Three new ones on Monday.',
+    progressLabel: 'This week',
+    progressHint: 'Tear off all three and the week is cleared.',
     swapRule: "One swap a week, on a quest you haven't started.",
     swapSpent: "This week's swap is used. A new one arrives on Monday.",
     rollingOver: 'Tearing off last week…',
@@ -37,10 +39,13 @@ export const COPY = {
     count === 1
       ? '1 ready. Tear off its stub.'
       : `${formatNumber(count)} ready. Tear off the stubs.`,
-  swap: 'Swap this quest',
+  swapShort: 'Swap',
+  swapRest: ' this quest',
   swapped: (title: string) => `Swapped. New quest: ${title}.`,
   swapRefused: "That one can't be swapped any more.",
   counts: 'Counts',
+  more: (count: number) => `+${formatNumber(count)} more`,
+  fewer: 'Show fewer',
   claimRefused: {
     title: "That one isn't finished any more.",
     meta: 'A log was peeled off. Its progress is back on the card.',
