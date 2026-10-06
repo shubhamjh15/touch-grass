@@ -31,7 +31,13 @@ export type BurstKind =
   /** Fruit or blossom chips popping across the crown, left to right. */
   | 'fruit'
   /** Petals drifting down for a while. */
-  | 'petals';
+  | 'petals'
+  /** White paper chips bursting in a star where a prop lands. */
+  | 'chips'
+  /** Small bright sparks that rise and fade: growth, streaks, stars. */
+  | 'sparks'
+  /** One leaf let go by the crown, drifting down on the wind. */
+  | 'drift';
 
 /** Everything a frame of pulses asks of the scene. All zero (or -1) at rest. */
 export interface PulseChannels {

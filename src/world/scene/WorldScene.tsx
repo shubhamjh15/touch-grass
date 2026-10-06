@@ -28,6 +28,7 @@ import { Island } from './Island';
 import { Lights } from './Lights';
 import { live } from './live';
 import { Meadow } from './Meadow';
+import { Props } from './Props';
 import { useScene } from './sceneStore';
 import { Sky } from './Sky';
 import { Tree } from './Tree';
@@ -320,6 +321,7 @@ function World(props: SceneProps) {
         <Meadow />
         <Water />
         <Tree />
+        <Props shadows={tier.shadowMap > 0} />
       </IslandGroup>
       <Bursts />
       {tier.motes > 0 && (

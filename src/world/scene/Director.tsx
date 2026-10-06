@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { clamp, clamp01, damp } from '@/lib/math';
 import { atmosphereAt, moodAt } from '../atmosphere';
 import { viewFor, type View } from '../camera';
-import { CAMERA, MOTION } from '../config';
+import { CAMERA, ISLAND, MOTION } from '../config';
 import { hourDelta, wrapHour } from '../daylight';
 import { emitWorldHover, emitWorldTap, onTap, pointer } from '../interaction';
 import { PulseScheduler, type BurstKind } from '../pulses';
@@ -40,6 +40,9 @@ export function Director({ frame }: { frame: RefObject<WorldFrame | null> }) {
     atmosphereHour: Number.NaN,
     moodVitality: Number.NaN,
     scheduler: new PulseScheduler(),
+    propsRef: null as readonly string[] | null,
+    stageId: null as string | null,
+    stageSince: 0,
   });
 
   useEffect(() => {
@@ -67,7 +70,9 @@ export function Director({ frame }: { frame: RefObject<WorldFrame | null> }) {
     live.aspect = three.size.width / Math.max(1, three.size.height);
 
     // Structure: another tree or another island is a rebuild, done by React.
-    if (snapshot.seed !== live.seed || snapshot.species !== live.species || !local.started) {
+    const rebuilt =
+      snapshot.seed !== live.seed || snapshot.species !== live.species || !local.started;
+    if (rebuilt) {
       const replaced = local.started;
       live.seed = snapshot.seed;
       live.species = snapshot.species;
@@ -82,6 +87,39 @@ export function Director({ frame }: { frame: RefObject<WorldFrame | null> }) {
     const sky = current.stage ? current.stage.options.sky : useScene.getState().sky;
     if (sky !== useScene.getState().sky || current.mode !== useScene.getState().mode) {
       useScene.setState({ sky, mode: current.mode });
+    }
+    live.explore = current.stage?.options.explore === true;
+
+    // Which toys stand on the island: structural, so React mounts and unmounts them. A
+    // prop earned while the user is watching drops in; props that come with another
+    // island or another page's preview simply stand there.
+    const stageId = current.stage ? current.stage.id : null;
+    if (stageId !== local.stageId) {
+      local.stageId = stageId;
+      local.stageSince = current.time;
+    }
+    if (snapshot.props !== local.propsRef) {
+      local.propsRef = snapshot.props;
+      const key = [...snapshot.props].sort().join(',');
+      const previous = useScene.getState().props;
+      if (key !== previous) {
+        live.arrived.clear();
+        if (!rebuilt && !reduced && current.time - local.stageSince > 0.6) {
+          const had = new Set(previous.split(','));
+          let order = 0;
+          for (const id of snapshot.props) {
+            if (had.has(id)) continue;
+            live.arrived.set(`prop:${id}`, current.time + order * 0.12);
+            order += 1;
+          }
+        }
+        useScene.setState({ props: key });
+      }
+    }
+    let rings = 0;
+    for (const days of ISLAND.emblem.rings) if (snapshot.ageDays >= days) rings += 1;
+    if (Math.max(1, rings) !== useScene.getState().rings) {
+      useScene.setState({ rings: Math.max(1, rings) });
     }
 
     // Growth, vitality and hour ease towards the snapshot.
@@ -115,6 +153,12 @@ export function Director({ frame }: { frame: RefObject<WorldFrame | null> }) {
       local.moodVitality = live.vitality;
       live.mood = moodAt(live.vitality);
     }
+    // Lamps and night creatures switch with a little hysteresis, so dusk never flickers.
+    const night = useScene.getState().night;
+    if (night ? live.atmosphere.night < 0.25 : live.atmosphere.night > 0.4) {
+      useScene.setState({ night: !night });
+    }
+    live.startle = Math.max(0, live.startle - dt * 0.7);
 
     // Pulses: channels for this frame, and the bursts that became due.
     const share = BURST_SHARE[live.quality];

@@ -14,6 +14,7 @@ const options = (mode: StageMode, priority = 0): StageOptions => ({
   anchor: STAGE_DEFAULTS[mode].anchor,
   priority,
   sky: mode !== 'companion',
+  explore: false,
 });
 
 /** A stage element as `WorldStage` renders it: a box with a host for the world layer. */

@@ -23,6 +23,8 @@ export interface StageOptions {
   priority: number;
   /** Whether the printed sky is drawn inside this stage box. */
   sky: boolean;
+  /** The full-screen Explore view: free look, zoom, a camera that flies in. */
+  explore: boolean;
 }
 
 export interface StageRecord {

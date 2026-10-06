@@ -13,6 +13,12 @@ interface SceneState {
   /** The active stage wants the painted sky behind the island (otherwise the canvas is clear). */
   sky: boolean;
   mode: StageMode;
+  /** Unlocked island props, as a sorted comma-separated key (stable between frames). */
+  props: string;
+  /** Growth rings on the medallion: milestones of days shown up that were reached. */
+  rings: number;
+  /** After dark: lamps are lit and the night creatures are out. */
+  night: boolean;
 }
 
 export const useScene = create<SceneState>()(() => ({
@@ -20,6 +26,9 @@ export const useScene = create<SceneState>()(() => ({
   species: 'oak',
   sky: true,
   mode: 'companion',
+  props: '',
+  rings: 1,
+  night: false,
 }));
 
 /** Frees a GPU resource when it is replaced or its owner unmounts. */

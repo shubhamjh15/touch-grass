@@ -126,6 +126,7 @@ export function WorldStage({
       anchor,
       priority,
       sky: showSky,
+      explore: false,
     }),
     [mode, previewKey, canInteract, landmarks, fit, anchor, priority, showSky],
   );

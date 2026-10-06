@@ -105,6 +105,33 @@ const PRESETS: Record<BurstKind, Preset> = {
     flutter: 1.6,
     spin: 3,
   },
+  chips: {
+    colours: ['#ffffff', '#fffbeb', '#fef9c3'],
+    life: [0.45, 0.8],
+    size: [0.08, 0.14],
+    gravity: 4.5,
+    drag: 1.2,
+    flutter: 0.2,
+    spin: 10,
+  },
+  sparks: {
+    colours: ['#fff7c2', '#fde047', '#ffffff', '#fdba74'],
+    life: [0.7, 1.3],
+    size: [0.05, 0.1],
+    gravity: -1.1,
+    drag: 2.2,
+    flutter: 0.5,
+    spin: 8,
+  },
+  drift: {
+    colours: ['#4ade80', '#86efac', '#bef264', '#fde047'],
+    life: [3.2, 4.6],
+    size: [0.12, 0.17],
+    gravity: 0.28,
+    drag: 1.4,
+    flutter: 1.5,
+    spin: 2.2,
+  },
 };
 
 const matrix = new THREE.Matrix4();
@@ -196,6 +223,22 @@ export function Bursts() {
           vx *= 1.4;
           vz *= 1.4;
           vy = 1.2 + random();
+        } else if (kind === 'chips') {
+          vx *= 1.9;
+          vz *= 1.9;
+          vy = 1.6 + random() * 1.2;
+        } else if (kind === 'sparks') {
+          vx *= 0.7;
+          vz *= 0.7;
+          vy = 0.5 + random() * 1.1;
+        } else if (kind === 'drift') {
+          // Let go at the rim of the crown and carried off by the wind.
+          x = tree.x + Math.cos(angle) * reach * (0.6 + out * 0.4);
+          z = tree.z + Math.sin(angle) * reach * (0.6 + out * 0.4);
+          y = crownY + (random() - 0.5) * tree.top * 0.3;
+          vx = 0.35 + random() * 0.3;
+          vz = 0.2 * (random() - 0.5);
+          vy = -0.15;
         }
         if (at) {
           x = at[0] + (random() - 0.5) * 0.4;

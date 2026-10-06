@@ -46,6 +46,19 @@ export interface Live {
   hover: string | null;
   /** Width over height of the canvas. */
   aspect: number;
+  /**
+   * When a part (`prop:bench`) joined the island, in scene seconds: it drops in from
+   * then. Parts that were there when the world loaded are not listed.
+   */
+  arrived: Map<string, number>;
+  /** When a part was last tapped, in scene seconds. */
+  tapped: Map<string, number>;
+  /** 0..1: creatures were startled just now; decays by itself. */
+  startle: number;
+  /** Where the last tap or startle happened, in island space. */
+  startleAt: [number, number, number];
+  /** The active stage is the full-screen Explore view. */
+  explore: boolean;
 }
 
 export const live: Live = {
@@ -72,6 +85,11 @@ export const live: Live = {
   shake: 0,
   hover: null,
   aspect: 1,
+  arrived: new Map(),
+  tapped: new Map(),
+  startle: 0,
+  startleAt: [0, 0, 0],
+  explore: false,
 };
 
 /**
