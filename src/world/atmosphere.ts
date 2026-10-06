@@ -94,7 +94,11 @@ const DAY: Omit<Key, 'hour'> = {
   shadow: 0.78,
 };
 
-/** The day in keyframes; hours between two keys are blended in OKLab. */
+/**
+ * The day in keyframes; hours between two keys are blended in OKLab. The key light stays
+ * pale even at dawn and dusk: a saturated orange light on green grass is mud, so the
+ * warmth of those hours is carried by the sky, the clouds and the haze instead.
+ */
 const KEYS: readonly Key[] = [
   { hour: 0, ...NIGHT },
   { hour: 4.6, ...NIGHT },
@@ -103,7 +107,7 @@ const KEYS: readonly Key[] = [
     zenith: '#7f9cf0',
     horizon: '#ffc9a8',
     haze: '#ffe3d2',
-    light: '#ffc79a',
+    light: '#ffe2c4',
     intensity: 2.36,
     skyFill: '#d3caf7',
     groundFill: '#d9b9a6',
@@ -135,7 +139,7 @@ const KEYS: readonly Key[] = [
     zenith: '#5b86e6',
     horizon: '#ffd08a',
     haze: '#ffe6bd',
-    light: '#ffb466',
+    light: '#ffdcae',
     intensity: 2.95,
     skyFill: '#d0c6f2',
     groundFill: '#e0b98c',
@@ -150,10 +154,10 @@ const KEYS: readonly Key[] = [
     zenith: '#3b3f95',
     horizon: '#ff9a7a',
     haze: '#c98aa0',
-    light: '#ff8f6b',
+    light: '#ffc9a6',
     intensity: 2.25,
-    skyFill: '#a79ee6',
-    groundFill: '#a27f95',
+    skyFill: '#cdbff0',
+    groundFill: '#c4a1a8',
     fill: 1.5,
     orb: '#ff7a55',
     glow: '#ff9f80',

@@ -305,7 +305,14 @@ export class TreeRig {
     // Seed leaves: two rounded leaves, big and bright while the tree is a sprout.
     const seedLeafGeo = seedLeafGeometry();
     const seedLeafMaterial = toyMaterial(
-      { color: palette.shoot, side: THREE.DoubleSide },
+      // A little light of their own: the sprout is all a new user has, so it must read
+      // as fresh and bright at any hour and from any side.
+      {
+        color: palette.shoot,
+        emissive: palette.shoot,
+        emissiveIntensity: 0.3,
+        side: THREE.DoubleSide,
+      },
       {
         sway: 'leaf',
         mood: true,
