@@ -17,7 +17,7 @@ import { gameActions, useGameEvents, useProfile, useSettings, worldPulsesFor } f
 import { formatCo2Parts } from '@/lib/format';
 import { useReducedMotion } from '@/lib/hooks';
 import { play } from '@/lib/sfx';
-import { Approx, dismissToast, toast } from '@/ui';
+import { Approx, Co2e, dismissToast, toast } from '@/ui';
 import { emitPulse } from '@/world';
 import { ROUTES } from '../routes';
 import { useShellStore } from '../shellStore';
@@ -50,7 +50,8 @@ function metaOf(spec: ToastSpec): ReactNode {
   return (
     <>
       <Approx weight="mono" />
-      {value} {unit} CO2e{spec.meta ? ` · ${spec.meta}` : ''}
+      {value} {unit} <Co2e />
+      {spec.meta ? ` · ${spec.meta}` : ''}
     </>
   );
 }
