@@ -1,412 +1,422 @@
 import * as THREE from 'three';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { mulberry32 } from '@/lib/rng';
-import type { ModelData } from '../props/kit';
 import type { Pose, Skeleton } from '../tree/types';
 
 /**
- * Geometry builders. Every solid carries an `aHull` attribute: the direction (and
- * miter length) its surface moves when the sticker passes swell it. Fills never use
- * vertex normals: flat facets come from screen-space derivatives, round shapes shade
- * from the hull direction.
+ * The small shapes the world is assembled from. Every builder returns a fresh geometry
+ * that its caller owns and disposes. Conventions: y is up; a blade, leaf or stem has its
+ * base at the origin and its tip at y = 1; `aTip` is 0 at the base and 1 at the tip
+ * (the wind and the base-to-tip shade read it).
  */
-
-type Triangles = number[];
-
-/**
- * Hull vectors for a triangle soup. Vertices that share a position are welded, and each
- * gets the vector `m` that best satisfies `m . n = 1` for all the face normals `n`
- * around it: every face plane then moves out by exactly one unit, so a hard-edged
- * low-poly solid keeps a constant outline width and sharp, mitred corners instead of
- * splitting open. `maxMiter` caps the length at spiky corners; 1 gives plain smooth normals.
- */
-export function hullVectors(positions: ArrayLike<number>, maxMiter: number): Float32Array {
-  const count = positions.length / 3;
-  const groups = new Map<string, { normals: number[]; members: number[] }>();
-  const key = (i: number) =>
-    `${Math.round((positions[i * 3] as number) * 2000)},${Math.round((positions[i * 3 + 1] as number) * 2000)},${Math.round((positions[i * 3 + 2] as number) * 2000)}`;
-
-  for (let t = 0; t < count; t += 3) {
-    const ax = positions[t * 3] as number;
-    const ay = positions[t * 3 + 1] as number;
-    const az = positions[t * 3 + 2] as number;
-    const ux = (positions[t * 3 + 3] as number) - ax;
-    const uy = (positions[t * 3 + 4] as number) - ay;
-    const uz = (positions[t * 3 + 5] as number) - az;
-    const vx = (positions[t * 3 + 6] as number) - ax;
-    const vy = (positions[t * 3 + 7] as number) - ay;
-    const vz = (positions[t * 3 + 8] as number) - az;
-    let nx = uy * vz - uz * vy;
-    let ny = uz * vx - ux * vz;
-    let nz = ux * vy - uy * vx;
-    const length = Math.hypot(nx, ny, nz);
-    if (length < 1e-12) continue;
-    nx /= length;
-    ny /= length;
-    nz /= length;
-    for (let corner = 0; corner < 3; corner += 1) {
-      const id = key(t + corner);
-      let group = groups.get(id);
-      if (!group) {
-        group = { normals: [], members: [] };
-        groups.set(id, group);
-      }
-      group.members.push(t + corner);
-      // Coplanar neighbours count once, or large fans would outvote a single side wall.
-      let known = false;
-      for (let n = 0; n < group.normals.length; n += 3) {
-        const d =
-          (group.normals[n] as number) * nx +
-          (group.normals[n + 1] as number) * ny +
-          (group.normals[n + 2] as number) * nz;
-        if (d > 0.995) known = true;
-      }
-      if (!known) group.normals.push(nx, ny, nz);
-    }
-  }
-
-  const hull = new Float32Array(count * 3);
-  const damping = 0.08;
-  for (const group of groups.values()) {
-    // Damped least squares towards the average normal keeps the system well-posed
-    // when the faces around a vertex are (nearly) coplanar.
-    let sx = 0;
-    let sy = 0;
-    let sz = 0;
-    const a = [damping, 0, 0, 0, damping, 0, 0, 0, damping];
-    for (let n = 0; n < group.normals.length; n += 3) {
-      const x = group.normals[n] as number;
-      const y = group.normals[n + 1] as number;
-      const z = group.normals[n + 2] as number;
-      sx += x;
-      sy += y;
-      sz += z;
-      a[0] = (a[0] as number) + x * x;
-      a[1] = (a[1] as number) + x * y;
-      a[2] = (a[2] as number) + x * z;
-      a[4] = (a[4] as number) + y * y;
-      a[5] = (a[5] as number) + y * z;
-      a[8] = (a[8] as number) + z * z;
-    }
-    a[3] = a[1] as number;
-    a[6] = a[2] as number;
-    a[7] = a[5] as number;
-    const mean = Math.hypot(sx, sy, sz) || 1;
-    const bx = sx + (damping * sx) / mean;
-    const by = sy + (damping * sy) / mean;
-    const bz = sz + (damping * sz) / mean;
-    const [a0, a1, a2, a3, a4, a5, a6, a7, a8] = a as [
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-    ];
-    const det = a0 * (a4 * a8 - a5 * a7) - a1 * (a3 * a8 - a5 * a6) + a2 * (a3 * a7 - a4 * a6);
-    let mx = sx / mean;
-    let my = sy / mean;
-    let mz = sz / mean;
-    if (Math.abs(det) > 1e-9) {
-      mx = (bx * (a4 * a8 - a5 * a7) - a1 * (by * a8 - a5 * bz) + a2 * (by * a7 - a4 * bz)) / det;
-      my = (a0 * (by * a8 - a5 * bz) - bx * (a3 * a8 - a5 * a6) + a2 * (a3 * bz - by * a6)) / det;
-      mz = (a0 * (a4 * bz - by * a7) - a1 * (a3 * bz - by * a6) + bx * (a3 * a7 - a4 * a6)) / det;
-    }
-    const length = Math.hypot(mx, my, mz) || 1;
-    const capped = Math.min(Math.max(length, 1), maxMiter) / length;
-    for (const member of group.members) {
-      hull[member * 3] = mx * capped;
-      hull[member * 3 + 1] = my * capped;
-      hull[member * 3 + 2] = mz * capped;
-    }
-  }
-  return hull;
-}
-
-/** A static solid from a triangle soup, with optional per-vertex tones and parts. */
-export function soupGeometry(
-  positions: ArrayLike<number>,
-  maxMiter: number,
-  tones?: ArrayLike<number>,
-  parts?: ArrayLike<number>,
-  normals?: ArrayLike<number>,
-): THREE.BufferGeometry {
-  const geometry = new THREE.BufferGeometry();
-  const count = positions.length / 3;
-  geometry.setAttribute('position', new THREE.BufferAttribute(Float32Array.from(positions), 3));
-  geometry.setAttribute('aHull', new THREE.BufferAttribute(hullVectors(positions, maxMiter), 3));
-  if (tones) {
-    const data = new Float32Array(count * 3);
-    for (let i = 0; i < count; i += 1) {
-      data[i * 3] = tones[i] as number;
-      data[i * 3 + 1] = tones[i] as number;
-    }
-    geometry.setAttribute('aTone', new THREE.BufferAttribute(data, 3));
-  }
-  if (parts) geometry.setAttribute('aPart', new THREE.BufferAttribute(Float32Array.from(parts), 1));
-  if (normals) {
-    geometry.setAttribute('aNormal', new THREE.BufferAttribute(Float32Array.from(normals), 3));
-  }
-  return geometry;
-}
-
-/** A unit sphere of triangles: the glossy foliage bubble. Its hull vector is its position. */
-export function blobGeometry(detail: number): THREE.BufferGeometry {
-  const source = new THREE.IcosahedronGeometry(1, detail);
-  const geometry = new THREE.BufferGeometry();
-  const position = source.getAttribute('position').clone();
-  geometry.setAttribute('position', position);
-  geometry.setAttribute('aHull', position.clone());
-  source.dispose();
-  return geometry;
-}
 
 const TAU = Math.PI * 2;
 
-/** A cone tier with a scalloped hem. Base at y = 0, apex at y = 1, radius 1. */
-export function tierGeometry(teeth: number): THREE.BufferGeometry {
-  const soup: Triangles = [];
-  const hem: Array<[number, number, number]> = [];
-  for (let i = 0; i < teeth * 2; i += 1) {
-    const angle = (i / (teeth * 2)) * TAU;
-    const tip = i % 2 === 0;
-    const radius = tip ? 1 : 0.8;
-    hem.push([Math.cos(angle) * radius, tip ? 0 : 0.11, Math.sin(angle) * radius]);
-  }
-  // Shading normals follow the smooth cone, so the shade falls in one clean wedge.
-  const normals: number[] = [];
-  const slope = (point: [number, number, number]): [number, number, number] => {
-    const flat = Math.hypot(point[0], point[2]) || 1;
-    return [point[0] / flat / Math.SQRT2, Math.SQRT1_2, point[2] / flat / Math.SQRT2];
-  };
-  for (let i = 0; i < hem.length; i += 1) {
-    const a = hem[i] as [number, number, number];
-    const b = hem[(i + 1) % hem.length] as [number, number, number];
-    const na = slope(a);
-    const nb = slope(b);
-    soup.push(0, 1, 0, ...b, ...a);
-    normals.push((na[0] + nb[0]) / 2, na[1], (na[2] + nb[2]) / 2, ...nb, ...na);
-    soup.push(0, 0.2, 0, ...a, ...b);
-    normals.push(0, -1, 0, 0, -1, 0, 0, -1, 0);
-  }
-  return soupGeometry(soup, 1.3, undefined, undefined, normals);
-}
-
-/**
- * A leaf bud: base at the origin, tip at y = 1. It is a flattened four-sided spindle
- * rather than a flat card, so it shows a leaf silhouette from every side and is a
- * closed solid the outline passes can swell.
- */
-export function leafGeometry(): THREE.BufferGeometry {
-  const rings: Array<[number, number]> = [
-    [0.2, 0.2],
-    [0.5, 0.3],
-    [0.8, 0.17],
-  ];
-  const corner = (ring: [number, number], side: number): [number, number, number] => {
-    const angle = (side / 4) * TAU;
-    return [Math.cos(angle) * ring[1], ring[0], Math.sin(angle) * ring[1] * 0.55];
-  };
-  const soup: Triangles = [];
-  for (let side = 0; side < 4; side += 1) {
-    const next = (side + 1) % 4;
-    const first = rings[0] as [number, number];
-    const last = rings[rings.length - 1] as [number, number];
-    soup.push(0, 0, 0, ...corner(first, side), ...corner(first, next));
-    soup.push(0, 1, 0, ...corner(last, next), ...corner(last, side));
-    for (let r = 0; r < rings.length - 1; r += 1) {
-      const lower = rings[r] as [number, number];
-      const upper = rings[r + 1] as [number, number];
-      soup.push(...corner(upper, side), ...corner(lower, next), ...corner(lower, side));
-      soup.push(...corner(upper, side), ...corner(upper, next), ...corner(lower, next));
-    }
-  }
-  return soupGeometry(soup, 1.15);
-}
-
-/** A five-petal blossom facing +z. Part 1 marks the yellow heart. */
-export function blossomGeometry(): THREE.BufferGeometry {
-  const soup: Triangles = [];
-  const parts: number[] = [];
-  const points = 10;
-  const rim = (i: number, radius: number, z: number): [number, number, number] => {
-    const angle = (i / points) * TAU + Math.PI / 2;
-    return [Math.cos(angle) * radius, Math.sin(angle) * radius, z];
-  };
-  for (let i = 0; i < points; i += 1) {
-    const j = (i + 1) % points;
-    const outerA = rim(i, i % 2 === 0 ? 1 : 0.62, 0);
-    const outerB = rim(j, j % 2 === 0 ? 1 : 0.62, 0);
-    const innerA = rim(i, 0.32, 0.16);
-    const innerB = rim(j, 0.32, 0.16);
-    soup.push(0, 0, 0.22, ...innerA, ...innerB);
-    parts.push(1, 1, 1);
-    soup.push(...innerA, ...outerA, ...outerB, ...innerA, ...outerB, ...innerB);
-    parts.push(0, 0, 0, 0, 0, 0);
-    soup.push(0, 0, -0.12, ...outerB, ...outerA);
-    parts.push(0, 0, 0);
-  }
-  return soupGeometry(soup, 1, undefined, parts);
-}
-
-/** A pebble: a squashed, slightly battered icosahedron with flat facets. */
-export function rockGeometry(): THREE.BufferGeometry {
-  const source = new THREE.IcosahedronGeometry(1, 0);
-  const position = source.getAttribute('position');
-  const random = mulberry32(7);
-  const moved = new Map<string, [number, number, number]>();
-  const soup: Triangles = [];
-  for (let i = 0; i < position.count; i += 1) {
-    const x = position.getX(i);
-    const y = position.getY(i);
-    const z = position.getZ(i);
-    const id = `${x.toFixed(3)},${y.toFixed(3)},${z.toFixed(3)}`;
-    let point = moved.get(id);
-    if (!point) {
-      const stretch = 0.82 + random() * 0.36;
-      point = [x * stretch, Math.max(y * stretch, -0.45), z * stretch];
-      moved.set(id, point);
-    }
-    soup.push(...point);
-  }
-  source.dispose();
-  return soupGeometry(soup, 1.25);
-}
-
-/** Three blades of grass as slim pyramids fanning from one root. */
-export function tuftGeometry(): THREE.BufferGeometry {
-  const soup: Triangles = [];
-  const blades: Array<[number, number, number]> = [
-    [0, 1, 0],
-    [-0.62, 0.72, 0.12],
-    [0.6, 0.66, -0.1],
-  ];
-  blades.forEach(([tx, ty, tz], blade) => {
-    const turn = blade * 2.1;
-    const base: Array<[number, number, number]> = [0, 1, 2].map((corner) => {
-      const angle = turn + (corner / 3) * TAU;
-      return [tx * 0.3 + Math.cos(angle) * 0.2, -0.05, tz * 0.3 + Math.sin(angle) * 0.2];
-    });
-    for (let i = 0; i < 3; i += 1) {
-      const a = base[i] as [number, number, number];
-      const b = base[(i + 1) % 3] as [number, number, number];
-      soup.push(tx, ty, tz, ...b, ...a);
-    }
-    soup.push(...(base[0] as number[]), ...(base[1] as number[]), ...(base[2] as number[]));
-  });
-  const geometry = soupGeometry(soup, 1);
-  // Blades lean in the gusts: nothing at the root, fully at the tip.
-  const sway = new Float32Array(soup.length);
-  for (let i = 0; i < soup.length / 3; i += 1) {
-    const height = Math.max(0, soup[i * 3 + 1] as number);
-    sway[i * 3] = height * 0.35;
-    sway[i * 3 + 1] = height * height * 0.3;
-  }
-  geometry.setAttribute('aSway', new THREE.BufferAttribute(sway, 3));
-  return geometry;
-}
-
-/**
- * A paper chip: a flat diamond with a slight bevel, one unit across. Stretched it is a
- * leaf, a petal, a wing or a blade; turned 45 degrees it is a confetti square.
- */
-export function chipGeometry(): THREE.BufferGeometry {
-  const soup: Triangles = [];
-  const rim: Array<[number, number, number]> = [
-    [0.5, 0, 0],
-    [0, 0.5, 0],
-    [-0.5, 0, 0],
-    [0, -0.5, 0],
-  ];
-  for (let i = 0; i < 4; i += 1) {
-    const a = rim[i] as [number, number, number];
-    const b = rim[(i + 1) % 4] as [number, number, number];
-    soup.push(0, 0, 0.07, ...a, ...b);
-    soup.push(0, 0, -0.07, ...b, ...a);
-  }
-  return soupGeometry(soup, 1.2);
-}
-
-/** The merged prop mesh: tones, shading normals, gloss marks, wind weights and the two slots. */
-export function propsGeometry(model: ModelData): THREE.BufferGeometry {
-  const geometry = new THREE.BufferGeometry();
-  const count = model.positions.length / 3;
-  const tones = new Float32Array(count * 3);
+/** `count` points spread evenly over the unit sphere. */
+function fibonacciSphere(count: number): THREE.Vector3[] {
+  const points: THREE.Vector3[] = [];
+  const golden = Math.PI * (3 - Math.sqrt(5));
   for (let i = 0; i < count; i += 1) {
-    tones[i * 3] = model.tones[i] as number;
-    tones[i * 3 + 1] = model.tones[i] as number;
-    tones[i * 3 + 2] = model.gloss[i] as number;
+    const y = 1 - ((i + 0.5) / count) * 2;
+    const radius = Math.sqrt(1 - y * y);
+    points.push(new THREE.Vector3(Math.cos(golden * i) * radius, y, Math.sin(golden * i) * radius));
   }
-  const attribute = (data: ArrayLike<number>, size: number) =>
-    new THREE.BufferAttribute(Float32Array.from(data), size);
-  geometry.setAttribute('position', attribute(model.positions, 3));
-  geometry.setAttribute('aHull', new THREE.BufferAttribute(hullVectors(model.positions, 1.3), 3));
-  geometry.setAttribute('aNormal', attribute(model.normals, 3));
-  geometry.setAttribute('aTone', new THREE.BufferAttribute(tones, 3));
-  geometry.setAttribute('aSway', attribute(model.sway, 3));
-  geometry.setAttribute('aProp', attribute(model.inner, 4));
-  geometry.setAttribute('aBase', attribute(model.outer, 4));
+  return points;
+}
+
+/** An icosphere with shared vertices, so normals come out smooth. */
+function smoothSphere(detail: number): THREE.BufferGeometry {
+  const source = new THREE.IcosahedronGeometry(1, detail);
+  source.deleteAttribute('normal');
+  source.deleteAttribute('uv');
+  const merged = mergeVertices(source, 1e-4);
+  source.dispose();
+  return merged;
+}
+
+/**
+ * A foliage puff: a sphere swollen into a dozen soft knobs, like a head of broccoli.
+ * Radius about 1. The same shape serves the crown, the bushes and the clouds.
+ */
+export function puffGeometry(detail: number, knobs = 13, swell = 0.24): THREE.BufferGeometry {
+  const geometry = smoothSphere(detail);
+  const centres = fibonacciSphere(knobs);
+  const position = geometry.getAttribute('position') as THREE.BufferAttribute;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < position.count; i += 1) {
+    v.fromBufferAttribute(position, i).normalize();
+    let knob = 0;
+    for (const centre of centres) {
+      const near = THREE.MathUtils.smoothstep(v.dot(centre), 0.55, 1);
+      if (near > knob) knob = near;
+    }
+    v.multiplyScalar(1 - swell * 0.55 + swell * knob);
+    position.setXYZ(i, v.x, v.y, v.z);
+  }
+  geometry.computeVertexNormals();
   return geometry;
 }
 
-/** The ring plaque: a short elliptical plug facing +z, centred on the origin. */
-export function emblemGeometry(
-  width: number,
-  height: number,
-  depth: number,
-  tone: number,
+/**
+ * Flips every triangle of an indexed geometry whose face looks away from `reference`
+ * (a direction given for the triangle's centre), then rebuilds the normals. It lets a
+ * builder list faces without minding the winding.
+ */
+export function orient(
+  geometry: THREE.BufferGeometry,
+  reference: (
+    x: number,
+    y: number,
+    z: number,
+    triangle: number,
+  ) => readonly [number, number, number],
 ): THREE.BufferGeometry {
-  const soup: Triangles = [];
-  const sides = 16;
-  const point = (i: number, z: number): [number, number, number] => {
-    const angle = (i / sides) * TAU;
-    return [Math.cos(angle) * width, Math.sin(angle) * height, z];
-  };
-  for (let i = 0; i < sides; i += 1) {
-    const j = (i + 1) % sides;
-    soup.push(0, 0, depth, ...point(i, depth), ...point(j, depth));
-    soup.push(...point(i, depth), ...point(i, 0), ...point(j, 0));
-    soup.push(...point(i, depth), ...point(j, 0), ...point(j, depth));
-    soup.push(0, 0, 0, ...point(j, 0), ...point(i, 0));
+  const index = geometry.getIndex();
+  const position = geometry.getAttribute('position') as THREE.BufferAttribute;
+  if (!index) return geometry;
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  const normal = new THREE.Vector3();
+  for (let t = 0; t < index.count; t += 3) {
+    const ia = index.getX(t);
+    const ib = index.getX(t + 1);
+    const ic = index.getX(t + 2);
+    a.fromBufferAttribute(position, ia);
+    b.fromBufferAttribute(position, ib);
+    c.fromBufferAttribute(position, ic);
+    normal.subVectors(b, a).cross(c.clone().sub(a));
+    const out = reference(
+      (a.x + b.x + c.x) / 3,
+      (a.y + b.y + c.y) / 3,
+      (a.z + b.z + c.z) / 3,
+      t / 3,
+    );
+    if (normal.x * out[0] + normal.y * out[1] + normal.z * out[2] < 0) {
+      index.setX(t + 1, ic);
+      index.setX(t + 2, ib);
+    }
   }
-  return soupGeometry(soup, 1.2, new Float32Array(soup.length / 3).fill(tone));
+  index.needsUpdate = true;
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
-/** Flat marks printed on a surface (the sundial's hour ticks): no hull, so no outline. */
-export function decalGeometry(positions: ArrayLike<number>, tone: number): THREE.BufferGeometry {
+function withTips(geometry: THREE.BufferGeometry, tips: number[]): THREE.BufferGeometry {
+  geometry.setAttribute('aTip', new THREE.Float32BufferAttribute(tips, 1));
+  return geometry;
+}
+
+/** A leaf card: a folded teardrop, four triangles, facing +z. */
+export function leafGeometry(): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry();
+  // base, right, left, midrib, tip
+  const positions = [0, 0, 0, 0.42, 0.5, 0.06, -0.42, 0.5, 0.06, 0, 0.55, -0.02, 0, 1, 0.08];
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex([0, 1, 3, 0, 3, 2, 3, 1, 4, 3, 4, 2]);
+  geometry.computeVertexNormals();
+  return withTips(geometry, [0, 0.5, 0.5, 0.5, 1]);
+}
+
+/**
+ * A seed leaf: a rounded, gently cupped oval with enough triangles to stay round when it
+ * fills the frame (a sprout is shown close up). Base at the origin, tip at y = 1.
+ */
+export function seedLeafGeometry(): THREE.BufferGeometry {
+  const rows = [
+    [0, 0.06],
+    [0.14, 0.24],
+    [0.34, 0.37],
+    [0.56, 0.4],
+    [0.78, 0.31],
+    [0.93, 0.16],
+    [1, 0.02],
+  ] as const;
+  const positions: number[] = [];
+  const tips: number[] = [];
+  const indices: number[] = [];
+  rows.forEach(([t, half], row) => {
+    // Cupped across, arched along.
+    const arch = Math.sin(t * Math.PI) * 0.1;
+    positions.push(-half, t, arch + 0.07, 0, t, arch - 0.02, half, t, arch + 0.07);
+    tips.push(t, t, t);
+    if (row > 0) {
+      const a = (row - 1) * 3;
+      const b = row * 3;
+      indices.push(a, a + 1, b + 1, a, b + 1, b, a + 1, a + 2, b + 2, a + 1, b + 2, b + 1);
+    }
+  });
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return withTips(geometry, tips);
+}
+
+/** A slim needle spray for the conifer: the same card, narrower and longer. */
+export function needleGeometry(): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry();
+  const positions = [0, 0, 0, 0.2, 0.4, 0.05, -0.2, 0.4, 0.05, 0, 0.5, -0.02, 0, 1, 0.04];
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex([0, 1, 3, 0, 3, 2, 3, 1, 4, 3, 4, 2]);
+  geometry.computeVertexNormals();
+  return withTips(geometry, [0, 0.5, 0.5, 0.5, 1]);
+}
+
+/** A five-petal blossom facing +z, a little cupped, with a golden heart (vertex colours). */
+export function blossomGeometry(): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const colours: number[] = [];
+  const tips: number[] = [];
+  const petal = [1, 1, 1];
+  const heart = [1, 0.78, 0.25];
+  const push = (x: number, y: number, z: number, colour: number[]) => {
+    positions.push(x, y, z);
+    colours.push(...colour);
+    tips.push(1);
+  };
+  for (let i = 0; i < 5; i += 1) {
+    const angle = (i / 5) * TAU + Math.PI / 2;
+    const left = angle - 0.42;
+    const right = angle + 0.42;
+    const inner = 0.22;
+    push(Math.cos(left) * inner, Math.sin(left) * inner, 0.02, heart);
+    push(Math.cos(right) * inner, Math.sin(right) * inner, 0.02, heart);
+    push(Math.cos(right) * 0.78, Math.sin(right) * 0.78, 0.14, petal);
+    push(Math.cos(left) * inner, Math.sin(left) * inner, 0.02, heart);
+    push(Math.cos(right) * 0.78, Math.sin(right) * 0.78, 0.14, petal);
+    push(Math.cos(angle) * 1, Math.sin(angle) * 1, 0.2, petal);
+    push(Math.cos(left) * inner, Math.sin(left) * inner, 0.02, heart);
+    push(Math.cos(angle) * 1, Math.sin(angle) * 1, 0.2, petal);
+    push(Math.cos(left) * 0.78, Math.sin(left) * 0.78, 0.14, petal);
+    // The heart: one fan triangle per petal.
+    push(0, 0, 0.07, heart);
+    push(Math.cos(left) * inner, Math.sin(left) * inner, 0.02, heart);
+    push(Math.cos(right) * inner, Math.sin(right) * inner, 0.02, heart);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colours, 3));
+  geometry.computeVertexNormals();
+  return withTips(geometry, tips);
+}
+
+/**
+ * One tier of a conifer: a full, slightly bulging cone whose hem hangs in scallops.
+ * Base at y = 0, apex at y = 1, radius 1. Vertex colours lighten the bough tips.
+ */
+export function tierGeometry(scallops: number): THREE.BufferGeometry {
+  const around = scallops * 2;
+  const positions: number[] = [0, 1, 0];
+  const colours: number[] = [0.82, 0.82, 0.82];
+  const rings = [
+    { y: 0.62, radius: 0.46, shade: 0.86 },
+    { y: 0.3, radius: 0.8, shade: 0.95 },
+    { y: 0, radius: 1, shade: 1.12 },
+  ];
+  for (const ring of rings) {
+    for (let i = 0; i < around; i += 1) {
+      const angle = (i / around) * TAU;
+      const hem = ring.y === 0;
+      const dip = hem && i % 2 === 1;
+      const radius = ring.radius * (dip ? 0.8 : 1);
+      positions.push(
+        Math.cos(angle) * radius,
+        ring.y + (dip ? 0.1 : hem ? -0.03 : 0),
+        Math.sin(angle) * radius,
+      );
+      const shade = ring.shade * (dip ? 0.86 : 1);
+      colours.push(shade, shade, shade);
+    }
+  }
+  // Underside: a shallow dark cone closing the tier.
+  const under = positions.length / 3;
+  positions.push(0, 0.3, 0);
+  colours.push(0.5, 0.5, 0.5);
+  const indices: number[] = [];
+  for (let i = 0; i < around; i += 1) {
+    const next = (i + 1) % around;
+    indices.push(0, 1 + next, 1 + i);
+    for (let ring = 0; ring < rings.length - 1; ring += 1) {
+      const a = 1 + ring * around;
+      const b = a + around;
+      indices.push(a + i, a + next, b + next, a + i, b + next, b + i);
+    }
+    const hem = 1 + (rings.length - 1) * around;
+    indices.push(under, hem + i, hem + next);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colours, 3));
+  geometry.setIndex(indices);
+  // Six triangles per step around: the last of each six closes the underside.
+  return orient(geometry, (x, _y, z, triangle) => (triangle % 6 === 5 ? [0, -1, 0] : [x, 0.5, z]));
+}
+
+/** A boulder: a battered icosphere with flat facets. Radius about 1. */
+export function rockGeometry(seed: number, detail = 1): THREE.BufferGeometry {
+  const merged = smoothSphere(detail);
+  const position = merged.getAttribute('position') as THREE.BufferAttribute;
+  const random = mulberry32(seed);
+  const v = new THREE.Vector3();
+  for (let i = 0; i < position.count; i += 1) {
+    v.fromBufferAttribute(position, i);
+    v.multiplyScalar(0.78 + random() * 0.4);
+    position.setXYZ(i, v.x, v.y * 0.8, v.z);
+  }
+  const geometry = merged.toNonIndexed();
+  merged.dispose();
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+/**
+ * A tuft of grass: three tapering blades leaning apart. About 1 tall, 0.5 wide.
+ * `hanging` turns it upside down (tips at y = -1) for the turf that droops over the rim;
+ * its shading normals still point up, so it is lit like the lawn it hangs from.
+ */
+export function tuftGeometry(hanging = false): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const tips: number[] = [];
+  const indices: number[] = [];
+  const blades = [
+    { angle: 0.2, lean: 0.26, height: 1, width: 0.15 },
+    { angle: 2.3, lean: 0.42, height: 0.72, width: 0.14 },
+    { angle: 4.3, lean: 0.36, height: 0.86, width: 0.13 },
+  ];
+  for (const blade of blades) {
+    const start = positions.length / 3;
+    const dx = Math.cos(blade.angle);
+    const dz = Math.sin(blade.angle);
+    // Across the blade: perpendicular to its lean.
+    const ax = -dz;
+    const az = dx;
+    const at = (side: number, t: number, width: number) => {
+      const out = blade.lean * t * t + 0.05;
+      positions.push(
+        dx * out + ax * side * width,
+        blade.height * t * (hanging ? -1 : 1),
+        dz * out + az * side * width,
+      );
+      // Blades are lit like the lawn they stand on, with a hint of their own lean.
+      normals.push(dx * 0.25, 0.95, dz * 0.25);
+      tips.push(t);
+    };
+    at(-1, 0, blade.width);
+    at(1, 0, blade.width);
+    at(-1, 0.55, blade.width * 0.8);
+    at(1, 0.55, blade.width * 0.8);
+    at(0, 1, 0);
+    indices.push(start, start + 1, start + 3, start, start + 3, start + 2);
+    indices.push(start + 2, start + 3, start + 4);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setIndex(indices);
+  return withTips(geometry, tips);
+}
+
+/** A flower stem: two crossed slivers, 1 tall. */
+export function stemGeometry(): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const tips: number[] = [];
+  const indices: number[] = [];
+  for (const angle of [0, Math.PI / 2]) {
+    const start = positions.length / 3;
+    const ax = Math.cos(angle) * 0.035;
+    const az = Math.sin(angle) * 0.035;
+    positions.push(-ax, 0, -az, ax, 0, az, -ax * 0.6, 1, -az * 0.6, ax * 0.6, 1, az * 0.6);
+    normals.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
+    tips.push(0, 0, 1, 1);
+    indices.push(start, start + 1, start + 3, start, start + 3, start + 2);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setIndex(indices);
+  return withTips(geometry, tips);
+}
+
+/**
+ * A flower head sitting on the tip of a unit stem: six petals around a domed heart,
+ * tilted towards the viewer. Vertex colours: white petals (tinted per instance), a
+ * golden heart.
+ */
+export function flowerHeadGeometry(): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const colours: number[] = [];
+  const petals = 6;
+  const tilt = 0.5;
+  const cos = Math.cos(tilt);
+  const sin = Math.sin(tilt);
+  const push = (x: number, y: number, z: number, colour: readonly number[]) => {
+    // Tilt about x so the face looks up and forwards, then lift onto the stem tip.
+    positions.push(x, 1 + y * cos - z * sin, y * sin + z * cos);
+    colours.push(...colour);
+  };
+  const white = [1, 1, 1] as const;
+  const gold = [1, 0.8, 0.22] as const;
+  for (let i = 0; i < petals; i += 1) {
+    const angle = (i / petals) * TAU;
+    const left = angle - 0.36;
+    const right = angle + 0.36;
+    push(0, 0.03, 0, white);
+    push(Math.sin(right) * 0.2, 0.05, Math.cos(right) * 0.2, white);
+    push(Math.sin(left) * 0.2, 0.05, Math.cos(left) * 0.2, white);
+    push(Math.sin(left) * 0.2, 0.05, Math.cos(left) * 0.2, white);
+    push(Math.sin(right) * 0.2, 0.05, Math.cos(right) * 0.2, white);
+    push(Math.sin(angle) * 0.34, 0.1, Math.cos(angle) * 0.34, white);
+    // Heart.
+    push(0, 0.11, 0, gold);
+    push(Math.sin(right) * 0.1, 0.07, Math.cos(right) * 0.1, gold);
+    push(Math.sin(left) * 0.1, 0.07, Math.cos(left) * 0.1, gold);
+  }
   const geometry = new THREE.BufferGeometry();
   const count = positions.length / 3;
-  const tones = new Float32Array(count * 3);
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colours, 3));
+  // A flower is lit like the lawn around it, whichever way a petal happens to face.
+  const normals = new Array<number>(count * 3);
   for (let i = 0; i < count; i += 1) {
-    tones[i * 3] = tone;
-    tones[i * 3 + 1] = tone;
+    normals[i * 3] = 0;
+    normals[i * 3 + 1] = 0.94;
+    normals[i * 3 + 2] = 0.34;
   }
-  geometry.setAttribute('position', new THREE.BufferAttribute(Float32Array.from(positions), 3));
-  geometry.setAttribute('aTone', new THREE.BufferAttribute(tones, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  return withTips(geometry, new Array<number>(count).fill(1));
+}
+
+/** A stepping stone: a low, rounded, six-sided slab. Radius 1, top at y = 0.5. */
+export function stoneGeometry(): THREE.BufferGeometry {
+  const geometry = new THREE.CylinderGeometry(0.86, 1, 0.5, 7, 1).toNonIndexed();
+  geometry.translate(0, 0.25, 0);
+  geometry.deleteAttribute('uv');
+  geometry.computeVertexNormals();
   return geometry;
 }
 
-/**
- * The wood: one tube mesh for trunk and branches. Rings are shared between segments,
- * so the silhouette is continuous; a child branch simply starts inside its parent.
- * Indices, hull vectors, sway weights and tones are static; `writeWood` only rewrites
- * positions when growth changes.
- */
+// --- Wood: one tube mesh for the trunk and every branch -------------------------------------
+
 export interface WoodMesh {
   geometry: THREE.BufferGeometry;
-  /** Sides of the ring of every node. */
+  /** Sides of the ring of every node, and the first vertex of that ring. */
   sides: Uint8Array;
-  /** First vertex of every node's ring. */
   ringStart: Uint32Array;
+  /** Unit direction of every vertex from its node (also its normal). */
+  spokes: Float32Array;
 }
 
+/**
+ * Builds the tube once per skeleton. The topology never changes: `writeWood` only moves
+ * the rings when growth changes, so a growing tree costs one buffer upload, not a rebuild.
+ */
 export function woodGeometry(
   skeleton: Skeleton,
   trunkSides: number,
   branchSides: number,
-  tone: number,
 ): WoodMesh {
   const nodes = skeleton.nodeLength.length;
   const sides = new Uint8Array(nodes);
@@ -427,28 +437,32 @@ export function woodGeometry(
     }
   }
 
-  const hull = new Float32Array(vertices * 3);
-  const sway = new Float32Array(vertices * 3);
-  const tones = new Float32Array(vertices * 3);
+  const spokes = new Float32Array(vertices * 3);
+  const colours = new Float32Array(vertices * 3);
   const indices: number[] = [];
   for (const branch of skeleton.branches) {
     for (let n = 0; n < branch.nodeCount; n += 1) {
       const node = branch.nodeStart + n;
       const count = sides[node] as number;
       const start = ringStart[node] as number;
+      // Bark darkens towards the root and warms towards the twigs.
+      const along = branch.nodeCount > 1 ? n / (branch.nodeCount - 1) : 0;
+      const shade = branch.parent < 0 ? 0.78 + 0.22 * along : 0.96 + 0.1 * along;
       for (let s = 0; s < count; s += 1) {
         const angle = (s / count) * TAU;
         const cos = Math.cos(angle);
         const sin = Math.sin(angle);
         const v = (start + s) * 3;
         for (let axis = 0; axis < 3; axis += 1) {
-          hull[v + axis] =
+          spokes[v + axis] =
             cos * (skeleton.nodeFrame[node * 6 + axis] as number) +
             sin * (skeleton.nodeFrame[node * 6 + 3 + axis] as number);
-          sway[v + axis] = skeleton.nodeSway[node * 3 + axis] as number;
         }
-        tones[v] = tone;
-        tones[v + 1] = tone;
+        // Every other spoke is a touch darker: cheap bark ridges.
+        const ridge = s % 2 === 0 ? 1 : 0.94;
+        colours[v] = shade * ridge;
+        colours[v + 1] = shade * ridge;
+        colours[v + 2] = shade * ridge;
         if (n < branch.nodeCount - 1) {
           const next = (ringStart[node + 1] as number) + s;
           const nextWrap = (ringStart[node + 1] as number) + ((s + 1) % count);
@@ -463,40 +477,27 @@ export function woodGeometry(
   const position = new THREE.BufferAttribute(new Float32Array(vertices * 3), 3);
   position.setUsage(THREE.DynamicDrawUsage);
   geometry.setAttribute('position', position);
-  geometry.setAttribute('aHull', new THREE.BufferAttribute(hull, 3));
-  geometry.setAttribute('aSway', new THREE.BufferAttribute(sway, 3));
-  geometry.setAttribute('aTone', new THREE.BufferAttribute(tones, 3));
+  geometry.setAttribute('normal', new THREE.BufferAttribute(spokes.slice(), 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3));
   geometry.setIndex(indices);
-  return { geometry, sides, ringStart };
+  return { geometry, sides, ringStart, spokes };
 }
 
-/** Where the rings of a branch that has not started yet are parked: far outside any view. */
-const PARKED = -1e5;
-
-export function writeWood(wood: WoodMesh, skeleton: Skeleton, pose: Pose): void {
+export function writeWood(wood: WoodMesh, pose: Pose): void {
   const position = wood.geometry.getAttribute('position') as THREE.BufferAttribute;
-  const hull = wood.geometry.getAttribute('aHull') as THREE.BufferAttribute;
   const out = position.array as Float32Array;
-  const dir = hull.array as Float32Array;
-  // A swollen outline pass would still draw a dot around a zero-radius ring, so a
-  // branch that does not exist yet must not be anywhere on screen.
-  const parked = new Uint8Array(wood.sides.length);
-  skeleton.branches.forEach((branch, index) => {
-    if ((pose.tipLength[index] as number) <= 0) {
-      parked.fill(1, branch.nodeStart, branch.nodeStart + branch.nodeCount);
-    }
-  });
+  const { spokes } = wood;
   for (let node = 0; node < wood.sides.length; node += 1) {
     const radius = pose.nodeRadius[node] as number;
     const x = pose.nodePosition[node * 3] as number;
-    const y = parked[node] ? PARKED : (pose.nodePosition[node * 3 + 1] as number);
+    const y = pose.nodePosition[node * 3 + 1] as number;
     const z = pose.nodePosition[node * 3 + 2] as number;
     const start = (wood.ringStart[node] as number) * 3;
     const end = start + (wood.sides[node] as number) * 3;
     for (let v = start; v < end; v += 3) {
-      out[v] = x + (dir[v] as number) * radius;
-      out[v + 1] = y + (dir[v + 1] as number) * radius;
-      out[v + 2] = z + (dir[v + 2] as number) * radius;
+      out[v] = x + (spokes[v] as number) * radius;
+      out[v + 1] = y + (spokes[v + 1] as number) * radius;
+      out[v + 2] = z + (spokes[v + 2] as number) * radius;
     }
   }
   position.needsUpdate = true;
