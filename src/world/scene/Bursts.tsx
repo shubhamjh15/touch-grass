@@ -19,7 +19,7 @@ import { useDispose } from './sceneStore';
  * `burstBus.ts`.
  */
 
-const CAPACITY = 220;
+const CAPACITY = 280;
 
 interface Preset {
   colours: readonly string[];
@@ -35,8 +35,8 @@ interface Preset {
 const PRESETS: Record<BurstKind, Preset> = {
   pops: {
     colours: ['#d9f99d', '#bef264', '#fef08a', '#ffffff'],
-    life: [0.6, 1.0],
-    size: [0.1, 0.18],
+    life: [0.7, 1.1],
+    size: [0.16, 0.28],
     gravity: -0.6,
     drag: 2.4,
     flutter: 0.2,
@@ -53,8 +53,8 @@ const PRESETS: Record<BurstKind, Preset> = {
   },
   confetti: {
     colours: ['#f472b6', '#facc15', '#9974f8', '#ff6b4a', '#60a5fa', '#4ade80'],
-    life: [1.4, 2.2],
-    size: [0.1, 0.16],
+    life: [1.5, 2.4],
+    size: [0.15, 0.25],
     gravity: 3.2,
     drag: 0.9,
     flutter: 0.8,
@@ -116,8 +116,8 @@ const PRESETS: Record<BurstKind, Preset> = {
   },
   sparks: {
     colours: ['#fff7c2', '#fde047', '#ffffff', '#fdba74'],
-    life: [0.7, 1.3],
-    size: [0.05, 0.1],
+    life: [0.8, 1.5],
+    size: [0.08, 0.16],
     gravity: -1.1,
     drag: 2.2,
     flutter: 0.5,
@@ -241,9 +241,10 @@ export function Bursts() {
           vy = -0.15;
         }
         if (at) {
-          x = at[0] + (random() - 0.5) * 0.4;
-          y = at[1] + (random() - 0.5) * 0.3;
-          z = at[2] + (random() - 0.5) * 0.4;
+          const spread = kind === 'sparks' ? 0.12 : 0.4;
+          x = at[0] + (random() - 0.5) * spread;
+          y = at[1] + (random() - 0.5) * spread * 0.75;
+          z = at[2] + (random() - 0.5) * spread;
         }
         const { data } = pool;
         data[o] = x;

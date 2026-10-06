@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { SFX_NAMES } from '@/lib/sfx';
 import type { WorldPulse } from './contract';
 import {
   CALM_MS,
   MAX_OVERLAP,
   MAX_QUEUE,
+  PULSE_SFX,
   PulseScheduler,
   SCRIPTS,
   bump,
@@ -86,8 +88,8 @@ describe('PulseScheduler', () => {
       scheduler.push({ kind: 'grow', strength }, 0);
       return Object.fromEntries(run(scheduler, 0, 1.2).bursts.map((b) => [b.kind, b.count]));
     };
-    expect(counts(0)).toEqual({ pops: 3, leaves: 8 });
-    expect(counts(1)).toEqual({ pops: 8, leaves: 24 });
+    expect(counts(0)).toEqual({ pops: 3, leaves: 8, sparks: 5 });
+    expect(counts(1)).toEqual({ pops: 8, leaves: 24, sparks: 14 });
   });
 
   it('merges rapid grow pulses into one and caps the strength', () => {
@@ -119,8 +121,15 @@ describe('PulseScheduler', () => {
     expect(peak).toBe(MAX_OVERLAP);
     expect(scheduler.playing).toBe(0);
     expect(scheduler.waiting).toBe(0);
-    // celebrate (confetti) and badge (dust) first, then the queued level-up (confetti).
-    expect(kinds).toEqual(['confetti', 'dust', 'confetti']);
+    // celebrate (confetti) and badge (dust) first, then the queued level-up (confetti) and
+    // the ring; each brings its sparks.
+    expect(kinds.filter((kind) => kind !== 'sparks')).toEqual([
+      'confetti',
+      'dust',
+      'confetti',
+      'confetti',
+    ]);
+    expect(kinds.filter((kind) => kind === 'sparks')).toHaveLength(3);
   });
 
   it('never holds more than its queue and keeps the newest pulse', () => {
@@ -129,7 +138,8 @@ describe('PulseScheduler', () => {
     scheduler.push({ kind: 'plant' }, 0);
     expect(scheduler.waiting).toBe(MAX_QUEUE);
     const { bursts } = run(scheduler, 0, 12);
-    expect(bursts.at(-1)?.kind).toBe('soil');
+    // The newest pulse, the planting, is the last thing played: soil, then its sparks.
+    expect(bursts.slice(-2).map((burst) => burst.kind)).toEqual(['soil', 'sparks']);
     expect(scheduler.playing + scheduler.waiting).toBe(0);
   });
 
@@ -141,6 +151,35 @@ describe('PulseScheduler', () => {
     expect(scheduler.channels.seed).toBeCloseTo(1);
     scheduler.update(1.2, false, () => {});
     expect(scheduler.channels.gate).toBe(0);
+  });
+
+  it('gives every pulse a set piece of its own', () => {
+    const peaks = (pulse: WorldPulse) => {
+      const scheduler = new PulseScheduler();
+      scheduler.push(pulse, 0);
+      const peak = { halo: -1, star: -1, spiral: -1, can: 0, band: -1, seed: -1, hop: 0 };
+      for (let t = 0; t < 3; t += 1 / 60) {
+        scheduler.update(t, false, () => {});
+        for (const key of Object.keys(peak) as Array<keyof typeof peak>) {
+          peak[key] = Math.max(peak[key], scheduler.channels[key]);
+        }
+      }
+      return peak;
+    };
+    expect(peaks({ kind: 'grow', strength: 1 }).halo).toBeGreaterThan(0.5);
+    expect(peaks({ kind: 'ring' }).band).toBeGreaterThan(0.9);
+    expect(peaks({ kind: 'water' }).can).toBeGreaterThan(0.9);
+    expect(peaks({ kind: 'level-up', level: 3 }).spiral).toBeGreaterThan(0.9);
+    expect(peaks({ kind: 'level-up', level: 3 }).hop).toBeGreaterThan(0.2);
+    // The badge star falls (0..1), lands and fades (1..2).
+    expect(peaks({ kind: 'badge' }).star).toBeGreaterThan(1.9);
+    expect(peaks({ kind: 'streak', days: 7 }).spiral).toBeGreaterThan(0.9);
+    expect(peaks({ kind: 'plant' }).seed).toBeCloseTo(1);
+    expect(peaks({ kind: 'celebrate' }).halo).toBeGreaterThan(0.5);
+  });
+
+  it('names a sound for every pulse kind', () => {
+    for (const pulse of KINDS) expect(SFX_NAMES).toContain(PULSE_SFX[pulse.kind]);
   });
 
   it('becomes one calm highlight under reduced motion: no bursts, no movement', () => {

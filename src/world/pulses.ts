@@ -1,4 +1,5 @@
 import { clamp01 } from '@/lib/math';
+import type { SfxName } from '@/lib/sfx';
 import type { WorldPulse } from './contract';
 
 /**
@@ -73,6 +74,12 @@ export interface PulseChannels {
   gate: number;
   /** 0..1: the sky rig makes room (clouds slide outward, the orb spins). */
   rig: number;
+  /** -1 = none, else 0..1: a ring of light spreading over the lawn from the foot of the tree. */
+  halo: number;
+  /** -1 = none, 0..1 = the badge star falling, 1..2 = landed and fading. */
+  star: number;
+  /** -1 = none, else 0..1: a ribbon of sparks winding up around the tree. */
+  spiral: number;
 }
 
 export function createChannels(): PulseChannels {
@@ -93,6 +100,9 @@ export function createChannels(): PulseChannels {
     seedSquash: 0,
     gate: 0,
     rig: 0,
+    halo: -1,
+    star: -1,
+    spiral: -1,
   };
 }
 
@@ -113,6 +123,9 @@ function resetChannels(out: PulseChannels): void {
   out.seedSquash = 0;
   out.gate = 0;
   out.rig = 0;
+  out.halo = -1;
+  out.star = -1;
+  out.spiral = -1;
 }
 
 // --- Envelopes (t in milliseconds) ---------------------------------------------------------
@@ -186,17 +199,19 @@ export const SCRIPTS: Record<PulseKind, Script> = {
     beats: [
       { at: 120, kind: 'pops', count: (play) => 3 + Math.round(5 * play.strength) },
       { at: 200, kind: 'leaves', count: (play) => 8 + Math.round(16 * play.strength) },
+      { at: 260, kind: 'sparks', count: (play) => 5 + Math.round(9 * play.strength) },
     ],
     channels(t, play, out) {
       const force = 0.6 + 0.4 * play.strength;
       out.squash += 0.04 * force * thump(t, 120);
       out.dip += 0.07 * force * thump(t - 20, 130, 120, 70);
       out.flash = Math.max(out.flash, 0.32 * bump(t, 100, 560));
+      if (t >= 120 && t < 820) out.halo = Math.max(out.halo, ramp(t, 120, 820) * 0.7);
     },
   },
   ring: {
     length: 800,
-    beats: [],
+    beats: [{ at: 500, kind: 'sparks', count: fixed(8) }],
     channels(t, _play, out) {
       if (t < 520) out.band = ramp(t, 0, 500);
       out.girth += 0.02 * bump(t, 0, 800);
@@ -205,7 +220,11 @@ export const SCRIPTS: Record<PulseKind, Script> = {
   },
   water: {
     length: 1200,
-    beats: [{ at: 200, kind: 'drops', count: fixed(5) }],
+    beats: [
+      { at: 200, kind: 'drops', count: fixed(5) },
+      { at: 380, kind: 'drops', count: fixed(4) },
+      { at: 760, kind: 'sparks', count: fixed(8) },
+    ],
     channels(t, _play, out) {
       out.can = Math.max(out.can, ramp(t, 0, 300) * (1 - ramp(t, 620, 860)));
       out.flash = Math.max(out.flash, 0.28 * bump(t, 300, 1200));
@@ -215,7 +234,10 @@ export const SCRIPTS: Record<PulseKind, Script> = {
   },
   'level-up': {
     length: 1800,
-    beats: [{ at: 300, kind: 'confetti', count: fixed(24) }],
+    beats: [
+      { at: 300, kind: 'confetti', count: fixed(24) },
+      { at: 520, kind: 'confetti', count: fixed(14) },
+    ],
     channels(t, _play, out) {
       const air = bump(t, 0, 350);
       out.hop += 0.24 * air;
@@ -224,17 +246,24 @@ export const SCRIPTS: Record<PulseKind, Script> = {
       out.cheer = Math.max(out.cheer, bounce(t, 400, 700));
       out.rig = Math.max(out.rig, bump(t, 400, 1000));
       out.flash = Math.max(out.flash, 0.22 * bump(t, 300, 900));
+      if (t >= 350 && t < 1150) out.halo = Math.max(out.halo, ramp(t, 350, 1150));
+      if (t >= 300 && t < 1300) out.spiral = Math.max(out.spiral, (t - 300) / 1000);
     },
   },
   badge: {
     length: 900,
-    beats: [{ at: 320, kind: 'dust', count: fixed(6) }],
+    beats: [
+      { at: 320, kind: 'dust', count: fixed(6) },
+      { at: 330, kind: 'sparks', count: fixed(10) },
+    ],
     channels(t, _play, out) {
       const pressed = t >= 320 && t < 400 ? 1 : 1 - ramp(t, 400, 470);
       if (t >= 320) {
         out.press += 3 * pressed;
         out.shadow *= 1 - 0.625 * pressed;
       }
+      // A gold star falls beside the tree and lands with the stamp.
+      out.star = t < 320 ? (t / 320) ** 2 : 1 + ramp(t, 420, 880);
     },
   },
   streak: {
@@ -247,11 +276,15 @@ export const SCRIPTS: Record<PulseKind, Script> = {
     channels(t, _play, out) {
       out.flash = Math.max(out.flash, 0.3 * bump(t, 0, 700));
       out.squash -= 0.02 * bump(t, 0, 500);
+      if (t < 900) out.spiral = Math.max(out.spiral, t / 900);
     },
   },
   plant: {
     length: 2400,
-    beats: [{ at: 500, kind: 'soil', count: fixed(6) }],
+    beats: [
+      { at: 500, kind: 'soil', count: fixed(6) },
+      { at: 1500, kind: 'sparks', count: fixed(8) },
+    ],
     channels(t, _play, out) {
       // The seed drops on its thread (ease-in), squashes, and the sprout only then rises.
       const fall = clamp01(t / 500);
@@ -262,19 +295,40 @@ export const SCRIPTS: Record<PulseKind, Script> = {
       if (t >= 1900) out.stamp = Math.max(out.stamp, 0.3 * (1 - ramp(t, 1900, 2200)));
       out.push = Math.max(out.push, 0.06 * ramp(t, 0, 600) * (1 - ramp(t, 2000, 2400)));
       out.rig = Math.max(out.rig, ramp(t, 0, 300) * (1 - ramp(t, 2200, 2400)));
+      if (t >= 500 && t < 1200) out.halo = Math.max(out.halo, ramp(t, 500, 1200) * 0.6);
     },
   },
   celebrate: {
     length: 1200,
-    beats: [{ at: 100, kind: 'confetti', count: fixed(16) }],
+    beats: [
+      { at: 100, kind: 'confetti', count: fixed(16) },
+      { at: 300, kind: 'sparks', count: fixed(8) },
+    ],
     channels(t, _play, out) {
       const air = bump(t, 0, 300);
       out.hop += 0.12 * air;
       out.shadow *= 1 + 0.4 * air;
       out.squash += 0.02 * thump(t - 300, 40, 100, 60);
       out.cheer = Math.max(out.cheer, bounce(t, 150, 600));
+      if (t >= 280 && t < 980) out.halo = Math.max(out.halo, ramp(t, 280, 980) * 0.85);
     },
   },
+};
+
+/**
+ * The sound that belongs to each pulse (design bible, section 8). The app's feedback layer
+ * plays these together with its own DOM moment; `emitPulse(pulse, { sound: true })` plays
+ * one for callers that have no such layer (the lab, a demo).
+ */
+export const PULSE_SFX: Record<PulseKind, SfxName> = {
+  grow: 'leaf',
+  ring: 'ring',
+  water: 'water',
+  'level-up': 'level',
+  badge: 'stamp',
+  streak: 'streak',
+  plant: 'plant',
+  celebrate: 'cheer',
 };
 
 /** Reduced motion: one calm highlight, whatever the pulse. */
