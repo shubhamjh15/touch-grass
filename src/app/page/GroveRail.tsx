@@ -13,7 +13,7 @@ import { ROUTES } from '../routes';
  */
 export function GroveRail() {
   const tree = useTreeStatus();
-  const meta = [tree.species, tree.stage, `day ${formatNumber(tree.dayNumber)}`, tree.vitalityLabel]
+  const meta = [tree.stage, `day ${formatNumber(tree.dayNumber)}`, tree.vitalityLabel]
     .join(' · ')
     .toUpperCase();
 

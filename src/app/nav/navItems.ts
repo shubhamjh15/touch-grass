@@ -4,6 +4,7 @@ import {
   FileText,
   ListChecks,
   MessageCircle,
+  Search,
   ShieldCheck,
   Sprout,
   Target,
@@ -129,6 +130,13 @@ export const MORE_ENTRIES: readonly MoreEntry[] = [
   { ...byId('community'), id: 'community' },
   { id: 'coach', label: 'Moss', hint: 'Ask your coach', icon: MessageCircle, command: 'coach' },
   { ...byId('me'), id: 'me' },
+  {
+    id: 'search',
+    label: 'Search',
+    hint: 'Find an action or a page',
+    icon: Search,
+    command: 'palette',
+  },
   {
     id: 'touch-grass',
     label: 'Touch grass',

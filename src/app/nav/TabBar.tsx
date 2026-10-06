@@ -100,7 +100,7 @@ function LogSticker({ onLog }: { onLog: boolean }) {
       onClick={onClick}
       aria-label="Log an action"
       aria-current={onLog ? 'page' : undefined}
-      className="group relative z-(--z-fab) -mt-[42px] flex w-full max-w-[78px] flex-col items-center gap-1.5 rounded-[22px] text-tab font-bold text-ink"
+      className="group relative z-(--z-fab) -mt-[42px] flex w-full max-w-[78px] flex-col items-center gap-2.5 rounded-[22px] text-tab font-bold text-ink"
     >
       <motion.span
         // One small wiggle every 12 s until the first log of the day; never after.

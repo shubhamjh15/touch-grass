@@ -8,7 +8,7 @@ import type { RouteId } from '../routes';
 import { openCoach, openPalette, useShellStore } from '../shellStore';
 import { MORE_ENTRIES, type MoreEntry } from './navItems';
 
-const TILE = 'flex h-[72px] w-full items-center gap-3 p-3 text-left';
+const TILE = 'flex min-h-[72px] w-full items-center gap-3 p-3 text-left';
 
 function MoreTile({
   entry,
@@ -27,7 +27,7 @@ function MoreTile({
       </IconTile>
       <span className="grid min-w-0">
         <span className="truncate text-label">{entry.label}</span>
-        <span className="truncate text-caption text-ink-3">{entry.hint}</span>
+        <span className="line-clamp-2 text-caption text-ink-3">{entry.hint}</span>
       </span>
     </>
   );
