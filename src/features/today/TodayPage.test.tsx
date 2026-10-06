@@ -354,6 +354,7 @@ describe('Today: Moss, the island and what happened while away', () => {
       'landmark me',
     ]);
     expect(screen.getByRole('button', { name: 'Turn left' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Done' })).toHaveFocus();
 
     fireEvent.click(screen.getByRole('button', { name: /landmark impact/ }));
     expect(nav.push).toHaveBeenCalledWith('/impact');
@@ -362,6 +363,11 @@ describe('Today: Moss, the island and what happened while away', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(screen.queryByRole('button', { name: /^landmark/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Explore' })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Explore' }));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
   });
 
   it('shows each return message once: dismissing it removes it for good', () => {

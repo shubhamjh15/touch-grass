@@ -47,6 +47,17 @@ export function TodayStage({ exploring, onExploringChange, away = false }: Today
   const now = useGameNow();
   const desktop = useBreakpoint('lg');
   const frame = useRef<HTMLDivElement>(null);
+  const exploreButton = useRef<HTMLButtonElement>(null);
+  const doneButton = useRef<HTMLButtonElement>(null);
+  const wasExploring = useRef(exploring);
+
+  // Entering and leaving Explore swaps the button under the user's finger for another one:
+  // focus follows it, so a keyboard user is never dropped at the top of the page.
+  useEffect(() => {
+    if (wasExploring.current === exploring) return;
+    wasExploring.current = exploring;
+    (exploring ? doneButton : exploreButton).current?.focus({ preventScroll: true });
+  }, [exploring]);
 
   const landmarks = exploring && !away;
   const lines = specimenLines(tree);
@@ -122,6 +133,7 @@ export function TodayStage({ exploring, onExploringChange, away = false }: Today
                 onClick={() => turn('ArrowRight')}
               />
               <Button
+                ref={doneButton}
                 size={desktop ? 'md' : 'sm'}
                 variant="ink"
                 icon={Check}
@@ -145,6 +157,7 @@ export function TodayStage({ exploring, onExploringChange, away = false }: Today
 
             <div className="absolute right-3 bottom-5 lg:right-8 lg:bottom-8">
               <Button
+                ref={exploreButton}
                 size={desktop ? 'md' : 'sm'}
                 icon={Compass}
                 variant="neutral"
