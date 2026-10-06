@@ -123,7 +123,13 @@ export function Passport() {
             <figcaption className="grid gap-1">
               <span className="type-slug text-ink-3">{COPY.passport.ringsTitle}</span>
               <span className="text-body-sm font-semibold text-ink">{passport.ringSummary}</span>
-              <span className="text-caption text-ink-2">
+              <span
+                className={
+                  merged > 1
+                    ? 'text-caption text-ink-2'
+                    : 'hidden text-caption text-ink-2 sm:inline'
+                }
+              >
                 {merged > 1 ? COPY.passport.ringsMerged(merged) : COPY.passport.ringsLead}
               </span>
             </figcaption>

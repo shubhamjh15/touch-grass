@@ -26,6 +26,14 @@ function arrival(params: URLSearchParams): { tab: ProfileTab; anchor: string | n
   return targetFromHash(window.location.hash) ?? { tab: parseTab(null), anchor: null };
 }
 
+/** Scrolls to an element inside the open tab after the layout has settled; returns the cleanup. */
+function scrollToAnchor(id: string): () => void {
+  const timer = window.setTimeout(() => {
+    document.getElementById(id)?.scrollIntoView({ block: 'start' });
+  }, 350);
+  return () => window.clearTimeout(timer);
+}
+
 /**
  * `/me`: the tree's passport, then four index tabs. Badges is the album and the next step; the
  * Island log writes down what arrived; Settings holds every preference; Your data is export,
@@ -52,7 +60,9 @@ export default function ProfilePage() {
   useEffect(() => {
     const onHash = () => {
       const target = targetFromHash(window.location.hash);
-      if (target) setTab(target.tab);
+      if (!target) return;
+      setTab(target.tab);
+      if (target.anchor) scrollToAnchor(target.anchor);
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -64,10 +74,10 @@ export default function ProfilePage() {
     if (isProfileTab(wanted)) setTab(wanted);
   }, [wanted]);
 
-  // An anchor inside a tab (`#starting-line`) is scrolled to once the tab has rendered.
+  // An anchor inside a tab (`#starting-line`) is scrolled to once the tab has rendered and the
+  // page has finished its own arrival scroll.
   useEffect(() => {
-    if (!landing.anchor) return;
-    document.getElementById(landing.anchor)?.scrollIntoView({ block: 'start' });
+    if (landing.anchor) return scrollToAnchor(landing.anchor);
   }, [landing.anchor]);
 
   const tabs: TabItem<ProfileTab>[] = [
