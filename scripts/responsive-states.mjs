@@ -4,7 +4,7 @@
  * sheet, quest details, a lesson quiz, the More sheet on phones, and every tab of every tab list.
  * It runs the same in-page checks as responsive-audit.mjs on each state.
  *
- *   node scripts/responsive-states.mjs [--widths 320,390,768] [--state day200] [--only coach,palette] [--out file.json]
+ *   node scripts/responsive-states.mjs [--widths 320,390,768] [--state day200] [--only coach,palette] [--height 390 --phone true] [--out file.json]
  *
  * Exits 1 when anything is found or a state could not be reached.
  */
@@ -184,9 +184,9 @@ const results = [];
 try {
   const seed = loadState(stateName);
   for (const width of widths) {
-    const phone = width < 768;
+    const phone = 'phone' in args || width < 768;
     const context = await browser.newContext({
-      viewport: { width, height: phone ? 800 : 900 },
+      viewport: { width, height: Number(args.height ?? (phone ? 800 : 900)) },
       deviceScaleFactor: 1,
       hasTouch: phone,
       isMobile: phone,

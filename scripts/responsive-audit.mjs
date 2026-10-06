@@ -11,6 +11,8 @@
  *   --widths <a,b,c>    Default 320,390,768,1024,1440. --full adds 360,414,600,1280,1920.
  *   --state <name>      Saved state for the app routes (scripts/fixtures). Default day12.
  *                       Public routes and /start always load as a first-time visitor.
+ *   --height <px>       Viewport height (default 800 on phones, 900 elsewhere).
+ *   --phone             Treat every width as a touch phone (for landscape: --widths 844 --height 390 --phone).
  *   --webgl             Draw the live 3D world (slow). Default: the illustrated fallback.
  *   --out <file>        Also write the full report as JSON.
  *
@@ -86,9 +88,9 @@ const results = [];
 try {
   const seed = loadState(stateName);
   for (const width of widths) {
-    const phone = width < 768;
+    const phone = args.flags.has('phone') || width < 768;
     const context = await browser.newContext({
-      viewport: { width, height: phone ? 800 : 900 },
+      viewport: { width, height: Number(args.height ?? (phone ? 800 : 900)) },
       deviceScaleFactor: 1,
       hasTouch: phone,
       isMobile: phone,
