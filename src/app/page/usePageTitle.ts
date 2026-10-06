@@ -16,7 +16,19 @@ export function pageTitle(title: string): string {
  */
 export function usePageTitle(title: string | null | undefined): void {
   useEffect(() => {
-    if (title === null || title === undefined) return;
-    document.title = pageTitle(title);
+    if (title === null || title === undefined) return undefined;
+    const wanted = pageTitle(title);
+    const path = window.location.pathname;
+    document.title = wanted;
+
+    // On a hard load the route's own <title> is committed after this effect has run (the
+    // metadata streams in late, and React may swap the element) and would put the generic
+    // route title back. Win that race, but only while this page is still the one on
+    // screen: once the address changes the next route's title is the right one.
+    const observer = new MutationObserver(() => {
+      if (window.location.pathname === path && document.title !== wanted) document.title = wanted;
+    });
+    observer.observe(document.head, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
   }, [title]);
 }
