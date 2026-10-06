@@ -95,6 +95,11 @@ export function useGameHydrated(): boolean {
   return useStore(gameStore, (state) => state.runtime.hydrated);
 }
 
+/** A stand-in world (the demo) is showing; the real save is untouched until it ends. */
+export function useIsSandbox(): boolean {
+  return useStore(gameStore, (state) => state.runtime.sandbox);
+}
+
 /** Storage mode, save failures and recovery: what the shell needs for its banners. */
 export function useGameRuntime(): GameRuntime {
   return useStore(gameStore, (state) => state.runtime);

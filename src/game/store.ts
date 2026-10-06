@@ -69,6 +69,9 @@ import { createInitialState, isOnboarded } from './state';
 import {
   clearAllAppStorage,
   clearRecovery,
+  createMemoryStorage,
+  createSandboxStorage,
+  detectSessionStorage,
   detectStorage,
   keepForRecovery,
   readRecovery,
@@ -99,6 +102,11 @@ export interface GameRuntime {
   recovery: { reason: string; detail: string; savedAt: number } | null;
   /** What the last scan of the legacy app's storage found. */
   legacy: { status: LegacyScan['status']; logs: number; skipped: number } | null;
+  /**
+   * A stand-in world is showing (the demo). It is read from and saved to the tab's session
+   * storage only; the real save is not read, written or followed until the sandbox ends.
+   */
+  sandbox: boolean;
 }
 
 export interface GameStoreState {
@@ -115,6 +123,13 @@ export interface CreateGameOptions {
   /** A fresh uint32 for a new tree. */
   seed?: () => number;
   events?: GameEventBus;
+  /** Where a sandbox keeps its stand-in save. Defaults to the tab's session storage. */
+  sandboxStorage?: KeyValueStorage;
+  /**
+   * `false` builds a game that lives in memory only: nothing is read, nothing is saved.
+   * For replaying the rules (the demo world is grown this way) without touching a save.
+   */
+  persist?: boolean;
 }
 
 export type GameStore = StoreApi<GameStoreState>;
@@ -128,7 +143,15 @@ export interface Game {
   setClock: (clock: () => number) => void;
   /** Re-reads the saved state, e.g. after another tab changed it. */
   rehydrate: () => void;
+  /** The storage in use: the sandbox's own while one is showing. */
   storage: KeyValueStorage;
+  /**
+   * Shows `state` as a sandbox: from here on the game reads and saves a separate,
+   * session-only namespace and leaves the real save exactly as it is.
+   */
+  enterSandbox: (state: GameState) => void;
+  /** Ends the sandbox, forgets it and brings back the real save (or "nothing planted yet"). */
+  leaveSandbox: () => void;
 }
 
 export type GameActions = ReturnType<typeof createActions>;
@@ -146,6 +169,7 @@ function createActions(
   clock: { now: () => number },
   seed: () => number,
   bus: GameEventBus,
+  sandbox: { isOn: () => boolean; leave: () => void },
 ) {
   /** The single path of every mutation: one transaction, one atomic set, one event batch. */
   function run<T>(operation: (ctx: Ctx) => T, extraEvents: readonly GameEvent[] = []): T {
@@ -351,8 +375,17 @@ function createActions(
       bus.emit([{ type: 'state-imported' }, ...settled.events]);
       return parsed;
     },
-    /** Deletes everything the app stored on this device and starts over. */
+    /**
+     * Deletes everything the app stored on this device and starts over. In a sandbox there
+     * is only the sandbox to erase: it ends, and the real save is left as it was.
+     */
     resetAll(): void {
+      if (sandbox.isOn()) {
+        // Announced first, so whatever listens clears the sandbox's leftovers, not the real ones.
+        bus.emit([{ type: 'state-reset' }]);
+        sandbox.leave();
+        return;
+      }
       clearAllAppStorage(kv);
       const now = clock.now();
       store.setState({
@@ -363,6 +396,7 @@ function createActions(
           recovery: null,
           legacy: null,
           saveFailed: false,
+          sandbox: false,
         },
       });
       bus.emit([{ type: 'state-reset' }]);
@@ -395,10 +429,13 @@ function createActions(
 
 /** Builds a game: store, actions and clock. The app uses one; tests build their own. */
 export function createGame(options: CreateGameOptions = {}): Game {
+  const persisted = options.persist !== false;
   const detected = options.storage
     ? { storage: options.storage, mode: options.storageMode ?? ('local' as StorageMode) }
-    : detectStorage();
-  const kv = detected.storage;
+    : persisted
+      ? detectStorage()
+      : { storage: createMemoryStorage(), mode: 'memory' as StorageMode };
+  const real = detected.storage;
   const clock = { now: options.now ?? (() => Date.now()) };
   const bus = options.events ?? gameEvents;
   const isBrowser = typeof window !== 'undefined';
@@ -406,6 +443,23 @@ export function createGame(options: CreateGameOptions = {}): Game {
   let recovery: GameRuntime['recovery'] = null;
   let lastWritten: GameState | null = null;
   let saveFailed = false;
+
+  // The sandbox. A game with a storage of its own (tests, tools) keeps its sandbox in memory
+  // unless it is given a place for it; the app's game uses the tab's session storage.
+  const sandbox = createSandboxStorage(
+    options.sandboxStorage ??
+      (persisted && !options.storage ? detectSessionStorage() : createMemoryStorage()),
+  );
+  let sandboxed = persisted && sandbox.isMarked();
+  /** The real game as it was in memory when a sandbox began, for a save that never reached storage. */
+  let parked: { game: GameState; lastWritten: GameState | null; saveFailed: boolean } | null = null;
+  // Everything below reads and writes through this, so one switch moves the whole game.
+  const kv: KeyValueStorage = {
+    getItem: (key) => (sandboxed ? sandbox.view : real).getItem(key),
+    setItem: (key, value) => (sandboxed ? sandbox.view : real).setItem(key, value),
+    removeItem: (key) => (sandboxed ? sandbox.view : real).removeItem(key),
+    keys: () => (sandboxed ? sandbox.view : real).keys(),
+  };
 
   const persistStorage: PersistStorage<GameState> = {
     getItem(name): StorageValue<GameState> | null {
@@ -460,27 +514,36 @@ export function createGame(options: CreateGameOptions = {}): Game {
       saveFailed: false,
       recovery: null,
       legacy: null,
+      sandbox: false,
     },
   });
 
-  const store = createStore<GameStoreState>()(
-    persist(initial, {
-      name: STORAGE_KEYS.game,
-      version: SCHEMA_VERSION,
-      storage: persistStorage,
-      partialize: (state) => state.game,
-      merge: (persisted, current) =>
-        persisted ? { ...current, game: persisted as GameState } : current,
-      // On the server there is nothing to read; the browser hydrates synchronously below.
-      skipHydration: true,
-    }),
-  );
+  const store: GameStore = persisted
+    ? createStore<GameStoreState>()(
+        persist(initial, {
+          name: STORAGE_KEYS.game,
+          version: SCHEMA_VERSION,
+          storage: persistStorage,
+          partialize: (state) => state.game,
+          merge: (saved, current) => (saved ? { ...current, game: saved as GameState } : current),
+          // On the server there is nothing to read; the browser hydrates synchronously below.
+          skipHydration: true,
+        }),
+      )
+    : createStore<GameStoreState>()(initial);
 
   function syncRuntime(): void {
     const runtime = store.getState().runtime;
-    if (runtime.hydrated && runtime.saveFailed === saveFailed && runtime.recovery === recovery)
+    if (
+      runtime.hydrated &&
+      runtime.saveFailed === saveFailed &&
+      runtime.recovery === recovery &&
+      runtime.sandbox === sandboxed
+    )
       return;
-    store.setState({ runtime: { ...runtime, hydrated: true, saveFailed, recovery } });
+    store.setState({
+      runtime: { ...runtime, hydrated: true, saveFailed, recovery, sandbox: sandboxed },
+    });
   }
 
   const readSaved = () =>
@@ -499,8 +562,18 @@ export function createGame(options: CreateGameOptions = {}): Game {
     syncRuntime();
   };
 
-  if (isBrowser || options.storage) {
-    const stored = readSaved();
+  if (!persisted) {
+    syncRuntime();
+  } else if (isBrowser || options.storage) {
+    let stored = readSaved();
+    if (sandboxed && (!stored || !isOnboarded(stored.state))) {
+      // The tab says "sandbox" but there is no world to show: forget it and open the real save.
+      sandbox.clear();
+      sandboxed = false;
+      recovery = null;
+      lastWritten = null;
+      stored = readSaved();
+    }
     // A blank state is not a save: nothing is written until the game actually changes,
     // which also leaves an unreadable save in place until the user has decided.
     if (stored) store.setState({ game: stored.state });
@@ -508,7 +581,57 @@ export function createGame(options: CreateGameOptions = {}): Game {
     syncRuntime();
   }
 
-  const actions = createActions(store, kv, clock, options.seed ?? randomSeed, bus);
+  function enterSandbox(state: GameState): void {
+    if (!persisted) return;
+    const current = store.getState();
+    if (!sandboxed) parked = { game: current.game, lastWritten, saveFailed };
+    sandbox.clear();
+    sandbox.mark();
+    sandboxed = true;
+    lastWritten = null;
+    saveFailed = false;
+    recovery = null;
+    store.setState({
+      game: state,
+      runtime: { ...current.runtime, saveFailed, recovery, legacy: null, sandbox: true },
+    });
+    actions.tick();
+  }
+
+  function leaveSandbox(): void {
+    if (!sandboxed) return;
+    const held = parked;
+    parked = null;
+    sandbox.clear();
+    sandboxed = false;
+    recovery = null;
+    saveFailed = false;
+    lastWritten = null;
+    const stored = readSaved();
+    let next: GameState;
+    if (held?.saveFailed) {
+      // The real game had outgrown its save (a full quota): what was in memory is the truth.
+      next = held.game;
+      lastWritten = held.lastWritten;
+      saveFailed = true;
+    } else if (stored) {
+      next = stored.state;
+    } else {
+      // Nothing was ever planted: back to exactly that, without writing a blank save.
+      next = createInitialState(clock.now());
+      lastWritten = next;
+    }
+    store.setState({
+      game: next,
+      runtime: { ...store.getState().runtime, saveFailed, recovery, legacy: null, sandbox: false },
+    });
+    actions.tick();
+  }
+
+  const actions = createActions(store, kv, clock, options.seed ?? randomSeed, bus, {
+    isOn: () => sandboxed,
+    leave: leaveSandbox,
+  });
   return {
     store,
     actions,
@@ -518,6 +641,8 @@ export function createGame(options: CreateGameOptions = {}): Game {
     },
     rehydrate,
     storage: kv,
+    enterSandbox,
+    leaveSandbox,
   };
 }
 
@@ -565,6 +690,8 @@ export function startGameClock(target: Game = game, intervalMs = 60_000): ClockH
     }
   };
   const onStorage = (event: StorageEvent) => {
+    // A sandbox does not follow other tabs: the real save is re-read when it ends.
+    if (target.store.getState().runtime.sandbox) return;
     if (event.key === STORAGE_KEYS.game || event.key === null) target.rehydrate();
   };
 

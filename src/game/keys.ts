@@ -17,6 +17,14 @@ export const STORAGE_KEYS = {
   recovery: `${STORAGE_PREFIX}game:recovery`,
 } as const;
 
+/**
+ * A sandbox (the demo world) keeps its stand-in save in the tab's session storage, under
+ * the same key names behind this prefix, so it can never meet the real save.
+ */
+export const SANDBOX_PREFIX = 'sandbox:';
+/** Session-storage flag: this tab is showing a sandbox. Survives a reload, not the tab. */
+export const SANDBOX_MARK_KEY = `${STORAGE_PREFIX}sandbox`;
+
 /** `app` field of an export file; an import of anything else is refused. */
 export const EXPORT_APP_ID = 'touchgrass';
 export const EXPORT_FILE_PREFIX = 'touch-grass';

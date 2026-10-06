@@ -3,7 +3,7 @@
  * blocked site data, a full quota) and the server has none at all; the game must keep
  * working in memory in every one of those cases and say so.
  */
-import { STORAGE_KEYS, STORAGE_PREFIX } from './keys';
+import { SANDBOX_MARK_KEY, SANDBOX_PREFIX, STORAGE_KEYS, STORAGE_PREFIX } from './keys';
 import { LEGACY_KEYS } from './legacy';
 
 export interface KeyValueStorage {
@@ -56,6 +56,79 @@ export function detectStorage(): { storage: KeyValueStorage; mode: StorageMode }
     // Private mode or blocked site data: fall through to memory.
   }
   return { storage: createMemoryStorage(), mode: 'memory' };
+}
+
+/** The tab's sessionStorage when it exists and accepts a write; otherwise memory. */
+export function detectSessionStorage(): KeyValueStorage {
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      const probe = `${STORAGE_PREFIX}probe`;
+      window.sessionStorage.setItem(probe, '1');
+      window.sessionStorage.removeItem(probe);
+      return wrapWebStorage(window.sessionStorage);
+    }
+  } catch {
+    // Private mode or blocked site data: a sandbox then lives in memory.
+  }
+  return createMemoryStorage();
+}
+
+/**
+ * A storage of its own inside another one: every key is kept behind `prefix`, and only
+ * those keys are listed. Whatever uses the view cannot see or touch anything else.
+ */
+export function createNamespacedStorage(base: KeyValueStorage, prefix: string): KeyValueStorage {
+  return {
+    getItem: (key) => base.getItem(prefix + key),
+    setItem: (key, value) => base.setItem(prefix + key, value),
+    removeItem: (key) => base.removeItem(prefix + key),
+    keys: () =>
+      base
+        .keys()
+        .filter((key) => key.startsWith(prefix))
+        .map((key) => key.slice(prefix.length)),
+  };
+}
+
+/**
+ * Where a sandbox lives: a namespaced view for its stand-in save, and a flag that says
+ * this tab is showing one. The flag and the clean-up never throw.
+ */
+export interface SandboxStorage {
+  view: KeyValueStorage;
+  isMarked: () => boolean;
+  mark: () => void;
+  /** Removes the flag and everything the sandbox stored. */
+  clear: () => void;
+}
+
+export function createSandboxStorage(base: KeyValueStorage): SandboxStorage {
+  const view = createNamespacedStorage(base, SANDBOX_PREFIX);
+  return {
+    view,
+    isMarked() {
+      try {
+        return base.getItem(SANDBOX_MARK_KEY) === '1';
+      } catch {
+        return false;
+      }
+    },
+    mark() {
+      try {
+        base.setItem(SANDBOX_MARK_KEY, '1');
+      } catch {
+        // Without the flag the sandbox still works; it just does not survive a reload.
+      }
+    },
+    clear() {
+      try {
+        base.removeItem(SANDBOX_MARK_KEY);
+        for (const key of view.keys()) view.removeItem(key);
+      } catch {
+        // Nothing stored, nothing to clear.
+      }
+    },
+  };
 }
 
 export interface RecoveryEntry {

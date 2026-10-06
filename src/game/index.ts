@@ -38,6 +38,13 @@
  *   storageUsedBytes() / legacyBackup() / deleteLegacyBackup()
  *   recoveryEntries() / discardRecovery()             unreadable saves, never wiped silently
  *
+ * ── SANDBOX — a stand-in world (the demo) that can never touch the real save ─────────────
+ *   game.enterSandbox(state)   show `state`; from here the game reads and saves a separate,
+ *                              session-only namespace and ignores other tabs
+ *   game.leaveSandbox()        forget it and bring back the real save, or "nothing planted"
+ *   useIsSandbox()             true while one is showing (`runtime.sandbox`)
+ *   createGame({ persist: false })   a game in memory only, for replaying the rules
+ *
  * ── HOOKS — read models that keep their identity until something relevant changes ────────
  *   useGameHydrated()   saved state has been read (false on the server)
  *   useGameRuntime()    storage mode, save failure, recovery, legacy scan
@@ -131,7 +138,13 @@ export {
   type CreateGameOptions,
   type ClockHandle,
 } from './store';
-export { STORAGE_KEYS, STORAGE_PREFIX, EXPORT_APP_ID } from './keys';
+export {
+  STORAGE_KEYS,
+  STORAGE_PREFIX,
+  EXPORT_APP_ID,
+  SANDBOX_PREFIX,
+  SANDBOX_MARK_KEY,
+} from './keys';
 export {
   createMemoryStorage,
   type KeyValueStorage,
