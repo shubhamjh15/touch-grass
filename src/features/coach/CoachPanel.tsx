@@ -349,7 +349,7 @@ export default function CoachPanel({
           </header>
         )}
         <div className="flex-1 pt-5 pb-6">{conversation}</div>
-        <div className="sticky bottom-[calc(var(--tabbar-h)+var(--safe-b))] z-(--z-sticky) -mx-(--gutter) border-t-[1.5px] border-ink bg-mat px-(--gutter) pt-2 pb-3 lg:bottom-0 lg:mx-0 lg:px-0 lg:pb-6">
+        <div className="sticky bottom-[calc(var(--tabbar-h)+var(--safe-b))] z-(--z-sticky) -mx-(--gutter) border-t-[1.5px] border-ink bg-mat px-(--gutter) pt-2 pb-12 lg:bottom-0 lg:mx-0 lg:px-0 lg:pb-6">
           <div className="relative">{dock}</div>
         </div>
         {overlays}

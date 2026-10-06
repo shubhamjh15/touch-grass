@@ -17,7 +17,7 @@ export interface QuickPromptsProps {
 
 /**
  * Three ideas above the box, five more behind "More ideas" (product spec 8.6). One row that
- * scrolls sideways, so the composer never jumps.
+ * scrolls sideways on phones and wraps on desktop, so nothing is cut off.
  */
 export function QuickPrompts({ onPick, busy, className }: QuickPromptsProps) {
   const more = useCoachUi((state) => state.moreIdeas);
@@ -28,7 +28,7 @@ export function QuickPrompts({ onPick, busy, className }: QuickPromptsProps) {
     <div
       role="group"
       aria-label={COACH_COPY.promptsLabel}
-      className={cn('scroll-row flex gap-2 py-1.5', className)}
+      className={cn('scroll-row flex gap-2 py-1.5 lg:flex-wrap', className)}
     >
       {prompts.map((prompt) => (
         <Chip
