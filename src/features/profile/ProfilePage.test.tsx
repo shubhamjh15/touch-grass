@@ -16,12 +16,17 @@ vi.mock('next/navigation', async () => {
   };
 });
 
+const world = vi.hoisted(() => ({ explored: 0 }));
+
 vi.mock('@/world', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     WorldStage: ({ label }: { label?: string }) => <div role="img" aria-label={label} />,
     emitPulse: vi.fn(),
+    openExplore: () => {
+      world.explored += 1;
+    },
   };
 });
 
@@ -116,6 +121,15 @@ describe('the island log', () => {
     const log = screen.getByRole('list', { name: 'Island log' });
     expect(within(log).getAllByRole('listitem').length).toBeGreaterThan(0);
     expect(screen.getByRole('list', { name: 'Island props still to arrive' })).toBeInTheDocument();
+  });
+
+  it("opens the world's Explore mode from the Island tab", async () => {
+    seed('day45');
+    render(<ProfilePage />);
+    await open('Island');
+    world.explored = 0;
+    await userEvent.click(screen.getByRole('button', { name: 'Explore the island' }));
+    expect(world.explored).toBe(1);
   });
 });
 

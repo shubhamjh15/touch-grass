@@ -74,6 +74,12 @@ export const COPY = {
   },
 
   island: {
+    explore: {
+      slug: 'In 3D',
+      title: 'Walk around it',
+      body: 'Open the island full screen: look around, read the labels, take a photo.',
+      action: 'Explore the island',
+    },
     logHeading: 'What has arrived',
     logLead: 'Everything that arrived on the island, in words, newest first.',
     logLabel: 'Island log',

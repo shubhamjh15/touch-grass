@@ -1,16 +1,19 @@
 'use client';
 
+import { Compass } from 'lucide-react';
 import Link from 'next/link';
 import { ROUTES } from '@/app/shell';
 import { effectiveDay, useBadges, useGame, useIslandLog } from '@/game';
 import { formatDay } from '@/lib/format';
 import { Button, Card, EmptyState, Meter } from '@/ui';
+import { openExplore } from '@/world';
 import { COPY } from '../copy';
 import { pendingProps, splitLogLine } from '../model/island';
 
 /**
- * The Island log: every arrival written in words, so the canvas never carries information alone,
- * followed by the props still to come and the badge tier that brings each.
+ * The Island tab: a door into the world's full-screen Explore mode, then the Island log (every
+ * arrival written in words, so the canvas never carries information alone) and the props still
+ * to come with the badge tier that brings each.
  */
 export function IslandPanel() {
   const log = useIslandLog();
@@ -21,6 +24,18 @@ export function IslandPanel() {
 
   return (
     <div className="grid gap-8">
+      <Card tone="paper" className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div className="grid min-w-0 gap-0.5">
+          <p className="type-slug text-ink-3">{COPY.island.explore.slug}</p>
+          <h2 className="text-h4 text-ink">{COPY.island.explore.title}</h2>
+          <p className="text-body-sm text-ink-2">{COPY.island.explore.body}</p>
+        </div>
+        {/* The world owns Explore: full screen, labelled landmarks, a photo button, Escape to leave. */}
+        <Button variant="neutral" icon={Compass} onClick={() => openExplore()}>
+          {COPY.island.explore.action}
+        </Button>
+      </Card>
+
       <section aria-labelledby="island-log-heading" className="grid gap-3">
         <div className="grid gap-0.5">
           <h2 id="island-log-heading" className="text-h3">
