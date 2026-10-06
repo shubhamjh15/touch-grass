@@ -71,14 +71,9 @@ export function YouView({
             <Sprout size={44} strokeWidth={2} aria-hidden="true" className="text-green-deep" />
           }
           action={
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-              <Button asChild variant="primary" iconRight={ArrowRight}>
-                <UiLink href={ROUTES.log}>{COPY.empty.action}</UiLink>
-              </Button>
-              <Button variant="ghost" onClick={onSeePlanet}>
-                {COPY.empty.planet}
-              </Button>
-            </div>
+            <Button asChild variant="primary" iconRight={ArrowRight}>
+              <UiLink href={ROUTES.log}>{COPY.empty.action}</UiLink>
+            </Button>
           }
         />
         <PlanetTeaser climate={climate} onSeePlanet={onSeePlanet} />

@@ -65,7 +65,11 @@ export function TotalsCard({ impact }: { impact: Impact }) {
       <dl className="grid grid-cols-3 border-t-2 border-dashed border-ink">
         <Stub label={COPY.totals.logs} value={impact.logs} />
         <Stub label={COPY.totals.rings} value={impact.rings} />
-        <Stub label={COPY.totals.outside} value={impact.minutesOutside} />
+        <Stub
+          label={COPY.totals.outside}
+          value={impact.minutesOutside}
+          unit={COPY.totals.outsideUnit}
+        />
       </dl>
     </Card>
   );
