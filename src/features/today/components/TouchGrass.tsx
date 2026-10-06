@@ -51,7 +51,7 @@ export function TouchGrassCard({ flow }: { flow: BreakFlow }) {
 
   return (
     <PageSection id="touch-grass" title={BREAK_COPY.slug}>
-      <Card tone="yellow" className="grid gap-3">
+      <Card tone="blue" className="grid gap-3">
         <p className="text-h4 text-ink">{BREAK_COPY.cardTitle}</p>
         <p className="text-body-sm text-ink-2">{BREAK_COPY.line(tree.name)}</p>
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">

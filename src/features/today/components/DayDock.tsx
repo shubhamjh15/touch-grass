@@ -80,7 +80,7 @@ export function DayDock() {
       aria-label={COPY.dockLabel}
       data-coachmark="ring"
       data-vitality={tree.vitality}
-      className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5 lg:px-6 lg:py-5"
+      className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5 lg:gap-6 lg:px-7 lg:py-6"
     >
       <div className="flex min-w-0 flex-1 items-center gap-3.5 lg:gap-5">
         <RingProgress
@@ -102,7 +102,9 @@ export function DayDock() {
         </RingProgress>
         <div className="min-w-0 flex-1">
           <p className="type-slug text-ink-3 max-lg:hidden">{printDate(today.day)}</p>
-          <h1 className="text-h3 text-ink lg:mt-1 lg:text-h2">{greeting(now, profile.name)}</h1>
+          <h1 tabIndex={-1} className="text-h3 text-ink lg:mt-1.5 lg:text-h2">
+            {greeting(now, profile.name)}
+          </h1>
           <p className="mt-1 text-body text-ink-2" data-testid="status-line">
             {tree.statusLine}
           </p>

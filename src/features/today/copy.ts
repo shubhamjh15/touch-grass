@@ -42,6 +42,8 @@ export const COPY = {
   activityAll: 'See all',
   activityEmpty: 'Nothing stuck yet today. Your first action is one tap away.',
   activityHistory: 'See your whole history',
+  activityNoXp: 'no XP, maxed for today',
+  activityNoEstimate: 'Not estimated',
 } as const;
 
 export function waterLabel(treeName: string, dormant: boolean): string {

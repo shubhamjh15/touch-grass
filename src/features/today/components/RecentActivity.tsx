@@ -6,7 +6,7 @@ import { PageSection, ROUTES } from '@/app/shell';
 import { ACTION_BY_ID } from '@/data/catalogue';
 import { useStreak, useToday, useTreeStatus, type LogEntry } from '@/game';
 import { formatCo2, formatNumber } from '@/lib/format';
-import { Co2e, HonestyMark, SPRINGS, Sticker, TabPanel, Tabs, Tag, TextLink } from '@/ui';
+import { Co2e, HonestyMark, SPRINGS, Sticker, TabPanel, Tabs, TextLink } from '@/ui';
 import { COPY } from '../copy';
 import { logEstimateSource, logMeta, rhythmLine } from '../model';
 import { stickerLabel } from '../stickerLabels';
@@ -29,19 +29,20 @@ function LogRow({ log }: { log: LogEntry }) {
       <Sticker category={log.category} size={32} rotate={0} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-body font-bold text-ink">{rowTitle(log)}</span>
-        <span className="mt-1 block truncate type-slug leading-[1.3] text-ink-3">
-          {logMeta(log)}
+        <span className="mt-1 block type-slug leading-[1.4] text-ink-3">
+          {logMeta(log)} · {log.xp > 0 ? `+${formatNumber(log.xp)} XP` : COPY.activityNoXp}
         </span>
       </span>
       {estimated ? (
-        <span className="flex shrink-0 items-center gap-1.5 font-mono text-data text-ink">
+        <span className="flex shrink-0 items-center gap-1.5 font-mono text-data-lg text-ink">
           <HonestyMark source={logEstimateSource(log)} size="sm" />
           <span>
             {formatCo2(log.co2eKg ?? 0)} <Co2e className="sr-only" />
           </span>
         </span>
-      ) : null}
-      {log.xp > 0 ? <Tag hue="yellow">+{formatNumber(log.xp)} XP</Tag> : null}
+      ) : (
+        <span className="shrink-0 type-tick text-ink-3">{COPY.activityNoEstimate}</span>
+      )}
     </>
   );
 }

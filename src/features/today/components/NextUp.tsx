@@ -157,9 +157,9 @@ export function NextUp({ onBreak }: { onBreak: (minutes?: number) => void }) {
       id="next"
       title={COPY.nextHeading}
       aside={
-        <Button
-          size="sm"
-          variant="ghost"
+        <button
+          type="button"
+          className="hit-3 inline-flex shrink-0 cursor-pointer items-center gap-1.5 link rounded-xs text-body-sm font-semibold"
           onClick={() => {
             play('tap');
             openCoach();
@@ -167,7 +167,7 @@ export function NextUp({ onBreak }: { onBreak: (minutes?: number) => void }) {
         >
           <MossFace size={18} />
           {COPY.askMoss}
-        </Button>
+        </button>
       }
     >
       <Tabs
