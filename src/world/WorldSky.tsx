@@ -16,9 +16,9 @@ import { useWorldStore } from './store';
  * with halftone dot rows, printed stars at night, and a hanging rig of paper cut-outs
  * on ink threads (sun or moon, clouds), with crop marks in the corners.
  *
- * It is plain CSS in a layer below the WebGL canvas. The tracker sizes and moves this
- * element to the active stage rectangle every frame, so the 3D tree occludes the sky
- * and page UI covers it. All colours come from the `--sky-*`, `--orb`, `--cloud` and
+ * It is plain CSS under the WebGL canvas, inside the world layer that the tracker moves
+ * into the active stage. It is what stands behind the illustrated tree while the 3D
+ * scene loads and when 3D is off; once the scene paints its own sky it is hidden. All colours come from the `--sky-*`, `--orb`, `--cloud` and
  * `--stage-mark` custom properties, which the tracker writes for the previewed hour.
  */
 
@@ -171,7 +171,7 @@ const CROP_MARKS = [
   'right-3 bottom-3 border-r-[1.5px] border-b-[1.5px] lg:right-7 lg:bottom-7',
 ];
 
-export function WorldSky({ ref }: { ref: Ref<HTMLDivElement> }) {
+export function WorldSky({ ref, hidden = false }: { ref: Ref<HTMLDivElement>; hidden?: boolean }) {
   const twinkle = useRef<HTMLDivElement>(null);
   const still = useStillness();
 
@@ -191,7 +191,8 @@ export function WorldSky({ ref }: { ref: Ref<HTMLDivElement> }) {
       ref={ref}
       data-frame="bleed"
       className={cn(
-        'group @container absolute top-0 left-0 size-0 overflow-hidden opacity-0 will-change-transform',
+        'group @container absolute inset-0 overflow-hidden rounded-[inherit] opacity-0',
+        hidden && 'invisible',
         // The plate is a printed card: an ink frame with a hard shadow, drawn by the sky itself.
         'data-[frame=plate]:border-4 data-[frame=plate]:border-ink data-[frame=plate]:shadow-3',
       )}

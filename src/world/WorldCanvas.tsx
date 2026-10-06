@@ -40,20 +40,23 @@ class SceneBoundary extends Component<
 }
 
 /**
- * Mounted once by the root layout and never unmounted: the fixed backdrop (the printed
- * sky plate; the mat itself is the page background) and, on capable devices, the one
- * WebGL canvas that renders the world. The canvas persists across pages, so the tree is
- * never rebuilt on navigation; the tracker sizes it to whichever stage is active.
- * It decides between 3D and the illustrated fallback; everything heavy is lazy.
+ * Mounted once by the root layout and never unmounted: the one WebGL canvas that renders
+ * the world, with the printed sky that stands in for it while it loads. Both sit in a
+ * single "world layer" element which the tracker moves into whichever stage is active,
+ * so the canvas is part of the page's own flow (native scrolling moves it) and is never
+ * larger than the stage it shows. The WebGL context survives the moves, so the tree is
+ * never rebuilt on navigation. This component also decides between 3D and the
+ * illustrated fallback; everything heavy is lazy.
  */
 export function WorldCanvas() {
   const preference = useWorldStore((state) => state.preference);
+  const ready = useWorldStore((state) => state.status === 'ready');
   const [support] = useState(detectSupport);
   const [failed, setFailed] = useState(false);
   const fail = useCallback(() => setFailed(true), []);
   const backdrop = useRef<HTMLDivElement>(null);
+  const layer = useRef<HTMLDivElement>(null);
   const sky = useRef<HTMLDivElement>(null);
-  const scene = useRef<HTMLDivElement>(null);
   const use3d = support.webgl2 && preference !== 'off' && !failed;
 
   useEffect(() => {
@@ -76,31 +79,31 @@ export function WorldCanvas() {
   }, []);
 
   useEffect(() => {
-    if (!backdrop.current || !sky.current || !scene.current) return;
-    return startTracker({ backdrop: backdrop.current, sky: sky.current, scene: scene.current });
+    if (!backdrop.current || !layer.current || !sky.current) return;
+    return startTracker({ backdrop: backdrop.current, layer: layer.current, sky: sky.current });
   }, []);
 
   return (
     <div
       ref={backdrop}
       aria-hidden="true"
-      // `lvh`, not `inset-0`: the box must not resize (and reallocate the drawing buffer)
-      // every time a mobile URL bar slides away.
+      // Where the layer waits between two stages. `lvh`, not `inset-0`: the box must not
+      // resize every time a mobile URL bar slides away.
       className="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh overflow-hidden"
     >
-      <WorldSky ref={sky} />
-      {/* Sized and moved by the tracker: the canvas is never larger than the stage it shows. */}
-      <div
-        ref={scene}
-        className="absolute top-0 left-0 size-px origin-top-left overflow-hidden opacity-0 will-change-transform"
-      >
-        {use3d && (
-          <SceneBoundary onError={fail}>
-            <Suspense fallback={null}>
-              <WorldScene onFail={fail} adaptive={!support.software} />
-            </Suspense>
-          </SceneBoundary>
-        )}
+      {/* Moved between stage hosts by the tracker; React only ever sees it here. */}
+      <div ref={layer} className="absolute top-0 left-0 size-0 overflow-hidden opacity-0">
+        {/* The 3D scene paints its own sky: the printed one is for loading and fallback. */}
+        <WorldSky ref={sky} hidden={ready && use3d} />
+        <div className="absolute inset-0">
+          {use3d && (
+            <SceneBoundary onError={fail}>
+              <Suspense fallback={null}>
+                <WorldScene onFail={fail} adaptive={!support.software} />
+              </Suspense>
+            </SceneBoundary>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -3,14 +3,22 @@
 import { Sparkles } from '@react-three/drei';
 import { Canvas, useThree } from '@react-three/fiber';
 import { useEffect, useRef, useState, type RefObject } from 'react';
+import { IS_DEV } from '@/lib/env';
 import * as THREE from 'three';
 import { anchorsFor } from '../anchors';
 import { hideAllCallouts, writeCallouts, type CalloutFrame } from '../callouts';
 import { FOV } from '../camera';
 import { ISLAND, QUALITY } from '../config';
 import { LANDMARKS } from '../contract';
-import { QualityGovernor, frameInterval } from '../quality';
-import { registerCapturer, statsWanted, stickingPoint, useWorldStore, worldStats } from '../store';
+import { QualityGovernor, resolveDpr } from '../quality';
+import {
+  getWorldStats,
+  registerCapturer,
+  statsWanted,
+  stickingPoint,
+  useWorldStore,
+  worldStats,
+} from '../store';
 import { onWorldFrame, popWorld, type WorldFrame } from '../tracker';
 import { Bursts } from './Bursts';
 import { captureScene } from './capture';
@@ -63,12 +71,15 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
     let cancelled = false;
     const governor = new QualityGovernor(useWorldStore.getState().quality);
     let governed = useWorldStore.getState().preference;
-    let lastMoved = 0;
     let lastDrawn = -1;
-    const lastBox = { x: Number.NaN, y: 0, width: 0, height: 0 };
     const samples = new Float32Array(SAMPLES);
     const sorted = new Float32Array(SAMPLES);
     let sampleCount = 0;
+    // GPU time of a frame, where the driver offers timer queries: the one number that
+    // tells fill-rate cost apart from a busy main thread. Development only.
+    const context = gl.getContext() as WebGL2RenderingContext;
+    const timer = IS_DEV ? context.getExtension('EXT_disjoint_timer_query_webgl2') : null;
+    let query: WebGLQuery | null = null;
     const anchors = new Float32Array(LANDMARKS.length * 3);
     const callouts: CalloutFrame = {
       stageId: null,
@@ -114,6 +125,9 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
     registerCapturer((options) =>
       lost || cancelled ? Promise.resolve(null) : captureScene(gl, scene, options),
     );
+    // What the measuring script (scripts/world-perf.mjs) reads; development only.
+    const probe = globalThis as { __touchgrassWorld?: { stats: typeof getWorldStats } };
+    if (IS_DEV) probe.__touchgrassWorld = { stats: getWorldStats };
 
     const stop = onWorldFrame((current) => {
       frame.current = current;
@@ -124,28 +138,11 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
         governor.reset(quality);
       }
 
-      // A world that moves on the page (scroll, flight, drag, pulse) is drawn every frame;
-      // one that only sways in the wind may idle at the tier's frame cap.
-      const { box } = current;
+      // Every visible frame is drawn: a swaying tree at half the display rate reads as
+      // lag. Only reduced motion, whose sway is slow by design, idles at 30 fps.
       const moved =
-        !current.locked ||
-        current.interacting ||
-        live.growing > 0 ||
-        live.channels.flash > 0 ||
-        box.x !== lastBox.x ||
-        box.y !== lastBox.y ||
-        box.width !== lastBox.width ||
-        box.height !== lastBox.height;
-      lastBox.x = box.x;
-      lastBox.y = box.y;
-      lastBox.width = box.width;
-      lastBox.height = box.height;
-      if (moved) lastMoved = current.time;
-      const idle = current.time - lastMoved;
-      const interval = current.reducedMotion
-        ? 1 / 30
-        : frameInterval(quality, moved ? 0 : Math.max(idle, 0.001));
-      const due = moved || current.time - lastDrawn >= interval - 0.002;
+        !current.locked || current.interacting || live.growing > 0 || live.channels.flash > 0;
+      const due = !current.reducedMotion || moved || current.time - lastDrawn >= 1 / 30 - 0.002;
       const draw = current.render && (due || rendered < 3);
       if (draw) {
         const sinceDrawn = lastDrawn < 0 ? 0 : (current.time - lastDrawn) * 1000;
@@ -154,7 +151,25 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
         // Counted per frame, not per render call: the composer's passes would otherwise
         // leave only the last full-screen triangle in the numbers.
         gl.info.reset();
+        const timed = timer !== null && query === null && (statsWanted() || rendered % 7 === 0);
+        if (timed) {
+          query = context.createQuery();
+          if (query) context.beginQuery(timer.TIME_ELAPSED_EXT, query);
+        }
         advance(current.time);
+        if (timed && query) context.endQuery(timer.TIME_ELAPSED_EXT);
+        else if (
+          timer &&
+          query &&
+          context.getQueryParameter(query, context.QUERY_RESULT_AVAILABLE)
+        ) {
+          if (!context.getParameter(timer.GPU_DISJOINT_EXT)) {
+            const ms = (context.getQueryParameter(query, context.QUERY_RESULT) as number) / 1e6;
+            worldStats.gpuMs += (ms - worldStats.gpuMs) * (worldStats.gpuMs > 0 ? 0.2 : 1);
+          }
+          context.deleteQuery(query);
+          query = null;
+        }
         const cost = performance.now() - started;
         rendered += 1;
         worldStats.drawCalls = gl.info.render.calls;
@@ -180,12 +195,15 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
             }
           }
         }
-        // `auto` steps the resolution down, then the tier, and never climbs back.
-        const judged =
-          adaptive && preference === 'auto' && !current.reducedMotion && interval === 0;
-        if (judged && sinceDrawn > 0 && governor.sample(sinceDrawn)) {
-          setQuality(governor.tier);
-          setDprScale(governor.dprScale);
+        // `auto` steps the resolution down, then the tier, and never climbs back. It
+        // judges only a world at rest in its stage: never mid-drag (a resize of the
+        // drawing buffer under the user's finger is itself a stutter) or mid-flight.
+        if (adaptive && preference === 'auto' && !current.reducedMotion) {
+          if (current.interacting || !current.locked) governor.pause();
+          else if (sinceDrawn > 0 && governor.sample(sinceDrawn)) {
+            setQuality(governor.tier);
+            setDprScale(governor.dprScale);
+          }
         }
       }
 
@@ -220,7 +238,8 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
       }
       writeCallouts(callouts, anchors);
 
-      // Where a logged action sticks, for the page's peel-and-stick flight (viewport px).
+      // Where a logged action sticks, for the page's peel-and-stick flight: kept as
+      // shares of the canvas box, turned into viewport pixels only when someone asks.
       const { tree } = live;
       projected
         .set(
@@ -229,13 +248,13 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
           tree.z + tree.halfWidth * 0.45,
         )
         .project(camera);
+      stickingPoint.el = canvas;
       stickingPoint.valid = current.locked && rendered > 0;
-      stickingPoint.x =
-        current.originX + current.box.x + (projected.x * 0.5 + 0.5) * current.box.width;
-      stickingPoint.y =
-        current.originY + current.box.y + (0.5 - projected.y * 0.5) * current.box.height;
+      stickingPoint.u = projected.x * 0.5 + 0.5;
+      stickingPoint.v = 0.5 - projected.y * 0.5;
 
       worldStats.dpr = gl.getPixelRatio();
+      worldStats.tier = quality;
       worldStats.dprScale = dprScale;
       worldStats.bufferWidth = canvas.width;
       worldStats.bufferHeight = canvas.height;
@@ -251,7 +270,9 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
       cancelled = true;
       stop();
       registerCapturer(null);
+      delete probe.__touchgrassWorld;
       stickingPoint.valid = false;
+      stickingPoint.el = null;
       hideAllCallouts();
       window.clearTimeout(lostTimer);
       canvas.removeEventListener('webglcontextlost', onLost);
@@ -318,15 +339,18 @@ function primeScene(): true {
 
 /**
  * The WebGL half of the world, loaded lazily. One antialiased canvas with a clear
- * background, sized to the active stage by the tracker and driven by it
- * (`frameloop="never"`): the scene renders in the same task that measured the DOM, and
- * never while nothing is visible.
+ * background that fills the world layer (and so the active stage), driven by the
+ * tracker (`frameloop="never"`): never while nothing is visible. Its resolution follows
+ * the tier's pixel budget, so a large stage on a dense screen costs no more than a small
+ * one.
  */
 export default function WorldScene(props: SceneProps) {
   const quality = useWorldStore((state) => state.quality);
   const dprScale = useWorldStore((state) => state.dprScale);
   const [deviceDpr, setDeviceDpr] = useState(() => window.devicePixelRatio || 1);
   const [coarse] = useState(() => window.matchMedia('(pointer: coarse)').matches);
+  const [pixels, setPixels] = useState(() => window.innerWidth * window.innerHeight);
+  const box = useRef<HTMLDivElement>(null);
   useState(primeScene);
 
   // The ratio changes without a resize when a window moves to another monitor.
@@ -337,25 +361,39 @@ export default function WorldScene(props: SceneProps) {
     return () => query.removeEventListener('change', update);
   }, [deviceDpr]);
 
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      const size = entries.at(-1)?.contentRect;
+      if (size && size.width >= 2 && size.height >= 2) setPixels(size.width * size.height);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const tier = QUALITY[quality];
-  const cap = coarse ? tier.dprTouch : tier.dpr;
+  // In steps of a twentieth, so a stage that resizes by a few pixels keeps its buffer scale.
+  const dpr = Math.round(resolveDpr(quality, pixels, deviceDpr, coarse, dprScale) * 20) / 20;
   return (
-    <Canvas
-      frameloop="never"
-      dpr={Math.max(0.5, Math.min(deviceDpr, cap) * dprScale)}
-      shadows={tier.shadowMap > 0 ? { type: THREE.PCFShadowMap } : false}
-      resize={{ scroll: false, debounce: 0, offsetSize: true }}
-      gl={{ antialias: true, alpha: true, stencil: false, powerPreference: 'high-performance' }}
-      camera={{ fov: FOV, near: 0.5, far: 420, position: [0, 4, 18] }}
-      onCreated={({ gl }) => {
-        gl.toneMapping = THREE.NeutralToneMapping;
-        gl.setClearColor(0x000000, 0);
-        gl.info.autoReset = false;
-      }}
-      aria-hidden="true"
-      style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-    >
-      <World {...props} />
-    </Canvas>
+    <div ref={box} className="absolute inset-0">
+      <Canvas
+        frameloop="never"
+        dpr={dpr}
+        shadows={tier.shadowMap > 0 ? { type: THREE.PCFShadowMap } : false}
+        resize={{ scroll: false, debounce: 0, offsetSize: true }}
+        gl={{ antialias: true, alpha: true, stencil: false, powerPreference: 'high-performance' }}
+        camera={{ fov: FOV, near: 0.5, far: 420, position: [0, 4, 18] }}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.NeutralToneMapping;
+          gl.setClearColor(0x000000, 0);
+          gl.info.autoReset = false;
+        }}
+        aria-hidden="true"
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+      >
+        <World {...props} />
+      </Canvas>
+    </div>
   );
 }

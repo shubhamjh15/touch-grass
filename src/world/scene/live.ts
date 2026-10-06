@@ -94,6 +94,11 @@ export const shared = {
   uDroop: { value: 0 },
   /** 0..1 shake of the crown. */
   uShake: { value: 0 },
+  /**
+   * Where the crown's shadow falls on the lawn: centre x, centre z, radius, strength.
+   * Grass and flowers shade themselves from it instead of sampling the shadow map.
+   */
+  uCrown: { value: new THREE.Vector4(0, 0, 1, 0) },
 };
 
 /** Sets a three colour from an sRGB triple in 0..1 (converted to the linear working space). */

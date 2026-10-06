@@ -50,20 +50,18 @@ function partOf(object: THREE.Object3D | null): string | null {
 }
 
 /**
- * The nearest registered part under a viewport point, or `null`. `rect` is the canvas
- * rectangle on screen (it may be scaled or mid-flight; that is why it is passed in).
+ * The nearest registered part under a point of the stage, or `null`. `u` and `v` run
+ * 0..1 across and down the stage box, which the canvas fills.
  */
 export function hitTest(
+  u: number,
+  v: number,
+  camera: THREE.Camera,
   clientX: number,
   clientY: number,
-  rect: { left: number; top: number; width: number; height: number },
-  camera: THREE.Camera,
 ): WorldHit | null {
-  if (targets.length === 0 || rect.width <= 0 || rect.height <= 0) return null;
-  ndc.set(
-    ((clientX - rect.left) / rect.width) * 2 - 1,
-    -(((clientY - rect.top) / rect.height) * 2 - 1),
-  );
+  if (targets.length === 0) return null;
+  ndc.set(u * 2 - 1, 1 - v * 2);
   if (Math.abs(ndc.x) > 1 || Math.abs(ndc.y) > 1) return null;
   raycaster.setFromCamera(ndc, camera);
   results.length = 0;

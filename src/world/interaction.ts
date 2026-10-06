@@ -171,14 +171,40 @@ export class OrbitController {
 /** The one controller of the one world: the active stage feeds it, the tracker steps it. */
 export const orbit = new OrbitController();
 
+// --- Where the stage is on screen: read once, reused until the page moves ------------------
+
+let rectVersion = 0;
+
+/** The page scrolled or resized: every cached stage rectangle is stale. */
+export function invalidateStageRects(): void {
+  rectVersion += 1;
+}
+
+/**
+ * Caches an element's rectangle between scrolls and resizes, so pointer handlers that
+ * fire a hundred times a second never force a layout each.
+ */
+export function createRectCache(): (el: Element) => DOMRect {
+  let version = -1;
+  let rect: DOMRect | null = null;
+  return (el) => {
+    if (rect === null || version !== rectVersion) {
+      rect = el.getBoundingClientRect();
+      version = rectVersion;
+    }
+    return rect;
+  };
+}
+
 // --- Taps: fire-and-forget, like pulses ---------------------------------------------------
 
-type TapListener = (clientX: number, clientY: number) => void;
+/** A tap at a point of the stage: `u`, `v` are 0..1 across and down its box. */
+type TapListener = (u: number, v: number, clientX: number, clientY: number) => void;
 const tapListeners = new Set<TapListener>();
 
-/** A tap or click on the active stage, in viewport coordinates. */
-export function emitTap(clientX: number, clientY: number): void {
-  tapListeners.forEach((listener) => listener(clientX, clientY));
+/** A tap or click on the active stage. */
+export function emitTap(u: number, v: number, clientX: number, clientY: number): void {
+  tapListeners.forEach((listener) => listener(u, v, clientX, clientY));
 }
 
 /** Scene-side subscription. Returns an unsubscribe function. */
@@ -192,12 +218,15 @@ export function onTap(listener: TapListener): () => void {
 // --- Pointer and hit-testing: what the user points at and taps, by name ---------------------
 
 /**
- * The pointer over the active stage, in viewport coordinates. The stage writes it on
- * pointer moves; the scene reads it once per frame and ray-casts only when it moved.
+ * The pointer over the active stage: `u`, `v` are 0..1 across and down the stage box,
+ * `x`, `y` the same point in viewport coordinates. The stage writes it on pointer moves;
+ * the scene reads it once per frame and ray-casts only when it moved.
  */
-export const pointer = { x: 0, y: 0, inside: false, moved: false };
+export const pointer = { x: 0, y: 0, u: 0, v: 0, inside: false, moved: false };
 
-export function setPointer(clientX: number, clientY: number): void {
+export function setPointer(u: number, v: number, clientX: number, clientY: number): void {
+  pointer.u = u;
+  pointer.v = v;
   pointer.x = clientX;
   pointer.y = clientY;
   pointer.inside = true;

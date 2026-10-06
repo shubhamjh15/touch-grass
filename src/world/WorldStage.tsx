@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -17,7 +18,7 @@ import { measureCallouts, registerCallouts, type CalloutElements } from './callo
 import { STAGE_DEFAULTS } from './config';
 import { LANDMARKS, type LandmarkId, type WorldStageProps } from './contract';
 import { FallbackTree } from './FallbackTree';
-import { clearPointer, emitTap, orbit, setPointer } from './interaction';
+import { clearPointer, createRectCache, emitTap, orbit, setPointer } from './interaction';
 import { stickingPoint, useWorldStore, type StageOptions } from './store';
 
 /** Label, icon and disc colour of each landmark's callout (bible 5.7). */
@@ -65,10 +66,11 @@ interface Drag {
 }
 
 /**
- * Reserves a box in the page for the Grove. The persistent 3D world flies to the
- * active stage, scales to fit it and follows it on scroll. Until the 3D scene has
- * drawn (and for good when WebGL is unavailable or turned off) the stage draws the
- * illustrated tree in the same place, so a stage box is never empty.
+ * Reserves a box in the page for the world. The one persistent 3D world moves into the
+ * active stage (its canvas becomes a child of the stage, so the page scrolls it like any
+ * other element) and frames itself for the stage's mode. Until the 3D scene has drawn
+ * (and for good when WebGL is unavailable or turned off) the stage draws the illustrated
+ * tree in the same place, so a stage box is never empty.
  *
  * An interactive stage can be turned by dragging, with the arrow keys or by hovering;
  * a stage with `landmarks` carries one real button per landmark, tracked to the island.
@@ -134,7 +136,9 @@ export function WorldStage({
     useWorldStore.getState().updateStage(id, options);
   }, [id, options]);
 
-  useEffect(() => {
+  // A layout effect, so the world leaves this stage while its element is still in the
+  // page (the tracker measures where it was) and enters a new one before the next paint.
+  useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     const { registerStage, setStageVisibility, unregisterStage } = useWorldStore.getState();
@@ -190,6 +194,7 @@ export function WorldStage({
 
   // --- Turning the island: pointer, keyboard, hover. The tracker steps the controller. ---
   const drag = useRef<Drag | null>(null);
+  const [rectOf] = useState(createRectCache);
   const isActive = () => useWorldStore.getState().activeStageId === id;
 
   const endDrag = (el: HTMLElement, pointer: number) => {
@@ -221,13 +226,12 @@ export function WorldStage({
     if (!current || current.pointer !== event.pointerId) {
       // Hover parallax and hover hit-testing are for fine pointers only.
       if (operable && event.pointerType === 'mouse' && isActive()) {
-        const rect = el.getBoundingClientRect();
-        orbit.hover(
-          ((event.clientX - rect.left) / rect.width) * 2 - 1,
-          ((event.clientY - rect.top) / rect.height) * 2 - 1,
-        );
+        const rect = rectOf(el);
+        const u = (event.clientX - rect.left) / Math.max(1, rect.width);
+        const v = (event.clientY - rect.top) / Math.max(1, rect.height);
+        orbit.hover(u * 2 - 1, v * 2 - 1);
         if (isControl(event.target)) clearPointer();
-        else setPointer(event.clientX, event.clientY);
+        else setPointer(u, v, event.clientX, event.clientY);
       }
       return;
     }
@@ -245,18 +249,24 @@ export function WorldStage({
     }
     current.x = event.clientX;
     current.y = event.clientY;
-    orbit.dragMove(
-      dx / Math.max(1, el.clientWidth),
-      current.touch ? 0 : dy / Math.max(1, el.clientHeight),
-    );
+    const rect = rectOf(el);
+    orbit.dragMove(dx / Math.max(1, rect.width), current.touch ? 0 : dy / Math.max(1, rect.height));
   };
 
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
     const current = drag.current;
     if (!current || current.pointer !== event.pointerId) return;
     const tapped = !current.turning && event.timeStamp - current.startedAt < 500;
+    const rect = rectOf(event.currentTarget);
     endDrag(event.currentTarget, event.pointerId);
-    if (tapped && isActive()) emitTap(event.clientX, event.clientY);
+    if (tapped && isActive()) {
+      emitTap(
+        (event.clientX - rect.left) / Math.max(1, rect.width),
+        (event.clientY - rect.top) / Math.max(1, rect.height),
+        event.clientX,
+        event.clientY,
+      );
+    }
   };
 
   const onPointerCancel = (event: PointerEvent<HTMLDivElement>) => {
@@ -281,9 +291,9 @@ export function WorldStage({
       const el = ref.current;
       const state = useWorldStore.getState();
       if (!el || state.status === 'ready' || state.activeStageId !== id) return;
-      const rect = el.getBoundingClientRect();
-      stickingPoint.x = rect.left + stick.x;
-      stickingPoint.y = rect.top + stick.y;
+      stickingPoint.el = el;
+      stickingPoint.u = stick.x / Math.max(1, el.clientWidth);
+      stickingPoint.v = stick.y / Math.max(1, el.clientHeight);
       stickingPoint.valid = true;
     },
     [id],
@@ -345,6 +355,12 @@ export function WorldStage({
       }}
       onKeyDown={onKeyDown}
     >
+      {/* The world layer (sky and canvas) is moved in here while this stage is active. */}
+      <div
+        data-world-host=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit]"
+      />
       {operable && (
         <span id={hintId} className="sr-only">
           Drag, or use the arrow keys, to look around the island. Home faces it front.

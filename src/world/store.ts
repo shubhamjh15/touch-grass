@@ -158,15 +158,27 @@ export function onPulse(listener: PulseListener): () => void {
 
 // --- The sticking point: where a logged action lands on the tree (bible 5.7, 7.4). ---
 
-/** Mutated in place by whoever draws the tree (the scene, or the illustrated fallback). */
-export const stickingPoint = { x: 0, y: 0, valid: false };
+/**
+ * Mutated in place by whoever draws the tree (the scene, or the illustrated fallback):
+ * the point as shares of the box of `el`, so it stays right while the page scrolls.
+ */
+export const stickingPoint: { u: number; v: number; valid: boolean; el: Element | null } = {
+  u: 0.5,
+  v: 0.5,
+  valid: false,
+  el: null,
+};
 
 /**
  * The point on the crown, top-left of centre, that the "peel and stick" flight of a
  * logged action ends on, in viewport coordinates. `null` while no tree is on screen.
  */
 export function getStickingPoint(): { x: number; y: number } | null {
-  return stickingPoint.valid ? { x: stickingPoint.x, y: stickingPoint.y } : null;
+  const { el, u, v, valid } = stickingPoint;
+  if (!valid || !el || !el.isConnected) return null;
+  const rect = el.getBoundingClientRect();
+  if (rect.width < 2 || rect.height < 2) return null;
+  return { x: rect.left + u * rect.width, y: rect.top + v * rect.height };
 }
 
 // --- Capture: lets the app export a picture of the world (share cards). ---
@@ -201,6 +213,8 @@ export interface WorldStats {
   frameMs: number;
   /** Device pixel ratio the canvas is actually rendering at. */
   dpr: number;
+  /** Quality tier in use. */
+  tier: WorldQuality;
   /** Share of the tier's DPR cap in use: below 1 once `auto` has stepped the resolution down. */
   dprScale: number;
   /** GPU objects alive (`renderer.info.memory`, programs): flat numbers mean no leak. */
@@ -217,6 +231,8 @@ export interface WorldStats {
   p95Ms: number;
   /** Milliseconds of script time one frame of the scene costs (update and draw calls issued). */
   cpuMs: number;
+  /** Milliseconds of GPU time one frame costs, where timer queries exist (development only). */
+  gpuMs: number;
   /** Drawing-buffer size in device pixels. */
   bufferWidth: number;
   bufferHeight: number;
@@ -229,6 +245,7 @@ export const worldStats: WorldStats = {
   fps: 0,
   frameMs: 0,
   dpr: 1,
+  tier: 'medium',
   dprScale: 1,
   geometries: 0,
   textures: 0,
@@ -239,6 +256,7 @@ export const worldStats: WorldStats = {
   worstMs: 0,
   p95Ms: 0,
   cpuMs: 0,
+  gpuMs: 0,
   bufferWidth: 0,
   bufferHeight: 0,
 };

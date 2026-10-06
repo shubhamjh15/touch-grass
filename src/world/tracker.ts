@@ -1,38 +1,33 @@
 import type { StageMode, WorldSnapshot } from './contract';
 import { MOTION } from './config';
 import { applySkyVars, skyAt } from './daylight';
-import { boxesIntersect, stepSpring, type Box, type Spring } from './framing';
-import { orbit } from './interaction';
+import { stepSpring, type Spring } from './framing';
+import { invalidateStageRects, orbit } from './interaction';
 import { useWorldStore, type StageRecord } from './store';
 
 /**
- * The world's heartbeat. One requestAnimationFrame loop that, every frame:
+ * The world's heartbeat, and the one place that decides where the world is on the page.
  *
- *   1. reads the canvas rectangle and the active stage rectangle,
- *   2. turns them into the box the world should occupy (locked 1:1 to the stage while
- *      it stays the same, flown on a spring when the active stage changes),
- *   3. writes the printed sky layer to that box, and sizes the WebGL canvas to the stage
- *      (its drawing buffer is never larger than what is shown; a flight between two
- *      stages only moves and scales the layer),
- *   4. hands the frame to the scene, which renders the world into that canvas.
+ * The world layer (the printed sky and the WebGL canvas) is a single DOM node that
+ * LIVES INSIDE the active stage: when another stage becomes active the node is moved
+ * into it. While it stands in a stage the browser lays it out and scrolls it like any
+ * other element, on the compositor, so it can never trail the page, and nothing here
+ * reads layout per frame. Layout is read only when the stage changes (twice, to fly the
+ * world from where it was to where it is going), and sizes arrive from a ResizeObserver.
  *
- * Reads, sky and WebGL all happen in the same task, so the DOM and the canvas can
- * never be a frame apart. Lives in the main bundle (no three.js): the sky follows
- * stages even while the 3D chunk is loading or when 3D is off.
+ * Between two stages the move is a short transform on top of the new place (FLIP). With
+ * no stage at all (a route is loading) the layer is parked in the fixed backdrop exactly
+ * where it was, held for a moment and then faded out.
+ *
+ * Lives in the main bundle (no three.js): the sky follows stages even while the 3D chunk
+ * is loading or when 3D is off. The loop stops itself whenever nothing can be seen.
  */
 
 export interface WorldFrame {
   /** Seconds since the tracker started, and since the previous frame (clamped). */
   time: number;
   dt: number;
-  /** CSS size of the canvas, measured this frame (not `window.innerHeight`). */
-  canvas: { width: number; height: number };
-  /** Top-left corner of the canvas in viewport coordinates. */
-  originX: number;
-  originY: number;
-  /** Box the world occupies, relative to the canvas. Mid-flight it is between two stages. */
-  box: Box;
-  /** CSS size of the WebGL canvas: the active stage's size, in whole pixels. */
+  /** CSS size of the world layer: the active stage's box, in whole pixels. */
   view: { width: number; height: number };
   fit: number;
   /** 0 = centred in the box, 1 = standing on its bottom edge. */
@@ -42,14 +37,10 @@ export interface WorldFrame {
   opacity: number;
   /** Scale multiplier of the first-appearance pop: settles at 1. */
   appear: number;
-  /** 0..1: how far the sticker is peeled off the page while it is carried between stages. */
-  lift: number;
-  /** Velocity of the box centre in px/s while flying. Zero when locked to a stage. */
-  velocityX: number;
-  velocityY: number;
+  /** True while the layer is still travelling from the previous stage. */
   flying: boolean;
   reducedMotion: boolean;
-  /** False when nothing would be visible (tab hidden, faded out, box off screen). */
+  /** False when nothing would be visible (tab hidden, faded out, stage off screen). */
   render: boolean;
   /** The live snapshot with the active stage's `preview` applied. */
   snapshot: WorldSnapshot;
@@ -59,7 +50,7 @@ export interface WorldFrame {
   tilt: number;
   /** True while the user is turning the island or it is still coasting. */
   interacting: boolean;
-  /** True when the box is exactly the active stage's rectangle (not flying, not fading). */
+  /** True when the world stands in its stage, at rest: not flying, not fading. */
   locked: boolean;
 }
 
@@ -76,7 +67,7 @@ export function popWorld(): void {
   replayAppear?.();
 }
 
-/** Scene-side subscription to the per-frame placement. Returns an unsubscribe function. */
+/** Scene-side subscription to the per-frame state. Returns an unsubscribe function. */
 export function onWorldFrame(listener: FrameListener): () => void {
   listeners.add(listener);
   wakeTracker?.();
@@ -86,25 +77,35 @@ export function onWorldFrame(listener: FrameListener): () => void {
 }
 
 export interface TrackerLayers {
-  /** The fixed, full-viewport backdrop. Its rectangle is the canvas rectangle. */
+  /** The fixed, full-viewport backdrop: where the layer waits while no stage has it. */
   backdrop: HTMLElement;
-  /** The printed sky: sized and moved to the world's box. */
+  /** The world layer (sky plate and canvas): moved into the active stage's host. */
+  layer: HTMLElement;
+  /** The printed sky inside the layer. */
   sky: HTMLElement;
-  /** Wrapper of the WebGL canvas: sized to the stage, moved to the box, given the opacity. */
-  scene: HTMLElement;
 }
+
+/** The element of a stage that receives the world layer. */
+const hostOf = (stage: StageRecord): HTMLElement | null =>
+  stage.el.querySelector<HTMLElement>(':scope > [data-world-host]');
 
 const rest = (): Spring => ({ x: 0, v: 0 });
 
+/** Steps per hour in which the page-wide sky tokens follow the clock. */
+const ROOT_SKY_STEPS = 12;
+
 export function startTracker(layers: TrackerLayers): () => void {
+  const { backdrop, layer, sky } = layers;
   const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const offset = { cx: rest(), cy: rest(), w: rest(), h: rest() };
+  /** The flight: offset of the layer's centre in pixels and the log of its scale. */
+  const offset = { x: rest(), y: rest(), s: rest() };
   /** 1 right after a stage change, springs to 0: blends fit, anchor and sky amount. */
   const blend = rest();
   const appear = rest();
   const from = { fit: 0.86, anchor: 1, sky: 0 };
   const shown = { fit: 0.86, anchor: 1, sky: 0 };
-  let dip: { box: Box; fit: number; anchor: number; sky: number; t: number } | null = null;
+  /** Reduced motion: 0..1 progress of the fade that replaces a flight. */
+  let dip = 1;
 
   let raf = 0;
   let started = 0;
@@ -112,43 +113,25 @@ export function startTracker(layers: TrackerLayers): () => void {
   let placed = false;
   let presence = 0;
   let absentMs = 0;
+  /** Where the layer is: inside this stage's host, or parked in the backdrop (`null`). */
+  let host: HTMLElement | null = null;
   let stageId: string | null = null;
-  /** 0..1: short hops are carried flat, long flights lift off and arc. */
-  let carry = 0;
   let skyHour = Number.NaN;
-  /** True when the loop has stopped itself because nothing is on screen. */
-  let asleep = false;
+  let pageHour = Number.NaN;
   let cachedSnapshot: WorldSnapshot | null = null;
   let cachedPreview: Partial<WorldSnapshot> | null = null;
   let merged: WorldSnapshot = useWorldStore.getState().snapshot;
-  const written = {
-    transform: '',
-    width: '',
-    height: '',
-    skyOpacity: '',
-    sceneOpacity: '',
-    sceneTransform: '',
-    sceneWidth: '',
-    sceneHeight: '',
-    radius: '',
-  };
+  const written = { transform: '', opacity: '', skyOpacity: '' };
 
   const frame: WorldFrame = {
     time: 0,
     dt: 0,
-    canvas: { width: 1, height: 1 },
-    originX: 0,
-    originY: 0,
-    box: { x: 0, y: 0, width: 1, height: 1 },
     view: { width: 1, height: 1 },
     fit: 0.86,
     anchor: 1,
     mode: 'companion',
     opacity: 0,
     appear: 1,
-    lift: 0,
-    velocityX: 0,
-    velocityY: 0,
     flying: false,
     reducedMotion: false,
     render: false,
@@ -160,41 +143,98 @@ export function startTracker(layers: TrackerLayers): () => void {
     locked: false,
   };
 
+  const isReduced = () => {
+    const { motion } = useWorldStore.getState();
+    return motion === 'reduced' || (motion === 'system' && reducedQuery.matches);
+  };
+
   const schedule = () => {
     if (!raf && !document.hidden) raf = requestAnimationFrame(tick);
   };
 
-  function writeLayers(opacity: number, skyAmount: number): void {
-    const { box } = frame;
-    const transform = `translate3d(${box.x.toFixed(2)}px, ${box.y.toFixed(2)}px, 0)`;
-    const width = `${box.width.toFixed(2)}px`;
-    const height = `${box.height.toFixed(2)}px`;
-    const skyOpacity = (opacity * skyAmount).toFixed(3);
-    const sceneOpacity = opacity.toFixed(3);
-    const { sky, scene } = layers;
-    if (transform !== written.transform) sky.style.transform = written.transform = transform;
-    if (width !== written.width) sky.style.width = written.width = width;
-    if (height !== written.height) sky.style.height = written.height = height;
-    if (skyOpacity !== written.skyOpacity) sky.style.opacity = written.skyOpacity = skyOpacity;
-    if (sceneOpacity !== written.sceneOpacity) {
-      scene.style.opacity = written.sceneOpacity = sceneOpacity;
+  /** Lays the layer out as a plain child filling its stage. */
+  function standIn(target: HTMLElement): void {
+    const { style } = layer;
+    style.left = '0';
+    style.top = '0';
+    style.width = '100%';
+    style.height = '100%';
+    style.borderRadius = 'inherit';
+    target.appendChild(layer);
+  }
+
+  /** Leaves the layer in the fixed backdrop, exactly where it was on screen. */
+  function park(rect: DOMRect | null, radius: string): void {
+    const { style } = layer;
+    if (rect && rect.width >= 2 && rect.height >= 2) {
+      style.left = `${rect.left}px`;
+      style.top = `${rect.top}px`;
+      style.width = `${rect.width}px`;
+      style.height = `${rect.height}px`;
+      style.borderRadius = radius;
+    } else {
+      presence = 0;
     }
-    // The canvas keeps the stage's size in layout (so its buffer is resized only when the
-    // stage is) and reaches the box by a transform: an exact translation while locked,
-    // a uniform scale about the box centre while it flies.
-    const { view } = frame;
-    const zoom = Math.sqrt((box.width / view.width) * (box.height / view.height)) || 1;
-    const scale = Math.abs(zoom - 1) < 0.002 ? 1 : zoom;
-    const left = box.x + (box.width - view.width * scale) / 2;
-    const top = box.y + (box.height - view.height * scale) / 2;
-    const sceneTransform = `translate3d(${left.toFixed(2)}px, ${top.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
-    const sceneWidth = `${view.width}px`;
-    const sceneHeight = `${view.height}px`;
-    if (sceneTransform !== written.sceneTransform) {
-      scene.style.transform = written.sceneTransform = sceneTransform;
+    backdrop.appendChild(layer);
+  }
+
+  /**
+   * Puts the layer where the store says the world should be. A no-op unless the active
+   * stage changed, so it is safe to call on every store change and every frame. This is
+   * the only code that reads layout, and only at the moment of a change.
+   */
+  function place(): void {
+    const state = useWorldStore.getState();
+    const stage = (state.activeStageId && state.stages[state.activeStageId]) || null;
+    const target = stage ? hostOf(stage) : null;
+    if (target === host && (target === null || stage?.id === stageId)) return;
+
+    const visible = placed && presence > 0.04 && layer.isConnected;
+    const before = visible ? layer.getBoundingClientRect() : null;
+    if (!stage || !target) {
+      const radius = host ? getComputedStyle(layer).borderTopLeftRadius : layer.style.borderRadius;
+      park(before, radius);
+      host = null;
+      stageId = null;
+      for (const spring of Object.values(offset)) Object.assign(spring, rest());
+      return;
     }
-    if (sceneWidth !== written.sceneWidth) scene.style.width = written.sceneWidth = sceneWidth;
-    if (sceneHeight !== written.sceneHeight) scene.style.height = written.sceneHeight = sceneHeight;
+
+    standIn(target);
+    host = target;
+    stageId = stage.id;
+    absentMs = 0;
+    const after = target.getBoundingClientRect();
+    frame.view.width = Math.max(1, Math.round(after.width));
+    frame.view.height = Math.max(1, Math.round(after.height));
+    const reduced = isReduced();
+    const travels = before !== null && before.width >= 2 && after.width >= 2;
+    if (!travels) {
+      // First appearance: nothing to fly from, so pop in where the stage is.
+      for (const spring of Object.values(offset)) Object.assign(spring, rest());
+      Object.assign(blend, rest());
+      appear.x = reduced ? 0 : 1;
+      appear.v = 0;
+      dip = 1;
+      placed = true;
+    } else if (reduced) {
+      for (const spring of Object.values(offset)) Object.assign(spring, rest());
+      Object.assign(blend, rest());
+      dip = 0;
+    } else {
+      // FLIP: the jump becomes an offset that springs back to zero. Velocities are kept,
+      // so retargeting mid-flight stays smooth. The scale flies in log space.
+      offset.x.x = before.left + before.width / 2 - (after.left + after.width / 2);
+      offset.y.x = before.top + before.height / 2 - (after.top + after.height / 2);
+      offset.s.x =
+        Math.log((before.width * before.height) / Math.max(1, after.width * after.height)) / 2;
+      Object.assign(from, shown);
+      blend.x = 1;
+      blend.v = 0;
+    }
+    // A companion stage with a sky is a printed plate; the others bleed to the edges.
+    sky.dataset.frame = stage.options.mode === 'companion' ? 'plate' : 'bleed';
+    sky.dataset.mode = stage.options.mode;
   }
 
   function tick(now: number): void {
@@ -203,136 +243,40 @@ export function startTracker(layers: TrackerLayers): () => void {
     const dt = last ? Math.min((now - last) / 1000, 0.1) : 0;
     last = now;
 
+    place();
     const state = useWorldStore.getState();
-    const stage = (state.activeStageId && state.stages[state.activeStageId]) || null;
-    const reduced =
-      state.motion === 'reduced' || (state.motion === 'system' && reducedQuery.matches);
+    const stage = (stageId && state.stages[stageId]) || null;
+    const reduced = isReduced();
 
-    // 1. READ. Everything is measured against the canvas rectangle of this very frame,
-    //    which makes the mapping immune to mobile URL bars, overscroll and pinch zoom.
-    const canvasRect = layers.backdrop.getBoundingClientRect();
-    frame.canvas.width = Math.max(1, canvasRect.width);
-    frame.canvas.height = Math.max(1, canvasRect.height);
-    frame.originX = canvasRect.left;
-    frame.originY = canvasRect.top;
-    let target: Box | null = null;
-    if (stage) {
-      const rect = stage.el.getBoundingClientRect();
-      // A hidden (`display: none`) or collapsed stage has no box to stand in.
-      if (rect.width >= 2 && rect.height >= 2) {
-        target = {
-          x: rect.left - canvasRect.left,
-          y: rect.top - canvasRect.top,
-          width: rect.width,
-          height: rect.height,
-        };
-      }
-    }
-
-    // 2. PLACE.
-    const { box } = frame;
-    let dipOpacity = 1;
-    if (stage && target) {
-      absentMs = 0;
+    if (stage && host) {
       const options = stage.options;
       const wantsSky = options.sky ? 1 : 0;
       const wantsAnchor = options.anchor === 'bottom' ? 1 : 0;
-      const fresh = !placed || presence < 0.04;
-      const changed = stage.id !== stageId;
-      if (fresh) {
-        // First appearance: nothing to fly from, so pop in where the stage is.
-        for (const spring of Object.values(offset)) Object.assign(spring, rest());
-        Object.assign(blend, rest());
-        appear.x = reduced ? 0 : 1;
-        appear.v = 0;
-        dip = null;
-        placed = true;
-      } else if (changed) {
-        if (reduced) {
-          dip = { box: { ...box }, fit: shown.fit, anchor: shown.anchor, sky: shown.sky, t: 0 };
-          for (const spring of Object.values(offset)) Object.assign(spring, rest());
-          Object.assign(blend, rest());
-        } else {
-          // FLIP: the jump becomes an offset that springs back to zero. Velocities are
-          // kept, so retargeting mid-flight stays smooth. Sizes fly in log space.
-          offset.cx.x = box.x + box.width / 2 - (target.x + target.width / 2);
-          offset.cy.x = box.y + box.height / 2 - (target.y + target.height / 2);
-          offset.w.x = Math.log(Math.max(1, box.width) / target.width);
-          offset.h.x = Math.log(Math.max(1, box.height) / target.height);
-          Object.assign(from, shown);
-          blend.x = 1;
-          blend.v = 0;
-          carry = Math.min(1, Math.hypot(offset.cx.x, offset.cy.x) / 200);
-        }
-      }
-      if (fresh || changed) {
-        stageId = stage.id;
-        const radius = getComputedStyle(stage.el).borderRadius;
-        if (radius !== written.radius) {
-          layers.sky.style.borderRadius = radius;
-          layers.scene.style.borderRadius = written.radius = radius;
-        }
-        // A companion stage with a sky is a printed plate; the others bleed to the edges.
-        layers.sky.dataset.frame = options.mode === 'companion' ? 'plate' : 'bleed';
-        layers.sky.dataset.mode = options.mode;
-      }
-
-      // While the stage stays the same every offset is at rest, so the box IS the
-      // stage rectangle: no easing on scroll or resize, or it would swim against the page.
-      for (const spring of Object.values(offset)) {
-        stepSpring(spring, dt, MOTION.flightOmega, MOTION.flightZeta);
-      }
+      // At rest every offset is zero and the layer is simply the stage's child: nothing
+      // here moves it, the browser does.
+      stepSpring(offset.x, dt, MOTION.flightOmega, MOTION.flightZeta);
+      stepSpring(offset.y, dt, MOTION.flightOmega, MOTION.flightZeta);
+      stepSpring(offset.s, dt, MOTION.flightOmega, 1);
       stepSpring(blend, dt, MOTION.flightOmega, 1);
-      const width = target.width * Math.exp(offset.w.x);
-      const height = target.height * Math.exp(offset.h.x);
-      // Peel, carry, press: mid-flight the sticker is off the page and rides a shallow arc.
-      const k = Math.min(1, Math.max(0, blend.x));
-      frame.lift = 4 * k * (1 - k) * carry;
-      box.x = target.x + target.width / 2 + offset.cx.x - width / 2;
-      box.y =
-        target.y + target.height / 2 + offset.cy.x - height / 2 - MOTION.flightArc * frame.lift;
-      box.width = width;
-      box.height = height;
       shown.fit = options.fit + (from.fit - options.fit) * blend.x;
       shown.anchor = wantsAnchor + (from.anchor - wantsAnchor) * blend.x;
       shown.sky = wantsSky + (from.sky - wantsSky) * blend.x;
       frame.mode = options.mode;
-      frame.view.width = Math.max(1, Math.round(target.width));
-      frame.view.height = Math.max(1, Math.round(target.height));
-      frame.velocityX = offset.cx.v;
-      frame.velocityY = offset.cy.v;
-      frame.flying = offset.cx.x !== 0 || offset.cy.x !== 0 || offset.w.x !== 0 || offset.h.x !== 0;
-
-      if (dip) {
-        dip.t += (dt * 1000) / MOTION.crossFadeMs;
-        if (dip.t >= 1) {
-          dip = null;
-        } else if (dip.t < 0.5) {
-          Object.assign(box, dip.box);
-          shown.fit = dip.fit;
-          shown.anchor = dip.anchor;
-          shown.sky = dip.sky;
-          dipOpacity = 1 - dip.t * 2;
-        } else {
-          dipOpacity = dip.t * 2 - 1;
-        }
-      }
+      frame.flying = offset.x.x !== 0 || offset.y.x !== 0 || offset.s.x !== 0;
+      if (dip < 1) dip = Math.min(1, dip + (dt * 1000) / MOTION.crossFadeMs);
       presence = Math.min(1, presence + dt * 14 + (dt === 0 ? 0.05 : 0));
     } else {
-      // No stage (or a collapsed one): hold the last box and, after a short grace for
-      // lazy routes, fade out.
+      // No stage: the parked layer holds its place and, after a short grace for lazy
+      // routes, fades out.
       absentMs += dt * 1000;
       if (absentMs > MOTION.graceMs) {
         presence = Math.max(0, presence - dt * MOTION.fadeOutPerSecond);
       }
-      frame.velocityX = 0;
-      frame.velocityY = 0;
       frame.flying = false;
-      frame.lift = 0;
     }
     stepSpring(appear, dt, MOTION.appearOmega, MOTION.appearZeta);
 
-    // 3. SKY. Follows the hour of whatever the active stage previews.
+    // The sky follows the hour of whatever the active stage previews.
     if (cachedSnapshot !== state.snapshot || cachedPreview !== (stage?.options.preview ?? null)) {
       cachedSnapshot = state.snapshot;
       cachedPreview = stage?.options.preview ?? null;
@@ -340,20 +284,25 @@ export function startTracker(layers: TrackerLayers): () => void {
     }
     if (!(Math.abs(merged.hour - skyHour) < 0.004)) {
       skyHour = merged.hour;
-      const sky = skyAt(skyHour);
-      applySkyVars(document.documentElement, sky);
-      applySkyVars(layers.backdrop, sky);
+      applySkyVars(layer, skyAt(skyHour));
+    }
+    // The page's own sky tokens live on the root element, where a change restyles the
+    // whole document: they follow in five-minute steps, a handful of writes per hour.
+    const pageStep = Math.round(merged.hour * ROOT_SKY_STEPS);
+    if (pageStep !== pageHour) {
+      pageHour = pageStep;
+      applySkyVars(document.documentElement, skyAt(pageStep / ROOT_SKY_STEPS));
     }
 
-    // 4. TURN. The island's yaw belongs to the frame, like its box.
-    const interactive = Boolean(stage && target && stage.options.interactive);
+    // The island's yaw belongs to the frame.
+    const interactive = Boolean(stage && host && stage.options.interactive);
     orbit.step(dt, stage ? stage.options.mode : frame.mode, reduced, interactive);
     frame.yaw = orbit.yaw;
     frame.tilt = orbit.pitch;
     frame.interacting = orbit.moving;
-    frame.locked = Boolean(stage && target) && !frame.flying && dip === null && presence >= 1;
+    frame.locked = Boolean(stage && host) && !frame.flying && dip >= 1 && presence >= 1;
 
-    const opacity = presence * dipOpacity;
+    const opacity = presence * dip;
     frame.time = (now - started) / 1000;
     frame.dt = dt;
     frame.fit = shown.fit;
@@ -363,47 +312,65 @@ export function startTracker(layers: TrackerLayers): () => void {
     frame.reducedMotion = reduced;
     frame.snapshot = merged;
     frame.stage = stage;
-    frame.render = placed && opacity > 0.002 && boxesIntersect(box, frame.canvas, 96);
-    writeLayers(opacity, shown.sky);
+    // A stage reports how much of it is on screen through its IntersectionObserver; a
+    // parked layer is where the stage was, which was on screen.
+    const onScreen = stage ? stage.visible > 0 : host === null;
+    frame.render = placed && opacity > 0.002 && onScreen && frame.view.width >= 2;
 
-    // 5. RENDER, in the same task as the reads.
+    const transform = frame.flying
+      ? `translate3d(${offset.x.x.toFixed(2)}px, ${offset.y.x.toFixed(2)}px, 0) scale(${Math.exp(offset.s.x).toFixed(4)})`
+      : '';
+    const layerOpacity = opacity.toFixed(3);
+    const skyOpacity = shown.sky.toFixed(3);
+    if (transform !== written.transform) layer.style.transform = written.transform = transform;
+    if (layerOpacity !== written.opacity) layer.style.opacity = written.opacity = layerOpacity;
+    if (skyOpacity !== written.skyOpacity) sky.style.opacity = written.skyOpacity = skyOpacity;
+
     listeners.forEach((listener) => listener(frame));
 
     // Keep ticking only while something can be seen or is still settling. A world whose
-    // every stage has scrolled away requests no frames at all: a scroll, a resize or any
-    // store change (a stage becoming visible, a new snapshot) wakes it again.
-    let watched = false;
-    for (const id in state.stages) {
-      if ((state.stages[id] as StageRecord).visible > 0) watched = true;
-    }
-    const settling = frame.flying || dip !== null || (presence > 0 && presence < 1);
+    // stage has scrolled away requests no frames at all: the store change that reports
+    // it visible again (or a new snapshot, or a new stage) wakes the loop.
+    const settling = frame.flying || dip < 1 || (stage !== null && presence < 1);
     const fading = !stage && presence > 0;
-    if (watched || settling || fading || frame.render) schedule();
-    else asleep = true;
+    if (frame.render || settling || fading) schedule();
   }
 
   const wake = () => {
     if (!raf) last = 0;
-    asleep = false;
     schedule();
   };
-  // Scrolling can bring a stage back before its IntersectionObserver reports it.
-  const onScroll = () => {
-    if (asleep) wake();
+  // The stage a page just removed must be left before its element is gone, and the one
+  // it just added entered before the next paint: both happen in the store callback.
+  const onStore = () => {
+    place();
+    wake();
   };
+  const onViewport = () => {
+    invalidateStageRects();
+    wake();
+  };
+  const measure = new ResizeObserver((entries) => {
+    const size = entries.at(-1)?.contentRect;
+    if (!size || host === null) return;
+    frame.view.width = Math.max(1, Math.round(size.width));
+    frame.view.height = Math.max(1, Math.round(size.height));
+    invalidateStageRects();
+    wake();
+  });
+  measure.observe(layer);
   wakeTracker = wake;
   const pop = () => {
-    const { motion } = useWorldStore.getState();
-    if (motion === 'reduced' || (motion === 'system' && reducedQuery.matches)) return;
+    if (isReduced()) return;
     appear.x = 1;
     appear.v = 0;
   };
   replayAppear = pop;
-  const unsubscribe = useWorldStore.subscribe(wake);
+  const unsubscribe = useWorldStore.subscribe(onStore);
   document.addEventListener('visibilitychange', wake);
-  window.addEventListener('resize', wake);
-  window.addEventListener('scroll', onScroll, { capture: true, passive: true });
-  wake();
+  window.addEventListener('resize', onViewport);
+  window.addEventListener('scroll', invalidateStageRects, { capture: true, passive: true });
+  onStore();
 
   return () => {
     if (raf) cancelAnimationFrame(raf);
@@ -411,8 +378,14 @@ export function startTracker(layers: TrackerLayers): () => void {
     if (wakeTracker === wake) wakeTracker = null;
     if (replayAppear === pop) replayAppear = null;
     unsubscribe();
+    measure.disconnect();
     document.removeEventListener('visibilitychange', wake);
-    window.removeEventListener('resize', wake);
-    window.removeEventListener('scroll', onScroll, { capture: true });
+    window.removeEventListener('resize', onViewport);
+    window.removeEventListener('scroll', invalidateStageRects, { capture: true });
+    // React still believes the layer is the backdrop's child: give it back.
+    layer.style.transform = '';
+    backdrop.appendChild(layer);
+    host = null;
+    stageId = null;
   };
 }

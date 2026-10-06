@@ -137,6 +137,16 @@ export function Director({ frame }: { frame: RefObject<WorldFrame | null> }) {
     live.shake = Math.max(0, live.shake - dt * 1.7);
     shared.uShake.value = reduced ? 0 : live.shake;
     shared.uRipple.value.z += dt;
+    // The crown's shadow on the lawn, as a blob: its centre slides away from the sun.
+    const { tree, atmosphere } = live;
+    const [lx, ly, lz] = atmosphere.lightDir;
+    const throwLength = (tree.top * 0.6) / Math.max(0.3, ly);
+    shared.uCrown.value.set(
+      tree.x - lx * throwLength,
+      tree.z - lz * throwLength,
+      Math.max(0.3, tree.halfWidth * 1.05),
+      atmosphere.shadow * clamp01(live.growth * 9),
+    );
     worldStats.growth = live.growth;
   }, -30);
 
@@ -224,13 +234,12 @@ function dropOnPond(pond: THREE.Mesh, at: THREE.Vector3): void {
 }
 
 export function Pointer({ frame }: { frame: RefObject<WorldFrame | null> }) {
-  const gl = useThree((three) => three.gl);
   const camera = useThree((three) => three.camera);
   const scene = useThree((three) => three.scene);
 
   useEffect(() => {
-    const stop = onTap((clientX, clientY) => {
-      const hit = hitTest(clientX, clientY, gl.domElement.getBoundingClientRect(), camera);
+    const stop = onTap((u, v, clientX, clientY) => {
+      const hit = hitTest(u, v, camera, clientX, clientY);
       if (!hit) return;
       // The world answers every touch: leaves shake loose, grass and water ripple.
       if (hit.part === 'tree') {
@@ -253,16 +262,14 @@ export function Pointer({ frame }: { frame: RefObject<WorldFrame | null> }) {
       live.hover = null;
       emitWorldHover(null);
     };
-  }, [camera, gl, scene]);
+  }, [camera, scene]);
 
   useFrame(() => {
     if (!pointer.moved) return;
     pointer.moved = false;
     const stage = frame.current?.stage;
     const active = pointer.inside && stage?.options.interactive === true;
-    const hit = active
-      ? hitTest(pointer.x, pointer.y, gl.domElement.getBoundingClientRect(), camera)
-      : null;
+    const hit = active ? hitTest(pointer.u, pointer.v, camera, pointer.x, pointer.y) : null;
     const part = hit ? hit.part : null;
     if (part === live.hover) return;
     live.hover = part;
