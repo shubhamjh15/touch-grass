@@ -45,7 +45,11 @@ interface Rule {
   /** Conservative kg CO2e avoided per unit, or null when no honest number exists. */
   perUnitKg: number | null;
   defaultQuantity: number;
-  /** Catalogue ids this most likely corresponds to, best first. */
+  /**
+   * Catalogue ids this most likely corresponds to, best first. The product's own ids come
+   * first; where a phrase could mean several catalogue actions of different size, the
+   * smaller one is named, or none.
+   */
   actionIds: readonly string[];
   basis: string;
 }
@@ -61,11 +65,12 @@ const RULES: readonly Rule[] = [
     effort: 2,
     perUnitKg: 0.1,
     defaultQuantity: 3,
-    actionIds: ['move_bike_trip'],
+    actionIds: ['walk-cycle-instead-of-car', 'move_bike_trip'],
     basis: 'a car trip of the same length (about 0.17 kg per km, taken on the low side)',
   },
   {
-    re: /\b(walk\w*|on foot)\b/,
+    // Walking somewhere, not walking the dog: only a trip can stand in for a drive.
+    re: /\b(walk\w* (to|into|home|there|back|instead|it|\d+)|on foot)\b/,
     category: 'move',
     title: 'Walked instead of driving',
     emoji: '🚶',
@@ -73,11 +78,23 @@ const RULES: readonly Rule[] = [
     effort: 2,
     perUnitKg: 0.1,
     defaultQuantity: 2,
-    actionIds: ['move_walk_trip'],
+    actionIds: ['walk-cycle-instead-of-car', 'move_walk_trip'],
     basis: 'a car trip of the same length (about 0.17 kg per km, taken on the low side)',
   },
   {
-    re: /\b(bus|tram|metro|subway|underground|transit)\b/,
+    re: /\b(tram|metro|subway|underground)\b/,
+    category: 'move',
+    title: 'Took public transport',
+    emoji: '🚇',
+    unit: 'km',
+    effort: 2,
+    perUnitKg: 0.05,
+    defaultQuantity: 5,
+    actionIds: ['train-metro-instead-of-car', 'move_transit_trip'],
+    basis: 'driving the same distance alone, minus what the tram or metro emits per passenger',
+  },
+  {
+    re: /\b(bus|transit)\b/,
     category: 'move',
     title: 'Took public transport',
     emoji: '🚌',
@@ -85,7 +102,7 @@ const RULES: readonly Rule[] = [
     effort: 2,
     perUnitKg: 0.05,
     defaultQuantity: 5,
-    actionIds: ['move_transit_trip'],
+    actionIds: ['bus-instead-of-car', 'move_transit_trip'],
     basis: 'driving the same distance alone, minus what the bus or tram emits per passenger',
   },
   {
@@ -97,7 +114,7 @@ const RULES: readonly Rule[] = [
     effort: 3,
     perUnitKg: 0.1,
     defaultQuantity: 50,
-    actionIds: ['move_train_trip'],
+    actionIds: ['train-metro-instead-of-car', 'move_train_trip'],
     basis: 'driving the same distance alone, minus what rail emits per passenger',
   },
   {
@@ -109,7 +126,7 @@ const RULES: readonly Rule[] = [
     effort: 2,
     perUnitKg: 0.05,
     defaultQuantity: 10,
-    actionIds: ['move_carpool'],
+    actionIds: ['carpool', 'move_carpool'],
     basis: 'driving alone, with the trip split between two people',
   },
   {
@@ -121,8 +138,21 @@ const RULES: readonly Rule[] = [
     effort: 2,
     perUnitKg: 1,
     defaultQuantity: 1,
-    actionIds: ['eat_plant_meal'],
+    actionIds: ['plant-based-meal', 'eat_plant_meal'],
     basis: 'an average meal with meat, on the low side',
+  },
+  {
+    // A whole day without meat is its own catalogue action; a single meal (below) is not.
+    re: /\b((skipp?ed|skip|no|without|zero|off) (the )?meat|(vegetarian|veggie|meat ?free|meatless) day)\b/,
+    category: 'eat',
+    title: 'Meat-free day',
+    emoji: '🥗',
+    unit: 'days',
+    effort: 2,
+    perUnitKg: 1.5,
+    defaultQuantity: 1,
+    actionIds: ['vegetarian-day'],
+    basis: 'a day of average meals with meat, on the low side',
   },
   {
     re: /\b(vegetarian|veggie|meat ?free|meatless)\b/,
@@ -157,7 +187,7 @@ const RULES: readonly Rule[] = [
     effort: 2,
     perUnitKg: 0.4,
     defaultQuantity: 1,
-    actionIds: ['eat_use_it_up'],
+    actionIds: ['meal-saved-from-waste', 'eat_use_it_up'],
     basis: 'food that would have been thrown away and then replaced',
   },
   {
@@ -169,7 +199,7 @@ const RULES: readonly Rule[] = [
     effort: 2,
     perUnitKg: 0.5,
     defaultQuantity: 1,
-    actionIds: ['power_line_dry'],
+    actionIds: ['line-dry-instead-of-tumble', 'power_line_dry'],
     basis: 'running a tumble dryer for the same load, on the low side',
   },
   {
@@ -181,7 +211,7 @@ const RULES: readonly Rule[] = [
     effort: 1,
     perUnitKg: 0.2,
     defaultQuantity: 1,
-    actionIds: ['water_cold_wash'],
+    actionIds: ['wash-30-instead-of-40', 'water_cold_wash'],
     basis: 'a warmer wash, since most of the energy heats the water',
   },
   {
@@ -193,7 +223,7 @@ const RULES: readonly Rule[] = [
     effort: 1,
     perUnitKg: 0.2,
     defaultQuantity: 1,
-    actionIds: ['water_short_shower'],
+    actionIds: ['shorter-shower', 'water_short_shower'],
     basis: 'a longer shower, since most of the energy heats the water',
   },
   {
@@ -205,8 +235,20 @@ const RULES: readonly Rule[] = [
     effort: 2,
     perUnitKg: 0.2,
     defaultQuantity: 1,
-    actionIds: ['power_heat_down'],
+    actionIds: ['thermostat-down-1c', 'power_heat_down'],
     basis: 'your usual setting, on the low side',
+  },
+  {
+    re: /\b((reusable|own|travel) (cup|mug)|keep ?cup)\b/,
+    category: 'waste',
+    title: 'Used my own cup',
+    emoji: '☕',
+    unit: 'times',
+    effort: 1,
+    perUnitKg: 0.02,
+    defaultQuantity: 1,
+    actionIds: ['refuse-single-use-cup'],
+    basis: 'a single-use cup, on the low side',
   },
   {
     re: /\b(refill\w*|reusable (bottle|cup)|own (cup|bottle)|keep ?cup)\b/,
@@ -217,7 +259,7 @@ const RULES: readonly Rule[] = [
     effort: 1,
     perUnitKg: 0.05,
     defaultQuantity: 1,
-    actionIds: ['stuff_refill'],
+    actionIds: ['refuse-single-use-bottle', 'stuff_refill'],
     basis: 'a single-use bottle or cup, on the low side',
   },
   {
@@ -241,7 +283,7 @@ const RULES: readonly Rule[] = [
     effort: 3,
     perUnitKg: 1,
     defaultQuantity: 1,
-    actionIds: ['stuff_repair'],
+    actionIds: ['repair-instead-of-replace', 'stuff_repair'],
     basis: 'buying a replacement, on the low side',
   },
   {
@@ -253,7 +295,7 @@ const RULES: readonly Rule[] = [
     effort: 2,
     perUnitKg: null,
     defaultQuantity: 1,
-    actionIds: ['stuff_borrow'],
+    actionIds: ['borrow-instead-of-buy', 'stuff_borrow'],
     basis: 'no honest per-item figure',
   },
   {
@@ -277,7 +319,7 @@ const RULES: readonly Rule[] = [
     effort: 1,
     perUnitKg: null,
     defaultQuantity: 1,
-    actionIds: ['waste_compost'],
+    actionIds: ['compost-food-waste', 'waste_compost'],
     basis: 'it depends too much on what was composted',
   },
   {
