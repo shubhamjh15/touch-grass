@@ -1,5 +1,3 @@
-import { hashString } from '@/lib/rng';
-
 /**
  * Shared design-system types and class lookups. Tailwind only sees complete class names, so every
  * token-to-class mapping lives here as a full string; components never build a class by concatenation.
@@ -200,39 +198,4 @@ export function isCategoryId(value: string): value is CategoryId {
 
 export function isHue(value: string): value is Hue {
   return (HUES as readonly string[]).includes(value);
-}
-
-/** The fixed rotation set (bible 3.1). Anything else is off-system. */
-export type Rotation = -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4;
-
-export const ROTATE: Record<Rotation, string> = {
-  [-4]: '-rotate-4',
-  [-3]: '-rotate-3',
-  [-2]: '-rotate-2',
-  [-1]: '-rotate-1',
-  0: 'rotate-0',
-  1: 'rotate-1',
-  2: 'rotate-2',
-  3: 'rotate-3',
-  4: 'rotate-4',
-};
-
-/**
- * A stable resting rotation for a thing, picked by hashing its id: never `Math.random()` at render.
- * Interactive things stay within ±2°; pass `max` 3 or 4 for expressive, static stickers.
- */
-export function restRotation(id: string, max: 1 | 2 | 3 | 4 = 2): Rotation {
-  const options: Rotation[] = [];
-  for (let step = 1; step <= max; step += 1) {
-    options.push(-step as Rotation, step as Rotation);
-  }
-  return options[hashString(id) % options.length] ?? 0;
-}
-
-/** Resting tilt for sticker lettering (bible 2.5): XROT from {-6, 0, 6}, YROT from {-12, -8, 8, 12}. */
-export function restTilt(text: string): { xrot: number; yrot: number } {
-  const hash = hashString(text);
-  const xrot = [-6, 0, 6][hash % 3] ?? 0;
-  const yrot = [-12, -8, 8, 12][(hash >>> 3) % 4] ?? 8;
-  return { xrot, yrot };
 }
