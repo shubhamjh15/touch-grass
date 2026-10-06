@@ -237,7 +237,7 @@ export function FactorTable({ rows }: { rows: readonly FactorRow[] }) {
             <caption className="sr-only">
               Emission factors: one row for every action you can log
             </caption>
-            <thead className="max-md:sr-only">
+            <thead className="max-md:hidden">
               <tr role="row">
                 <th scope="col" className={cn(TH, 'md:w-[26%]')}>
                   Action

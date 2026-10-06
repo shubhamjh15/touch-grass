@@ -10,7 +10,11 @@ function UsedFor({ row }: { row: SourceListRow }) {
   const first = row.actions.slice(0, SHOWN);
   const rest = row.actions.slice(SHOWN);
   const link = (action: SourceListRow['actions'][number]) => (
-    <TextLink key={action.id} href={`#${action.anchor}`} className="text-caption">
+    <TextLink
+      key={action.id}
+      href={`#${action.anchor}`}
+      className="inline-flex items-center text-caption max-md:min-h-11 md:min-h-6"
+    >
       {action.title}
     </TextLink>
   );
@@ -20,7 +24,7 @@ function UsedFor({ row }: { row: SourceListRow }) {
       {first.map(link)}
       {rest.length > 0 ? (
         <details className="group/more inline">
-          <summary className="inline-flex min-h-6 cursor-pointer items-center type-slug underline decoration-2 underline-offset-4 group-open/more:hidden [&::-webkit-details-marker]:hidden">
+          <summary className="inline-flex cursor-pointer items-center type-slug underline decoration-2 underline-offset-4 group-open/more:hidden max-md:min-h-11 md:min-h-6 [&::-webkit-details-marker]:hidden">
             +{rest.length} more
           </summary>
           <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1">
