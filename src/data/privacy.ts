@@ -98,6 +98,16 @@ export const PRIVACY_STORED: readonly StoredItem[] = [
     howToDelete: 'Closing the tab removes it.',
   },
   {
+    id: 'demo-world',
+    area: 'sessionStorage',
+    key: 'touchgrass:sandbox',
+    holds: [
+      'Only while you look around the demo world: the demo tree and what you do to it (under keys that start with "sandbox:"), a copy of the demo as it was grown, and where its tour stands. Your own data is not read or changed meanwhile. It lasts until you exit the demo or close the tab.',
+    ],
+    leavesDevice: false,
+    howToDelete: 'Exit the demo world, or close the tab.',
+  },
+  {
     id: 'pending-challenge',
     area: 'sessionStorage',
     key: null,
