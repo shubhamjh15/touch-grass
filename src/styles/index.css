@@ -670,6 +670,12 @@
     box-shadow: var(--focus-halo), var(--own-shadow, 0 0 #0000);
   }
 
+  /* Headings and <main> take focus from code after a navigation, never from Tab: no ring. */
+  :where(h1, h2, h3, main)[tabindex='-1']:focus-visible {
+    outline: none;
+    box-shadow: var(--own-shadow, 0 0 #0000);
+  }
+
   /* Chunky legacy scrollbar, desktop fine pointers only. */
   @media (min-width: 64rem) and (pointer: fine) {
     html {
