@@ -17,6 +17,8 @@ export const HERO = {
   sub: 'Log the climate actions you already take. Get an honest estimate. Watch your tree grow. No account. No doomscrolling.',
   primary: 'Plant your tree',
   secondary: 'Try it first',
+  /** Opens the demo world: a tree two hundred days in, in a sandbox that saves nothing. */
+  grown: 'See day 200',
 } as const;
 
 export const DEMO = {

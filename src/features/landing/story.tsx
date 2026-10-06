@@ -66,11 +66,17 @@ export function Hero() {
         <Button asChild variant="primary" size="lg" iconRight={ArrowRight}>
           <Link href={ROUTES.start}>{HERO.primary}</Link>
         </Button>
-        <Button asChild variant="ghost" size="lg">
-          <a href={`#${DEMO_ANCHOR}`} onClick={tryIt}>
-            {HERO.secondary}
-          </a>
-        </Button>
+        {/* The two quieter ways in stay together: beside the button where there is room, under it on a phone. */}
+        <div className="flex items-center gap-x-1.5">
+          <Button asChild variant="ghost" size="md">
+            <a href={`#${DEMO_ANCHOR}`} onClick={tryIt}>
+              {HERO.secondary}
+            </a>
+          </Button>
+          <Button asChild variant="ghost" size="md">
+            <Link href={ROUTES.demo}>{HERO.grown}</Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
