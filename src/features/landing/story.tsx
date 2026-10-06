@@ -140,7 +140,7 @@ export function Problem() {
                   {PROBLEM_ART[card.id]}
                 </div>
               </div>
-              <p className="mt-2 text-body-sm text-ink-2">
+              <p className="mt-2 max-w-prose text-body-sm text-ink-2">
                 {card.body.replace('{km}', formatNumber(PROBLEM_KM))}
               </p>
             </Card>
@@ -152,7 +152,7 @@ export function Problem() {
         <Card tone="green" featured plate="yellow">
           <p className="type-slug text-ink-2">{PROBLEM.answerSlug}</p>
           <h3 className="mt-2 text-h2 text-balance">{PROBLEM.answerTitle}</h3>
-          <p className="mt-2 text-body text-pretty">{PROBLEM.answerBody}</p>
+          <p className="mt-2 max-w-prose text-body text-pretty">{PROBLEM.answerBody}</p>
         </Card>
       </Reveal>
     </section>
@@ -196,7 +196,9 @@ export function TimeLapse({
             <h2 id="time-lapse-title" className="mt-2 text-h2 text-balance lg:mt-3 lg:text-h1">
               {TIMELAPSE.title}
             </h2>
-            <p className="mt-1.5 text-body-sm text-ink-2 lg:mt-3 lg:text-lead">{TIMELAPSE.lead}</p>
+            <p className="mt-1.5 max-w-prose text-body-sm text-ink-2 lg:mt-3 lg:text-lead">
+              {TIMELAPSE.lead}
+            </p>
           </header>
 
           <div className="relative mt-4 min-h-0 flex-1 lg:mt-0 lg:pl-9">
@@ -224,7 +226,7 @@ export function TimeLapse({
                         {timelapseLabel(frame.day, frame.stage)}
                       </Tag>
                       <h3 className="mt-2.5 text-h3">{caption.title}</h3>
-                      <p className="mt-1.5 text-body-sm text-ink-2">{caption.body}</p>
+                      <p className="mt-1.5 max-w-prose text-body-sm text-ink-2">{caption.body}</p>
                     </Card>
                   </li>
                 );
