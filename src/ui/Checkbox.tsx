@@ -15,7 +15,7 @@ export interface CheckboxProps {
   className?: string;
 }
 
-/** A box that fills green with an ink check. The whole row (min 44 px) is the target. */
+/** A debossed box that fills green with an ink check. The whole row (min 44 px) is the target. */
 export function Checkbox({
   checked,
   onCheckedChange,
@@ -34,10 +34,10 @@ export function Checkbox({
         checked={checked}
         onCheckedChange={(next) => onCheckedChange(next === true)}
         disabled={disabled}
-        className="hit-2 grid size-6 shrink-0 place-items-center rounded-xs border-2 border-ink bg-white text-ink transition-colors duration-(--dur-fast) disabled:cursor-not-allowed disabled:border-ink-4 disabled:bg-line data-[state=checked]:bg-green"
+        className="hit-2 grid size-6 shrink-0 place-items-center rounded-xs border-3 border-ink bg-white text-ink deboss transition-colors duration-(--dur-fast) disabled:cursor-not-allowed disabled:border-2 disabled:border-dashed disabled:border-ink-4 disabled:bg-line data-[state=checked]:bg-green data-[state=checked]:[--deboss:transparent]"
       >
         <RadixCheckbox.Indicator>
-          <Check size={16} strokeWidth={2.5} aria-hidden="true" className="animate-pop" />
+          <Check size={16} strokeWidth={3} aria-hidden="true" className="animate-pop" />
         </RadixCheckbox.Indicator>
       </RadixCheckbox.Root>
       <label
@@ -46,7 +46,7 @@ export function Checkbox({
       >
         <span className="block text-body">{label}</span>
         {description ? (
-          <span className="mt-0.5 block text-body-sm text-ink-3">{description}</span>
+          <span className="mt-0.5 block text-body-sm text-ink-2">{description}</span>
         ) : null}
       </label>
     </div>
@@ -71,7 +71,7 @@ export interface RadioGroupProps {
   className?: string;
 }
 
-/** One choice from a short list. Selected = an ink dot in the ring. Arrow keys move. */
+/** One choice from a short list. Selected = a yellow disc with an ink dot. Arrow keys move. */
 export function RadioGroup({
   value,
   onValueChange,
@@ -106,9 +106,9 @@ export function RadioGroup({
               id={id}
               value={option.value}
               disabled={option.disabled}
-              className="hit-2 grid size-6 shrink-0 place-items-center rounded-full border-2 border-ink bg-white transition-colors duration-(--dur-fast) disabled:cursor-not-allowed disabled:border-ink-4 disabled:bg-line"
+              className="hit-2 grid size-6 shrink-0 place-items-center rounded-full border-3 border-ink bg-white deboss transition-colors duration-(--dur-fast) disabled:cursor-not-allowed disabled:border-2 disabled:border-dashed disabled:border-ink-4 disabled:bg-line data-[state=checked]:bg-yellow data-[state=checked]:[--deboss:transparent]"
             >
-              <RadixRadioGroup.Indicator className="block size-3 animate-pop rounded-full bg-ink" />
+              <RadixRadioGroup.Indicator className="block size-2.5 animate-pop rounded-full bg-ink" />
             </RadixRadioGroup.Item>
             <label
               htmlFor={id}
@@ -116,7 +116,7 @@ export function RadioGroup({
             >
               <span className="block text-body">{option.label}</span>
               {option.description ? (
-                <span className="mt-0.5 block text-body-sm text-ink-3">{option.description}</span>
+                <span className="mt-0.5 block text-body-sm text-ink-2">{option.description}</span>
               ) : null}
             </label>
           </div>

@@ -1,64 +1,62 @@
 'use client';
 
-import { Check } from 'lucide-react';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, CSSProperties } from 'react';
 import { cn } from '@/lib/cn';
-import { DEEP_TEXT, TINT_BG, type Hue } from './tokens';
+import { DEEP_TEXT, type Hue } from './tokens';
 
 export type StampProps = Omit<ComponentProps<'span'>, 'children'> & {
-  /** The words: "Planted", "Claimed", "Done". */
+  /** The stamped words: "PLANTED", "CLAIMED", "TOUCHED GRASS". */
   label: string;
-  /** A short date after the words: "6 Oct 2026". */
+  /** Label-maker date under the words: "06 OCT 2026". */
   date?: string;
-  /** The label sits on this hue's tint, in its deep ink. */
+  /** Ink colour: always the hue's deep on paper or card. */
   hue?: Hue;
-  /** Retired: every mark is the same pill. Accepted and ignored. */
   shape?: 'rect' | 'round';
-  /** Retired: marks sit straight. Accepted and ignored. */
+  /** Degrees. */
   rotate?: number;
-  /** Plays the check landing once. */
+  /** Plays the stamp coming down once. Pair it with the `stamp` sound in the caller. */
   animate?: boolean;
   /**
-   * Marks are decoration by default: the words also exist as plain text nearby. Set false when the
-   * mark is the only place the words appear.
+   * Stamps are decoration by default: the words also exist as plain text nearby. Set false when the
+   * stamp is the only place the words appear.
    */
   decorative?: boolean;
 };
 
-/**
- * A small "done" mark: a check and a word on a tint. Retired as a rubber stamp: no double border,
- * no uneven ink, no tilt.
- */
+/** A rubber-stamp impression with uneven inking. */
 export function Stamp({
   label,
   date,
-  hue = 'green',
-  shape: _shape,
-  rotate: _rotate,
+  hue = 'pink',
+  shape = 'rect',
+  rotate = -6,
   animate = false,
   decorative = true,
   className,
+  style,
   ...rest
 }: StampProps) {
+  // The entrance keyframes own `transform`, so the resting turn travels with them as a variable.
+  const turn: CSSProperties = animate
+    ? ({ '--stamp-rot': `${rotate}deg` } as CSSProperties)
+    : { rotate: `${rotate}deg` };
   return (
     <span
       aria-hidden={decorative || undefined}
       className={cn(
-        'inline-flex h-7 items-center gap-1.5 rounded-pill px-2.5 text-body-sm font-semibold whitespace-nowrap',
-        TINT_BG[hue],
+        'inline-flex flex-col items-center justify-center gap-[3px] border-[3px] border-double border-current stamp-ink px-3 py-2 type-slug font-bold outline-2 outline-offset-2 outline-current',
+        shape === 'round' ? 'aspect-square min-w-20 rounded-full px-2 text-center' : 'rounded-sm',
         DEEP_TEXT[hue],
+        animate && 'animate-stamp',
         className,
       )}
+      style={{ ...turn, ...style }}
       {...rest}
     >
-      <Check
-        size={16}
-        strokeWidth={2.5}
-        aria-hidden="true"
-        className={animate ? 'animate-pop' : undefined}
-      />
-      {label}
-      {date ? <span className="font-normal">{date}</span> : null}
+      <span className="text-[0.75rem] tracking-[0.1em]">{label}</span>
+      {date ? (
+        <span className="text-[0.5625rem] font-semibold tracking-[0.1em]">{date}</span>
+      ) : null}
     </span>
   );
 }

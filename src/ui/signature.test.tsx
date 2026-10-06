@@ -1,17 +1,146 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setMotionPreference } from '@/lib/hooks';
 import { Approx } from './Approx';
 import { NumberTicker } from './NumberTicker';
 import { Sticker } from './Sticker';
 import { STICKER_SHAPES } from './stickerShapes';
+import { TearStub, type TearStubState } from './TearStub';
 import { installPointerCapture, mockReducedMotion } from './testUtils';
 import { dismissToast, toast } from './toast';
 import { Toaster } from './Toaster';
-import { CATEGORY_IDS, CATEGORY_ORDER } from './tokens';
+import { CATEGORY_IDS, CATEGORY_ORDER, restRotation, restTilt } from './tokens';
 
 installPointerCapture();
+
+/** jsdom has no PointerEvent constructor; a MouseEvent of the same type carries the coordinates. */
+function pointer(target: Element, type: string, clientX: number) {
+  fireEvent(target, new MouseEvent(type, { bubbles: true, cancelable: true, clientX, button: 0 }));
+}
+
+describe('TearStub', () => {
+  function Quest({ onClaim }: { onClaim?: () => void }) {
+    const [state, setState] = useState<TearStubState>('claimable');
+    return (
+      <>
+        <TearStub
+          title="Vampire Slayer"
+          description="Switch off three standby devices."
+          category="power"
+          kind="daily"
+          progress={{ value: 3, max: 3 }}
+          reward="+50 XP"
+          state={state}
+          onClaim={() => {
+            onClaim?.();
+            setState('claimed');
+          }}
+        />
+        <button type="button" onClick={() => setState('claimable')}>
+          Undo claim
+        </button>
+      </>
+    );
+  }
+
+  it('offers the stub as a named button when the quest is claimable', () => {
+    render(<Quest />);
+    expect(
+      screen.getByRole('button', { name: 'Claim +50 XP for Vampire Slayer' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('meter', { name: 'Vampire Slayer progress' })).toHaveAttribute(
+      'aria-valuetext',
+      '3 of 3',
+    );
+  });
+
+  it('tears off with Enter, exactly once, and says so', async () => {
+    const user = userEvent.setup();
+    const onClaim = vi.fn();
+    render(<Quest onClaim={onClaim} />);
+
+    await user.tab();
+    expect(screen.getByRole('button', { name: /Claim \+50/ })).toHaveFocus();
+    await user.keyboard('{Enter}');
+
+    expect(onClaim).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('button', { name: /Claim \+50/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Claimed. Plus 50 XP.');
+    expect(screen.getByText('Claimed · +50 XP')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Vampire Slayer (claimed)' })).toBeInTheDocument();
+  });
+
+  it('tears off with Space too', async () => {
+    const user = userEvent.setup();
+    const onClaim = vi.fn();
+    render(<Quest onClaim={onClaim} />);
+
+    screen.getByRole('button', { name: /Claim \+50/ }).focus();
+    await user.keyboard(' ');
+
+    expect(onClaim).toHaveBeenCalledOnce();
+  });
+
+  it('can be torn again after the claim is undone', async () => {
+    const user = userEvent.setup();
+    const onClaim = vi.fn();
+    render(<Quest onClaim={onClaim} />);
+
+    await user.click(screen.getByRole('button', { name: /Claim \+50/ }));
+    await user.click(screen.getByRole('button', { name: 'Undo claim' }));
+    await user.click(screen.getByRole('button', { name: /Claim \+50/ }));
+
+    expect(onClaim).toHaveBeenCalledTimes(2);
+  });
+
+  it('claims when the stub is dragged past the tear line, and not when the drag is abandoned', () => {
+    const onClaim = vi.fn();
+    render(<Quest onClaim={onClaim} />);
+    const stub = screen.getByRole('button', { name: /Claim \+50/ });
+
+    pointer(stub, 'pointerdown', 100);
+    pointer(stub, 'pointermove', 112);
+    pointer(stub, 'pointerup', 112);
+    // The browser follows a pointer-up with a click; an abandoned drag must swallow it.
+    fireEvent.click(stub);
+    expect(onClaim).not.toHaveBeenCalled();
+
+    pointer(stub, 'pointerdown', 100);
+    pointer(stub, 'pointermove', 140);
+    pointer(stub, 'pointerup', 140);
+    fireEvent.click(stub);
+    expect(onClaim).toHaveBeenCalledOnce();
+  });
+
+  it('has no button while the quest is still in progress', () => {
+    render(
+      <TearStub
+        title="Two-Wheel Tuesday"
+        progress={{ value: 1, max: 2 }}
+        reward="+60 XP"
+        state="active"
+        onClaim={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.getByText('+60 XP', { selector: 'span.font-mono' })).toBeInTheDocument();
+  });
+
+  it('names an expired quest as expired', () => {
+    render(
+      <TearStub
+        title="Cold Snap"
+        progress={{ value: 0, max: 1 }}
+        reward="+40 XP"
+        state="expired"
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'Cold Snap (expired)' })).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+});
 
 describe('NumberTicker', () => {
   afterEach(() => setMotionPreference('system'));
@@ -167,6 +296,16 @@ describe('Sticker and tokens', () => {
     rerender(<Sticker category="move" label="Bike it" onClick={onClick} disabled />);
     await user.click(screen.getByRole('button', { name: 'Bike it' }));
     expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it('picks rotations and tilts deterministically from the fixed sets', () => {
+    expect(restRotation('quest-7')).toBe(restRotation('quest-7'));
+    for (const id of ['a', 'bike', 'quest-7', 'Fern', '']) {
+      expect([-2, -1, 1, 2]).toContain(restRotation(id));
+      const tilt = restTilt(id);
+      expect([-6, 0, 6]).toContain(tilt.xrot);
+      expect([-12, -8, 8, 12]).toContain(tilt.yrot);
+    }
   });
 
   it('draws the approx glyph and speaks it', () => {

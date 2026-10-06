@@ -38,7 +38,7 @@ export type AvatarProps = Omit<ComponentProps<'span'>, 'children' | 'onClick'> &
   onClick?: () => void;
 };
 
-/** A round identity disc. As a link or a button it tints on hover. */
+/** A round identity disc. As a link or button it becomes pressable (`hard lift-3`). */
 export function Avatar({
   kind,
   species,
@@ -68,13 +68,12 @@ export function Avatar({
 
   const interactive = Boolean(href ?? onClick);
   const look = cn(
-    'relative grid shrink-0 place-items-center rounded-full border-2 border-ink',
+    'relative grid shrink-0 place-items-center rounded-full border-3 border-ink',
     kind === 'moss' ? 'bg-green text-ink' : 'bg-white',
     kind === 'tree' && 'text-green-deep',
     kind === 'initial' && 'text-ink',
     SIZE[size],
-    interactive &&
-      'transition-transform duration-(--dur-fast) ease-out active:translate-y-px fine:hover:bg-mat-deep',
+    interactive ? 'hard lift-3' : 'shadow-2',
     className,
   );
 
@@ -82,7 +81,7 @@ export function Avatar({
     <>
       {face}
       {badge !== undefined && badge !== null ? (
-        <span className="absolute -right-2 -bottom-2 grid h-6 min-w-6 place-items-center rounded-pill border-2 border-ink bg-white px-1 text-body-sm leading-none font-bold text-ink tabular-nums">
+        <span className="absolute -right-1.5 -bottom-1.5 grid h-5 min-w-5 place-items-center rounded-xs border-2 border-ink bg-blue px-0.5 font-mono text-[0.6875rem] leading-none font-bold text-ink">
           {badge}
         </span>
       ) : null}

@@ -9,22 +9,22 @@ import { useFieldControl } from './fieldContext';
 import { IconButton } from './IconButton';
 
 const SHELL =
-  'focus-within-ring flex h-12 w-full items-center rounded-md border-2 border-ink bg-white text-ink has-[input:disabled]:border-ink-4 has-[input:disabled]:bg-line has-[input:disabled]:text-ink-3';
+  'deboss focus-within-ring flex h-12 w-full items-center rounded-ctl border-3 border-ink bg-white text-ink has-[input:focus-visible]:[--deboss:var(--color-yellow-tint)] has-[input:disabled]:border-2 has-[input:disabled]:border-dashed has-[input:disabled]:border-ink-4 has-[input:disabled]:bg-line has-[input:disabled]:text-ink-3 has-[input:disabled]:[--deboss:transparent]';
 
-/** The error sentence and its icon carry the meaning; the tint only supports them. */
-const INVALID = 'border-tomato-deep bg-tomato-tint';
+const INVALID =
+  '[--deboss:var(--color-tomato-tint)] has-[input:focus-visible]:[--deboss:var(--color-tomato-tint)]';
 
 export type InputProps = Omit<ComponentProps<'input'>, 'size'> & {
   /** Leading 20 px icon. */
   icon?: LucideIcon;
-  /** A unit after the value: "km", "min". */
+  /** A mono unit cell behind a divider: "km", "min". */
   suffix?: string;
   invalid?: boolean;
-  /** Classes for the `<input>` itself (`className` styles the outlined shell). */
+  /** Classes for the `<input>` itself (`className` styles the debossed shell). */
   inputClassName?: string;
 };
 
-/** A text input: 48 px tall, 16 px text so iOS does not zoom. Put it in a `Field` for its label. */
+/** A debossed text input. 16 px text, so iOS does not zoom. Put it in a `Field` for its label. */
 export function Input({
   icon: Icon,
   suffix,
@@ -42,9 +42,9 @@ export function Input({
       {Icon ? (
         <Icon
           size={20}
-          strokeWidth={1.75}
+          strokeWidth={2.25}
           aria-hidden="true"
-          className="ml-3.5 shrink-0 text-ink-3"
+          className="ml-3 shrink-0 text-ink-3"
         />
       ) : null}
       <input
@@ -57,7 +57,9 @@ export function Input({
         {...rest}
       />
       {suffix ? (
-        <span className="shrink-0 pr-3.5 text-body font-medium text-ink-3">{suffix}</span>
+        <span className="grid h-full shrink-0 place-items-center border-l-2 border-ink px-3 font-mono text-data font-semibold text-ink-2">
+          {suffix}
+        </span>
       ) : null}
     </div>
   );
@@ -81,8 +83,9 @@ export function Textarea({
     <textarea
       {...control}
       className={cn(
-        'block min-h-24 w-full resize-y rounded-md border-2 border-ink bg-white px-3.5 py-3 text-body text-ink placeholder:text-ink-4 disabled:cursor-not-allowed disabled:border-ink-4 disabled:bg-line disabled:text-ink-3',
-        isInvalid && INVALID,
+        'block min-h-24 w-full resize-y rounded-ctl border-3 border-ink bg-white px-3.5 py-3 text-body text-ink deboss placeholder:text-ink-4 focus-visible:[--deboss:var(--color-yellow-tint)] disabled:cursor-not-allowed disabled:border-2 disabled:border-dashed disabled:border-ink-4 disabled:bg-line disabled:text-ink-3',
+        isInvalid &&
+          '[--deboss:var(--color-tomato-tint)] focus-visible:[--deboss:var(--color-tomato-tint)]',
         className,
       )}
       {...rest}
@@ -128,9 +131,9 @@ export function SearchInput({
     <div className={cn(SHELL, className)} role="search">
       <Search
         size={20}
-        strokeWidth={1.75}
+        strokeWidth={2.25}
         aria-hidden="true"
-        className="ml-3.5 shrink-0 text-ink-3"
+        className="ml-3 shrink-0 text-ink-3"
       />
       <input
         ref={(node) => {
@@ -152,10 +155,9 @@ export function SearchInput({
         <IconButton
           label="Clear search"
           icon={X}
-          variant="ghost"
           size="sm"
           tooltipSide={null}
-          className="mr-1.5"
+          className="mr-1.5 [--lift:2px]"
           onClick={() => {
             onValueChange('');
             inner.current?.focus();

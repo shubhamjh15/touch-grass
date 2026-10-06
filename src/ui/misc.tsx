@@ -10,13 +10,13 @@ export type SkipLinkProps = Omit<ComponentProps<'a'>, 'children'> & {
   targetId?: string;
 };
 
-/** The first focusable element on every route: a yellow pill that appears at the top-left on focus. */
+/** The first focusable element on every route: a yellow sticker that appears at the top-left on focus. */
 export function SkipLink({ targetId = 'main', className, ...rest }: SkipLinkProps) {
   return (
     <a
       href={`#${targetId}`}
       className={cn(
-        'sr-only rounded-pill border-2 border-ink bg-yellow px-4 text-body-sm font-bold text-ink focus-visible:not-sr-only focus-visible:fixed focus-visible:top-4 focus-visible:left-4 focus-visible:z-(--z-skip) focus-visible:inline-flex focus-visible:h-11 focus-visible:items-center',
+        'sr-only -rotate-2 diecut rounded-pill border-3 border-ink bg-yellow px-3 text-body-sm font-bold text-ink dc-4 focus-visible:not-sr-only focus-visible:fixed focus-visible:top-4 focus-visible:left-4 focus-visible:z-(--z-skip) focus-visible:inline-flex focus-visible:h-8 focus-visible:items-center',
         className,
       )}
       {...rest}
@@ -27,7 +27,7 @@ export function SkipLink({ targetId = 'main', className, ...rest }: SkipLinkProp
 }
 
 export type ProseProps = ComponentProps<'div'> & {
-  /** Body metrics instead of reading metrics: coach messages and other chat-sized markdown. */
+  /** Body metrics instead of reading metrics: coach slips and other chat-sized markdown. */
   compact?: boolean;
 };
 
@@ -86,7 +86,7 @@ export function ConfirmDialog({
       size="sm"
       footer={
         <>
-          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+          <Button variant="neutral" onClick={() => onOpenChange(false)}>
             {cancelLabel}
           </Button>
           <Button

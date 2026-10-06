@@ -7,7 +7,7 @@ import { cn } from '@/lib/cn';
 export interface TabItem<T extends string = string> {
   value: T;
   label: string;
-  /** Count after the label. */
+  /** Mono count after the label. */
   count?: number;
   disabled?: boolean;
 }
@@ -24,7 +24,7 @@ export interface TabsProps<T extends string = string> {
 }
 
 /**
- * Underlined tabs: the selected one is bold with an ink rule under it. Tabs swap what a panel
+ * Index tabs standing on a card: the selected tab joins the panel below. Tabs swap what a panel
  * contains (Chips filter it; Segmented picks a value). Arrow keys, Home and End move between tabs.
  */
 export function Tabs<T extends string = string>({
@@ -44,21 +44,18 @@ export function Tabs<T extends string = string>({
     >
       <RadixTabs.List
         aria-label={rest['aria-label']}
-        className={cn(
-          'scroll-row gap-6 shadow-[inset_0_-2px_0_0_var(--color-line)] [--row-pad:0px]',
-          listClassName,
-        )}
+        className={cn('scroll-row z-1 gap-1', listClassName)}
       >
         {tabs.map((tab) => (
           <RadixTabs.Trigger
             key={tab.value}
             value={tab.value}
             disabled={tab.disabled}
-            className="inline-flex h-11 items-center gap-1.5 border-b-2 border-transparent text-body font-medium whitespace-nowrap text-ink-3 focus-inset disabled:cursor-not-allowed disabled:text-ink-4 data-[state=active]:border-ink data-[state=active]:font-bold data-[state=active]:text-ink fine:hover:text-ink"
+            className="inline-flex h-10 items-center gap-1.5 rounded-t-ctl border-3 border-b-0 border-ink bg-mat-deep px-4 text-label whitespace-nowrap text-ink-2 focus-inset disabled:cursor-not-allowed disabled:text-ink-4 data-[state=active]:-mb-[3px] data-[state=active]:h-[43px] data-[state=active]:bg-card data-[state=active]:pb-[3px] data-[state=active]:font-bold data-[state=active]:text-ink fine:hover:text-ink"
           >
             {tab.label}
             {tab.count !== undefined ? (
-              <span className="text-body-sm font-medium text-ink-3 tabular-nums">{tab.count}</span>
+              <span className="font-mono text-data font-medium text-ink-3">{tab.count}</span>
             ) : null}
           </RadixTabs.Trigger>
         ))}
@@ -70,17 +67,19 @@ export function Tabs<T extends string = string>({
 
 export type TabPanelProps = Omit<ComponentProps<'div'>, 'value'> & {
   value: string;
-  /** Drop the card frame when the panel holds its own cards or rows. */
+  /** Drop the card frame when the panel holds its own cards. */
   bare?: boolean;
 };
 
-/** The panel of one tab. Focusable, so keyboard users land in its content. */
+/** The panel a tab stands on. Focusable, so keyboard users land in its content. */
 export function TabPanel({ value, bare = false, className, ...rest }: TabPanelProps) {
   return (
     <RadixTabs.Content
       value={value}
       className={cn(
-        bare ? 'pt-5' : 'mt-5 rounded-lg border-2 border-ink bg-card p-5 md:p-6',
+        bare
+          ? 'border-t-3 border-ink pt-4'
+          : 'rounded-md rounded-tl-none border-3 border-ink bg-card p-4 shadow-3 md:rounded-lg md:rounded-tl-none md:p-5',
         className,
       )}
       {...rest}

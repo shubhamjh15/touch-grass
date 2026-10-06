@@ -2,9 +2,9 @@
 @plugin '@tailwindcss/typography';
 
 /*
- * Touch Grass design tokens, base layer and recipes: the calm system.
- * Source of truth: the UX directive (section 3), then the design bible. Components never contain a
- * hex value: if a token is missing, add it here first.
+ * Touch Grass design tokens, base layer and paper recipes.
+ * Source of truth: the design bible, sections 1 to 3 and 7. Components never contain a hex value:
+ * if a token is missing, add it here first.
  */
 
 /* Reduced motion from either the OS or Settings → Motion (the shell sets data-motion on <html>). */
@@ -91,7 +91,6 @@
 
   /* ---- semantic ---- */
   --color-primary: #4ade80;
-  --color-primary-hover: #38d672;
   --color-selected: #facc15;
   --color-focus: #facc15;
   --color-success: #4ade80;
@@ -143,68 +142,58 @@
   --font-display: 'Tilt Warp Variable', 'Tilt Warp Fallback', 'Space Grotesk Variable', sans-serif;
   --font-mono: 'Martian Mono Variable', 'Martian Mono Fallback', ui-monospace, monospace;
 
-  /*
-   * ---- type scale: text-<name> sets size + line-height + tracking + weight ----
-   * Five steps: Display 44/48 (32/36 on phones) · H1 28/34 · H2 20/28 · Body 16/24 · Small 14/20.
-   * The older names stay as aliases of those steps so nothing off-scale can be set. Only chart ticks
-   * go below 14 px.
-   */
-  --text-display-hero: clamp(2rem, 1.539rem + 1.893vw, 2.75rem);
-  --text-display-hero--line-height: 1.1;
-  --text-display-hero--letter-spacing: -0.02em;
-  --text-display-hero--font-weight: 700;
-  --text-display-xl: clamp(2rem, 1.539rem + 1.893vw, 2.75rem);
-  --text-display-xl--line-height: 1.1;
-  --text-display-xl--letter-spacing: -0.02em;
-  --text-display-xl--font-weight: 700;
-  --text-display-lg: 1.75rem;
-  --text-display-lg--line-height: 2.125rem;
-  --text-display-lg--letter-spacing: -0.02em;
-  --text-display-lg--font-weight: 700;
-  --text-display-md: 1.75rem;
-  --text-display-md--line-height: 2.125rem;
-  --text-display-md--letter-spacing: -0.02em;
-  --text-display-md--font-weight: 700;
-  --text-display-sm: 1.25rem;
-  --text-display-sm--line-height: 1.75rem;
-  --text-display-sm--letter-spacing: -0.01em;
-  --text-display-sm--font-weight: 700;
+  /* ---- type scale: text-<name> sets size + line-height + tracking + weight ---- */
+  --text-display-hero: clamp(2.875rem, 1.529rem + 5.524vw, 6.5rem);
+  --text-display-hero--line-height: 0.95;
+  --text-display-hero--font-weight: 400;
+  --text-display-xl: clamp(2.5rem, 1.757rem + 3.048vw, 4.5rem);
+  --text-display-xl--line-height: 0.96;
+  --text-display-xl--font-weight: 400;
+  --text-display-lg: clamp(2rem, 1.629rem + 1.524vw, 3rem);
+  --text-display-lg--line-height: 1;
+  --text-display-lg--font-weight: 400;
+  --text-display-md: 1.875rem;
+  --text-display-md--line-height: 1;
+  --text-display-md--font-weight: 400;
+  --text-display-sm: 1.5rem;
+  --text-display-sm--line-height: 1;
+  --text-display-sm--font-weight: 400;
   --text-display-xs: 1.25rem;
-  --text-display-xs--line-height: 1.75rem;
-  --text-display-xs--letter-spacing: -0.01em;
-  --text-display-xs--font-weight: 700;
-  --text-h1: 1.75rem;
-  --text-h1--line-height: 2.125rem;
+  --text-display-xs--line-height: 1;
+  --text-display-xs--font-weight: 400;
+  --text-h1: clamp(1.75rem, 1.471rem + 1.143vw, 2.5rem);
+  --text-h1--line-height: 1.08;
   --text-h1--letter-spacing: -0.02em;
   --text-h1--font-weight: 700;
-  --text-h2: 1.25rem;
-  --text-h2--line-height: 1.75rem;
-  --text-h2--letter-spacing: -0.01em;
+  --text-h2: clamp(1.375rem, 1.236rem + 0.571vw, 1.75rem);
+  --text-h2--line-height: 1.12;
+  --text-h2--letter-spacing: -0.015em;
   --text-h2--font-weight: 700;
-  --text-h3: 1.125rem;
-  --text-h3--line-height: 1.5rem;
-  --text-h3--letter-spacing: -0.005em;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.2;
+  --text-h3--letter-spacing: -0.01em;
   --text-h3--font-weight: 700;
-  --text-h4: 1rem;
-  --text-h4--line-height: 1.5rem;
+  --text-h4: 1.0625rem;
+  --text-h4--line-height: 1.25;
+  --text-h4--letter-spacing: -0.005em;
   --text-h4--font-weight: 700;
   --text-reading: 1.125rem;
   --text-reading--line-height: 1.65;
   --text-reading--font-weight: 400;
   --text-lead: 1.125rem;
-  --text-lead--line-height: 1.75rem;
-  --text-lead--font-weight: 400;
+  --text-lead--line-height: 1.5;
+  --text-lead--font-weight: 500;
   --text-body: 1rem;
-  --text-body--line-height: 1.5rem;
-  --text-body--font-weight: 400;
+  --text-body--line-height: 1.5;
+  --text-body--font-weight: 500;
   --text-body-sm: 0.875rem;
-  --text-body-sm--line-height: 1.25rem;
-  --text-body-sm--font-weight: 400;
-  --text-caption: 0.875rem;
-  --text-caption--line-height: 1.25rem;
-  --text-caption--font-weight: 400;
-  --text-label: 0.875rem;
-  --text-label--line-height: 1.25rem;
+  --text-body-sm--line-height: 1.45;
+  --text-body-sm--font-weight: 500;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.4;
+  --text-caption--font-weight: 500;
+  --text-label: 0.9375rem;
+  --text-label--line-height: 1.2;
   --text-label--font-weight: 600;
   --text-button-sm: 0.875rem;
   --text-button-sm--line-height: 1;
@@ -215,54 +204,59 @@
   --text-button-lg: 1.125rem;
   --text-button-lg--line-height: 1;
   --text-button-lg--font-weight: 700;
-  --text-tab: 0.875rem;
+  --text-tab: 0.6875rem;
   --text-tab--line-height: 1;
+  --text-tab--letter-spacing: 0.01em;
   --text-tab--font-weight: 600;
-  --text-data-lg: 1rem;
-  --text-data-lg--line-height: 1.5rem;
+  --text-data-lg: 1.0625rem;
+  --text-data-lg--line-height: 1.2;
   --text-data-lg--font-weight: 600;
-  --text-data: 0.875rem;
-  --text-data--line-height: 1.25rem;
+  --text-data: 0.8125rem;
+  --text-data--line-height: 1.45;
   --text-data--font-weight: 500;
-  --text-data-sm: 0.875rem;
-  --text-data-sm--line-height: 1.25rem;
+  --text-data-sm: 0.75rem;
+  --text-data-sm--line-height: 1.6;
   --text-data-sm--font-weight: 500;
-  --text-slug: 0.875rem;
-  --text-slug--line-height: 1.25rem;
+  --text-slug: 0.6875rem;
+  --text-slug--line-height: 1;
+  --text-slug--letter-spacing: 0.08em;
   --text-slug--font-weight: 500;
-  --text-tick: 0.6875rem;
+  --text-tick: 0.625rem;
   --text-tick--line-height: 1;
+  --text-tick--letter-spacing: 0.06em;
   --text-tick--font-weight: 500;
 
-  /* ---- radii: controls 12, cards 16, sheets 24 ---- */
+  /* ---- radii: the radius says what kind of thing it is ---- */
   --radius-paper: 4px;
   --radius-xs: 6px;
   --radius-sm: 8px;
-  --radius-ctl: 12px;
+  --radius-ctl: 10px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-pill: 999px;
 
-  /*
-   * ---- hard shadows: one lamp, top-left; +x +y; no blur, no spread, ever ----
-   * Calm: cards carry none. 2 px marks a card that is a button, 3 px the primary button, 4 px the
-   * things that float (menus, dialogs). The larger names stay as aliases of 4 px.
-   */
+  /* ---- hard shadows: one lamp, top-left; +x +y; no blur, no spread, ever ---- */
   --shadow-1: 2px 2px 0 0 var(--color-shadow);
-  --shadow-2: 2px 2px 0 0 var(--color-shadow);
-  --shadow-3: 3px 3px 0 0 var(--color-shadow);
-  --shadow-4: 4px 4px 0 0 var(--color-shadow);
-  --shadow-5: 4px 4px 0 0 var(--color-shadow);
-  --shadow-carry: 4px 4px 0 0 var(--color-shadow);
-  --shadow-plate: 3px 3px 0 0 var(--color-shadow);
-  --shadow-key: 0 1px 0 0 var(--color-shadow);
+  --shadow-2: 3px 3px 0 0 var(--color-shadow);
+  --shadow-3: 5px 5px 0 0 var(--color-shadow);
+  --shadow-4: 8px 8px 0 0 var(--color-shadow);
+  --shadow-5: 12px 12px 0 0 var(--color-shadow);
+  --shadow-carry: 20px 20px 0 0 var(--color-shadow);
+  --shadow-plate:
+    4px 4px 0 0 var(--plate, #facc15), 8px 8px 0 0 var(--color-shadow); /* second colour plate: hero object only */
+  --shadow-key: 0 2px 0 0 var(--color-shadow); /* a key cap: the one shadow that points straight down */
+  --shadow-tooltip: 3px 3px 0 0 var(--color-yellow);
+  --shadow-thumb: 2px 0 0 0 var(--color-shadow); /* the switch thumb leans toward where it can go */
+  --shadow-thumb-on: -2px 0 0 0 var(--color-shadow);
+  --inset-shadow-deboss: inset 3px 3px 0 0 var(--color-line);
+  --inset-shadow-misreg: inset -2px -2px 0 0 var(--color-white);
 
   /* ---- easings ---- */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* arrivals */
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0); /* exits, the stamp coming down */
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* moves on a path, the world carry */
-  --ease-stick: cubic-bezier(0.34, 1.3, 0.64, 1); /* a small overshoot: checks, pops */
+  --ease-stick: cubic-bezier(0.34, 1.56, 0.64, 1); /* CSS-only overshoot: "stuck" */
   --ease-peel: cubic-bezier(0.3, 0, 0.1, 1); /* lift-offs */
   --ease-mech: cubic-bezier(0.2, 0, 0, 1); /* numbers, meters, toggles: decisive, never bouncy */
 
@@ -273,28 +267,32 @@
   --breakpoint-xl: 80rem;
   --breakpoint-2xl: 96rem;
 
-  /*
-   * ---- animations: transform and opacity only, each one plays once ----
-   * The two that repeat are loading indicators (the spinner and the streaming caret).
-   */
-  --animate-stick: stick 200ms var(--ease-out) both; /* something arrives */
-  --animate-peel: peel 140ms var(--ease-in) both; /* something leaves */
-  --animate-pop: pop 260ms var(--ease-stick) both; /* a check lands */
-  --animate-fade-in: scrim-in 200ms linear both;
-  --animate-spin: spin 800ms linear infinite;
+  /* ---- animations ---- */
+  --animate-stick: stick 220ms var(--ease-stick) both;
+  --animate-peel: peel 140ms var(--ease-peel) both;
+  --animate-stamp: stamp 320ms var(--ease-in) both;
+  --animate-pop: pop 260ms var(--ease-stick) both; /* a check sticking into place */
   --animate-caret: caret 1s steps(2, jump-none) infinite;
-  --animate-sheet-in: sheet-in 320ms var(--ease-out) both;
-  --animate-sheet-out: sheet-out 200ms var(--ease-in) both;
-  --animate-drawer-in: drawer-in 320ms var(--ease-out) both;
-  --animate-drawer-out: drawer-out 160ms var(--ease-in) both;
-  --animate-scrim-in: scrim-in 200ms linear both;
+  --animate-puppet: puppet 2s steps(24) infinite alternate; /* 12 fps stop-motion bob */
+  --animate-colorbar: colorbar 1.2s steps(6, jump-none) infinite; /* the loader */
+  --animate-hatch: hatch-pulse 1.6s steps(2, jump-none) infinite; /* skeletons: they step, never shimmer */
+  --animate-sheet-in: sheet-in 360ms var(--ease-out) both;
+  --animate-sheet-out: sheet-out 220ms var(--ease-in) both;
+  --animate-drawer-in: drawer-in 360ms var(--ease-out) both;
+  --animate-drawer-out: drawer-out 140ms var(--ease-peel) both;
+  --animate-scrim-in: scrim-in 220ms linear both;
   --animate-scrim-out: scrim-out 140ms linear both;
-  --animate-timer: timer var(--timer-dur, 8s) linear both; /* the Undo bar runs out */
+  --animate-tear: tear 420ms var(--ease-peel) both;
+  --animate-sweep: sweep 520ms var(--ease-stick) both; /* lettering entrance: one sweep, then still */
+  --animate-ticker: ticker var(--ticker-dur, 30s) steps(var(--ticker-steps, 360)) infinite; /* 12 fps */
+  --animate-timer: timer var(--timer-dur, 8s) steps(32, jump-none) both; /* the Undo bar shortens in steps */
+  --animate-strike: strike 140ms var(--ease-mech) both;
+  --animate-leader: leader 220ms var(--ease-mech) both; /* a callout's line draws out from its dot */
 
   @keyframes stick {
     from {
       opacity: 0;
-      transform: translateY(6px) scale(0.98);
+      transform: translate(-6px, -6px) scale(1.06) rotate(var(--stick-rot, 2deg));
     }
     to {
       opacity: 1;
@@ -304,27 +302,57 @@
   @keyframes peel {
     to {
       opacity: 0;
-      transform: translateY(4px) scale(0.98);
+      transform: translate(-8px, -10px) rotate(-4deg) scale(1.04);
+    }
+  }
+  @keyframes stamp {
+    0% {
+      opacity: 0;
+      transform: scale(1.7) rotate(var(--stamp-rot, -6deg));
+    }
+    55% {
+      opacity: 1;
+      transform: scale(0.94) rotate(var(--stamp-rot, -6deg));
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) rotate(var(--stamp-rot, -6deg));
     }
   }
   @keyframes pop {
     from {
       opacity: 0;
-      transform: scale(0.6);
+      transform: scale(0.4);
     }
     to {
       opacity: 1;
       transform: none;
     }
   }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
   @keyframes caret {
     50% {
       opacity: 0;
+    }
+  }
+  @keyframes puppet {
+    from {
+      transform: translateY(-3px);
+    }
+    to {
+      transform: translateY(3px);
+    }
+  }
+  @keyframes colorbar {
+    from {
+      --bar: 0;
+    }
+    to {
+      --bar: 5;
+    }
+  }
+  @keyframes hatch-pulse {
+    50% {
+      opacity: 0.6;
     }
   }
   @keyframes sheet-in {
@@ -343,7 +371,7 @@
   @keyframes drawer-in {
     from {
       opacity: 0;
-      transform: translateX(32px);
+      transform: translateX(40px);
     }
     to {
       opacity: 1;
@@ -353,7 +381,7 @@
   @keyframes drawer-out {
     to {
       opacity: 0;
-      transform: translateX(32px);
+      transform: translateX(40px);
     }
   }
   @keyframes scrim-in {
@@ -366,9 +394,47 @@
       opacity: 0;
     }
   }
+  /* The stub swings around its top notch and pulls away from the perforation. */
+  @keyframes tear {
+    0% {
+      opacity: 1;
+      transform: none;
+    }
+    60% {
+      opacity: 1;
+      transform: translate(16px, -6px) rotate(14deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(40px, -28px) rotate(20deg) scale(0.5);
+    }
+  }
+  @keyframes sweep {
+    from {
+      opacity: 0;
+      --xrot: 20;
+      --yrot: -45;
+      transform: translate(-8px, -8px) scale(1.06);
+    }
+  }
+  @keyframes ticker {
+    to {
+      transform: translateX(-50%);
+    }
+  }
   @keyframes timer {
     to {
       transform: scaleX(0);
+    }
+  }
+  @keyframes strike {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes leader {
+    from {
+      transform: scale(0);
     }
   }
 }
@@ -397,6 +463,23 @@
   inherits: true;
   initial-value: #f0fdf4;
 }
+@property --bar {
+  syntax: '<integer>';
+  inherits: true;
+  initial-value: 0;
+}
+/* Tilt Warp's tilt axes, registered so they can animate (one sweep on entrance). */
+@property --xrot {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --yrot {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 :root {
   color-scheme: light;
   /* border weights: weight says how important the edge is */
@@ -432,10 +515,8 @@
   --nav-h: 64px;
   --tabbar-h: 64px;
   --gutter: 16px;
-  --content-max: 1120px; /* pages */
-  --measure: 40rem; /* text columns: 640 px */
-  --space-section: 40px; /* between the sections of a page */
-  --space-card: 20px; /* inside a card */
+  --content-max: 1392px;
+  --measure: 42.5rem;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-l: env(safe-area-inset-left, 0px);
@@ -473,14 +554,16 @@
   --star: #fde68a;
   --orb: var(--orb-day);
   --cloud: var(--cloud-day);
-  --stage-mark: var(--color-ink);
-  /* The sky ramp is never transitioned here: an inherited custom property that animates restyles the whole page on every frame. */
+  --stage-mark: var(--color-ink); /* threads, crop marks: ink by dawn/day/dusk, #c7d2fe at night */
+  transition:
+    --sky-0 60s linear,
+    --sky-1 60s linear,
+    --sky-2 60s linear,
+    --sky-3 60s linear;
 }
 @media (min-width: 48rem) {
   :root {
     --gutter: 24px;
-    --space-section: 56px;
-    --space-card: 24px;
   }
 }
 @media (min-width: 64rem) {
@@ -527,11 +610,9 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-mat font-sans text-body text-ink antialiased;
+    @apply graph-paper font-sans text-body text-ink antialiased;
     min-height: 100dvh;
     font-optical-sizing: auto;
-    /* Tilt Warp has one weight: never fake a bold for it. */
-    font-synthesis-weight: none;
   }
   ::selection {
     background: var(--color-yellow);
@@ -589,10 +670,23 @@
     box-shadow: var(--focus-halo), var(--own-shadow, 0 0 #0000);
   }
 
-  /* A quiet scrollbar on desktop; touch keeps the system one. */
+  /* Chunky legacy scrollbar, desktop fine pointers only. */
   @media (min-width: 64rem) and (pointer: fine) {
     html {
-      scrollbar-color: var(--color-ink-4) var(--color-mat);
+      scrollbar-color: var(--color-ink) var(--color-white);
+    }
+    ::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--color-white);
+      border-left: 3px solid var(--color-ink);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--color-ink);
+      border: 2px solid var(--color-white);
+      border-radius: 999px;
     }
   }
 
@@ -630,46 +724,28 @@
  * Recipes
  * ---------------------------------------------------------------------------------------------- */
 
-/* ---- THE CARD: white, 2 px ink, 16 px radius, no shadow. One recipe for every surface. ---- */
-@utility card {
-  background-color: var(--color-card);
-  border: 2px solid var(--color-ink);
-  border-radius: var(--radius-lg);
-}
-/* Card padding: 20 px on phones, 24 px from `md`. */
-@utility card-pad {
-  padding: var(--space-card);
-}
-
-/* ---- RHYTHM: sections of a page sit 40 px apart on phones and 56 px from `md`. ---- */
-@utility section-gap {
-  margin-top: var(--space-section);
-}
-@utility stack-sections {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-section);
-}
-/* A text column: 640 px at most. */
-@utility measure {
-  max-width: var(--measure);
-}
-
-/* ---- PRESS: a hard shadow the control presses into. The primary button, the floating button and cards that are buttons. Depth with lift-2 / lift-3; nothing lifts further than 3 px. ---- */
+/* ---- EMBOSS: hard shadow + press physics. Every pressable thing. Size with lift-2 / lift-3 / lift-5 / lift-8. ---- */
 @utility lift-* {
-  --lift: min(calc(--value(integer) * 1px), 3px);
+  --lift: calc(--value(integer) * 1px);
 }
 @utility hard {
-  --own-shadow: var(--lift, 3px) var(--lift, 3px) 0 0 var(--color-shadow);
+  --own-shadow: var(--lift, 5px) var(--lift, 5px) 0 0 var(--color-shadow);
   box-shadow: var(--focus-halo, 0 0 #0000), var(--own-shadow);
-  /* The shadow itself is never animated: it is there, or the control is sitting on it. */
   transition:
     transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) linear;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled, [aria-disabled='true'], [aria-busy='true']) {
+      transform: translate(-1px, -1px);
+      --own-shadow: calc(var(--lift, 5px) + 1px) calc(var(--lift, 5px) + 1px) 0 0
+        var(--color-shadow);
+    }
+  }
   &:active:not(:disabled, [aria-disabled='true'], [aria-busy='true']),
   &[data-pressed='true'],
   &[aria-pressed='true'] {
-    transform: translate(var(--lift, 3px), var(--lift, 3px));
+    transform: translate(var(--lift, 5px), var(--lift, 5px));
     --own-shadow: 0 0 0 0 var(--color-shadow);
     transition-duration: var(--dur-press);
   }
@@ -680,18 +756,25 @@
     cursor: not-allowed;
   }
 }
-/* Kept for cards that are buttons: they no longer rise on hover, the surface tints instead. */
+/* Interactive cards lift further: translate(-2px,-2px) and one shadow level up. Add next to `hard`. */
 @utility hard-card {
   @media (hover: hover) and (pointer: fine) {
     &:hover:not(:disabled, [aria-disabled='true']) {
-      background-color: var(--color-mat);
+      transform: translate(-2px, -2px);
+      --own-shadow: calc(var(--lift, 5px) + 3px) calc(var(--lift, 5px) + 3px) 0 0
+        var(--color-shadow);
     }
   }
 }
-/* A static hard shadow on something focusable: keeps the focus halo, no press. flat-2 at most. */
+/* A static hard shadow on something focusable (selected chip, current nav link): keeps the focus halo, no press physics. flat-2, flat-3. */
 @utility flat-* {
-  --own-shadow: min(calc(--value(integer) * 1px), 2px) min(calc(--value(integer) * 1px), 2px) 0 0
-    var(--color-shadow);
+  --own-shadow: calc(--value(integer) * 1px) calc(--value(integer) * 1px) 0 0 var(--color-shadow);
+  box-shadow: var(--focus-halo, 0 0 #0000), var(--own-shadow);
+}
+
+/* ---- DEBOSS: things you fill (inputs, wells, tracks). ---- */
+@utility deboss {
+  --own-shadow: inset 3px 3px 0 0 var(--deboss, var(--color-line));
   box-shadow: var(--focus-halo, 0 0 #0000), var(--own-shadow);
 }
 
@@ -712,7 +795,7 @@
   }
 }
 
-/* ---- DIE-CUT: white margin + kiss-cut line + a small hard shadow. Only for the tree, action stickers and badges. Margin: dc-3 (small), dc-4 (default), dc-6 (hero). ---- */
+/* ---- DIE-CUT: white margin + 1.5 px kiss-cut line + hard shadow that follows the radius. Margin: dc-3 (<=32 px things), dc-4 (default), dc-6 (hero). ---- */
 @utility dc-* {
   --dc-m: calc(--value(integer) * 1px);
 }
@@ -720,22 +803,65 @@
   --own-shadow:
     0 0 0 var(--dc-m, 4px) var(--color-sticker),
     0 0 0 calc(var(--dc-m, 4px) + 1.5px) var(--color-shadow),
-    var(--dc-off, 3px) var(--dc-off, 3px) 0 calc(var(--dc-m, 4px) + 1.5px) var(--color-shadow);
+    var(--dc-off, 4px) var(--dc-off, 4px) 0 calc(var(--dc-m, 4px) + 1.5px) var(--color-shadow);
   box-shadow: var(--own-shadow), var(--focus-halo, 0 0 #0000);
-  transition: transform var(--dur-fast) var(--ease-out);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
   &:focus-visible {
     outline-offset: calc(var(--dc-m, 4px) + 6.5px);
     --focus-halo: 0 0 0 calc(var(--dc-m, 4px) + 6.5px) var(--color-focus);
   }
   &:active:is(button, a):not(:disabled, [aria-disabled='true']),
   &[data-pressed='true'] {
-    transform: translate(var(--dc-off, 3px), var(--dc-off, 3px));
+    transform: translate(var(--dc-off, 4px), var(--dc-off, 4px));
     --dc-off: 0px;
     transition-duration: var(--dur-press);
   }
 }
 
-/* ---- Hatch = projected / not measured (charts only). ---- */
+/* ---- HALFTONE: the only way to draw a gradient. ---- */
+@utility halftone {
+  background-image: radial-gradient(
+    circle,
+    var(--ht-color, var(--color-ink)) 0 var(--ht-dot, 1.6px),
+    #0000 calc(var(--ht-dot, 1.6px) + 0.5px)
+  );
+  background-size: var(--ht-pitch, 7px) var(--ht-pitch, 7px);
+}
+/* A 49 px dither strip above an element: seven staggered dot rows in the element's own colour, shrinking as they climb. Sky bands, section seams. */
+@utility halftone-fade-t {
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 49px;
+    pointer-events: none;
+    --c: var(--ht-color, currentColor);
+    background-image:
+      radial-gradient(circle, var(--c) 0 7.8px, #0000 8.3px),
+      radial-gradient(circle, var(--c) 0 6.2px, #0000 6.7px),
+      radial-gradient(circle, var(--c) 0 5px, #0000 5.5px),
+      radial-gradient(circle, var(--c) 0 3.9px, #0000 4.4px),
+      radial-gradient(circle, var(--c) 0 2.9px, #0000 3.4px),
+      radial-gradient(circle, var(--c) 0 1.9px, #0000 2.4px),
+      radial-gradient(circle, var(--c) 0 1px, #0000 1.5px);
+    background-size: 14px 14px;
+    background-repeat: repeat-x;
+    background-position:
+      0 38.5px,
+      7px 31.5px,
+      0 24.5px,
+      7px 17.5px,
+      0 10.5px,
+      7px 3.5px,
+      0 -3.5px;
+  }
+}
+/* Hatch = projected / loading / not measured. Never on "disabled" (that is the die line). */
 @utility hatch {
   background-image: repeating-linear-gradient(
     135deg,
@@ -744,53 +870,330 @@
   );
 }
 
-/* ---- DIE LINE: dashed grey = not there yet (an empty slot, a locked thing). ---- */
+/* ---- PINKED EDGE: 16 px zigzag, 8 px deep, 3 px ink stroke. Pure gradients, so it takes token colours. Set --edge-fill to the surface it belongs to. ---- */
+@utility edge-pinked-t {
+  /* teeth rise from the element's top edge (mat horizon on mobile) */
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% - 1px);
+    height: 12px;
+    pointer-events: none;
+    background:
+      conic-gradient(from 135deg at 50% 0, var(--edge-fill, var(--color-mat)) 90deg, #0000 0) 0
+        4px / 16px 8px repeat-x,
+      linear-gradient(var(--color-ink) 0 0) 0 8px / 100% 4px no-repeat,
+      conic-gradient(from 135deg at 50% 0, var(--color-ink) 90deg, #0000 0) 0 0 / 16px 8px repeat-x;
+  }
+}
+@utility edge-pinked-l {
+  /* teeth point left from the element's left edge (the desk on desktop) */
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: calc(100% - 1px);
+    width: 12px;
+    pointer-events: none;
+    background:
+      conic-gradient(from 45deg at 0 50%, var(--edge-fill, var(--color-mat)) 90deg, #0000 0) 4px 0 /
+        8px 16px repeat-y,
+      linear-gradient(var(--color-ink) 0 0) 8px 0 / 4px 100% no-repeat,
+      conic-gradient(from 45deg at 0 50%, var(--color-ink) 90deg, #0000 0) 0 0 / 8px 16px repeat-y;
+  }
+}
+@utility edge-pinked-b {
+  /* teeth hang below (receipts). Element has border-bottom: 0. --edge-bw = its side border width */
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--edge-bw, 3px) * -1);
+    right: calc(var(--edge-bw, 3px) * -1);
+    top: calc(100% - 1px);
+    height: 11px;
+    pointer-events: none;
+    background:
+      conic-gradient(from -45deg at 50% 100%, var(--edge-fill, var(--color-paper)) 90deg, #0000 0) 0
+        0 / 14px 7px repeat-x,
+      linear-gradient(var(--color-ink) 0 0) 0 0 / 100% 4px no-repeat,
+      conic-gradient(from -45deg at 50% 100%, var(--color-ink) 90deg, #0000 0) 0 4px / 14px 7px
+        repeat-x;
+  }
+}
+
+/* ---- PERFORATION: a line you can tear. Dashed ink + two half-moon notches. --notch-bg = the surface the ticket sits on (mat by default), so tickets sit only on flat surfaces. ---- */
+@utility perf-l {
+  position: relative;
+  border-left: 2px dashed var(--color-ink);
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: -9px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--notch-bg, var(--color-mat));
+    border: var(--notch-bw, 3px) solid var(--color-ink);
+  }
+  &::before {
+    top: calc(-8px - var(--notch-bw, 3px));
+    clip-path: inset(8px -2px -2px -2px);
+  }
+  &::after {
+    bottom: calc(-8px - var(--notch-bw, 3px));
+    clip-path: inset(-2px -2px 8px -2px);
+  }
+}
+@utility perf-t {
+  position: relative;
+  border-top: 2px dashed var(--color-ink);
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -9px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--notch-bg, var(--color-mat));
+    border: var(--notch-bw, 3px) solid var(--color-ink);
+  }
+  &::before {
+    left: calc(-8px - var(--notch-bw, 3px));
+    clip-path: inset(-2px -2px -2px 8px);
+  }
+  &::after {
+    right: calc(-8px - var(--notch-bw, 3px));
+    clip-path: inset(-2px 8px -2px -2px);
+  }
+}
+
+/* ---- TAPE: washi strip holding a note. Put an empty <i class="tape"> inside a relative parent. --tape-color: pink (default), yellow, blue, green. ---- */
+@utility tape {
+  position: absolute;
+  left: 50%;
+  top: -13px;
+  width: 92px;
+  height: 26px;
+  margin-left: -46px;
+  rotate: -3deg;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--tape-color, var(--color-pink)) 86%, transparent);
+  border-block: 2px solid var(--color-ink);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - 4px) 12.5%,
+    100% 25%,
+    calc(100% - 4px) 37.5%,
+    100% 50%,
+    calc(100% - 4px) 62.5%,
+    100% 75%,
+    calc(100% - 4px) 87.5%,
+    100% 100%,
+    0 100%,
+    4px 87.5%,
+    0 75%,
+    4px 62.5%,
+    0 50%,
+    4px 37.5%,
+    0 25%,
+    4px 12.5%
+  );
+}
+
+/* ---- GRAPH PAPER: the cutting mat. Major 80 px, minor 16 px. A texture, not a layout grid. Minor lines appear from md up. ---- */
+@utility graph-paper {
+  background-color: var(--color-mat);
+  background-image:
+    linear-gradient(var(--color-mat-line-major) 1.5px, #0000 1.5px),
+    linear-gradient(90deg, var(--color-mat-line-major) 1.5px, #0000 1.5px);
+  background-size:
+    80px 80px,
+    80px 80px;
+  background-position: -1px -1px;
+  @media (min-width: 48rem) {
+    background-image:
+      linear-gradient(var(--color-mat-line-major) 1.5px, #0000 1.5px),
+      linear-gradient(90deg, var(--color-mat-line-major) 1.5px, #0000 1.5px),
+      linear-gradient(var(--color-mat-line) 1px, #0000 1px),
+      linear-gradient(90deg, var(--color-mat-line) 1px, #0000 1px);
+    background-size:
+      80px 80px,
+      80px 80px,
+      16px 16px,
+      16px 16px;
+  }
+}
+
+/* ---- CROP MARKS: four printer's corners. On an absolutely positioned, pointer-events-none child that insets the stage by 12 px (mobile) / 28 px (lg). ---- */
+@utility crop-marks {
+  --c: var(--stage-mark, var(--color-ink));
+  opacity: 0.7;
+  background-repeat: no-repeat;
+  background-image:
+    linear-gradient(var(--c) 0 0), linear-gradient(var(--c) 0 0), linear-gradient(var(--c) 0 0),
+    linear-gradient(var(--c) 0 0), linear-gradient(var(--c) 0 0), linear-gradient(var(--c) 0 0),
+    linear-gradient(var(--c) 0 0), linear-gradient(var(--c) 0 0);
+  background-size:
+    var(--crop, 14px) 1.5px,
+    1.5px var(--crop, 14px),
+    var(--crop, 14px) 1.5px,
+    1.5px var(--crop, 14px),
+    var(--crop, 14px) 1.5px,
+    1.5px var(--crop, 14px),
+    var(--crop, 14px) 1.5px,
+    1.5px var(--crop, 14px);
+  background-position:
+    0 0,
+    0 0,
+    100% 0,
+    100% 0,
+    0 100%,
+    0 100%,
+    100% 100%,
+    100% 100%;
+}
+
+/* ---- DIE LINE: dashed grey = not there yet (empty slot, locked, disabled). ---- */
 @utility dieline {
   border: 2px dashed var(--color-ink-4);
   background-color: transparent;
   box-shadow: none;
 }
 
-/* ---- SCRIM: a plain ink veil behind sheets and dialogs. No blur, no pattern. ---- */
+/* ---- SCRIM: a mint veil with halftone dots. The world is veiled, never dimmed to grey. No blur. ---- */
 @utility scrim {
-  background-color: rgb(24 24 27 / 0.4);
+  background:
+    radial-gradient(circle, rgb(24 24 27 / 0.3) 0 1.1px, #0000 1.6px) 0 0 / 8px 8px,
+    rgb(240 253 244 / 0.8);
 }
 
-/* ---- TYPE HELPERS ---- */
-/* Retired mono micro-label: the name now gives plain small text, until the last page drops it. */
-@utility type-slug {
-  font-family: var(--font-sans);
-  font-size: var(--text-slug);
-  line-height: 1.25rem;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
+/* ---- STAMP INK: uneven inking for rubber stamps (static, <= 160 px wide). Pure gradient masks, no data URIs. ---- */
+@utility stamp-ink {
+  --sp:
+    radial-gradient(circle at 30% 40%, #0000 0 1.1px, #000 1.5px),
+    radial-gradient(circle at 70% 65%, #0000 0 0.9px, #000 1.3px),
+    radial-gradient(circle at 45% 80%, #0000 0 1.3px, #000 1.7px);
+  mask-image: var(--sp);
+  mask-size:
+    13px 13px,
+    17px 17px,
+    23px 23px;
+  mask-composite: intersect;
+  -webkit-mask-image: var(--sp);
+  -webkit-mask-size:
+    13px 13px,
+    17px 17px,
+    23px 23px;
+  -webkit-mask-composite: source-in;
 }
-/* Chart ticks: the one place type goes below 14 px. */
+
+/* ---- PAPER STACK: up to two extra sheets peeking 4 px (quest deck, lesson deck, sticker pad). Parent needs `relative isolate`. ---- */
+@utility stack {
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--color-card);
+    border: inherit;
+    border-radius: inherit;
+  }
+  &::before {
+    transform: translate(4px, 4px) rotate(1.5deg);
+  }
+  &::after {
+    transform: translate(8px, 7px) rotate(-1deg);
+    z-index: -2;
+    box-shadow: var(--shadow-3);
+  }
+}
+
+/* ---- STICKER LETTERING: Tilt Warp with die-cut. Markup: <span class="lettering" data-text="Fix this.">Fix this.</span> ---- */
+@utility lettering {
+  --fill: var(--color-ink);
+  --m: 0.11em;
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.035em;
+  color: var(--fill);
+  font-variation-settings:
+    'XROT' var(--xrot, 0),
+    'YROT' var(--yrot, 0);
+  -webkit-text-stroke: 0.045em var(--color-ink);
+  paint-order: stroke fill;
+  &::before,
+  &::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    color: var(--color-sticker);
+    -webkit-text-stroke: calc(var(--m) * 2) var(--color-sticker);
+    paint-order: stroke fill;
+  }
+  &::after {
+    z-index: -2;
+    color: var(--color-ink);
+    -webkit-text-stroke: calc(var(--m) * 2 + 3px) var(--color-ink);
+    filter: drop-shadow(0.05em 0.05em 0 var(--color-ink));
+  }
+  @media (forced-colors: active) {
+    -webkit-text-stroke: 0;
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+}
+
+/* ---- TYPE HELPERS that need more than a text-* token. ---- */
+@utility type-slug {
+  font-family: var(--font-mono);
+  font-stretch: 75%;
+  font-size: var(--text-slug);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 @utility type-tick {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
+  font-stretch: 75%;
   font-size: var(--text-tick);
   line-height: 1;
   font-weight: 500;
-  letter-spacing: 0.01em;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
-/* A proud number: bold sans with tabular figures. */
 @utility type-figure {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- Highlighter: the only emphasis allowed inside a headline (never coloured type). ---- */
+/* ---- Highlighter slab: the only emphasis allowed inside a headline (never coloured type). ---- */
 @utility highlighter {
-  border-radius: var(--radius-xs);
-  background-color: var(--slab, var(--color-green-tint));
+  display: inline-block;
+  rotate: -1deg;
+  border: 3px solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  background-color: var(--slab, var(--color-green));
   padding-inline: 0.14em;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
 }
 
 /* ---- Inline link: the one coloured text in running copy, always underlined. ---- */
@@ -804,24 +1207,8 @@
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       color: var(--color-ink);
+      background-color: var(--color-yellow-tint);
     }
-  }
-}
-/* The third button level: a text link in ink that underlines on hover. */
-@utility link-quiet {
-  color: var(--color-ink);
-  font-weight: 600;
-  text-decoration-line: none;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 4px;
-  border-radius: var(--radius-paper);
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      text-decoration-line: underline;
-    }
-  }
-  &:active {
-    text-decoration-line: underline;
   }
 }
 
@@ -851,12 +1238,12 @@
   }
 }
 
-/* ---- Horizontal rows (category chips, tab lists): snap, no scrollbar, room for focus rings. ---- */
+/* ---- Horizontal rows (sticker rows, chip rows, tab lists): snap, no scrollbar, room for shadows and focus rings. ---- */
 @utility scroll-row {
   /* Positioned, so visually hidden (absolute) text inside a scrolled item cannot widen the page. */
   position: relative;
   display: flex;
-  /* Room for the focus ring, which a scroll container would otherwise clip. */
+  /* Room for hard shadows and the focus ring, which a scroll container would otherwise clip. */
   padding: var(--row-pad, 8px);
   margin: calc(var(--row-pad, 8px) * -1);
   scroll-padding-inline: var(--row-pad, 8px);
@@ -888,7 +1275,7 @@
   padding-left: max(var(--gutter), var(--safe-l));
   padding-right: max(var(--gutter), var(--safe-r));
 }
-/* Bottom padding that clears the tab bar and the floating button on mobile. */
+/* Bottom padding that clears the tab bar and the Log sticker on mobile. */
 @utility pb-tabbar {
   padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 48px);
 }
@@ -904,15 +1291,15 @@
     --tw-prose-bold: var(--color-ink);
     --tw-prose-counters: var(--color-ink-3);
     --tw-prose-bullets: var(--color-ink);
-    --tw-prose-hr: var(--color-line);
+    --tw-prose-hr: var(--color-ink);
     --tw-prose-quotes: var(--color-ink);
-    --tw-prose-quote-borders: var(--color-green);
+    --tw-prose-quote-borders: var(--color-ink);
     --tw-prose-captions: var(--color-ink-3);
     --tw-prose-kbd: var(--color-ink);
     --tw-prose-kbd-shadows: 24 24 27;
     --tw-prose-code: var(--color-ink);
     --tw-prose-pre-code: var(--color-ink);
-    --tw-prose-pre-bg: var(--color-white);
+    --tw-prose-pre-bg: var(--color-paper);
     --tw-prose-th-borders: var(--color-ink);
     --tw-prose-td-borders: var(--color-line);
     max-width: var(--measure);
@@ -927,27 +1314,27 @@
     }
     & :where(h1) {
       font-size: var(--text-h1);
-      line-height: 2.125rem;
+      line-height: 1.08;
       letter-spacing: -0.02em;
       margin-bottom: 0.6em;
     }
     & :where(h2) {
       font-size: var(--text-h2);
-      line-height: 1.75rem;
-      letter-spacing: -0.01em;
-      margin-top: 2em;
+      line-height: 1.12;
+      letter-spacing: -0.015em;
+      margin-top: 1.8em;
       margin-bottom: 0.6em;
     }
     & :where(h3) {
       font-size: var(--text-h3);
-      line-height: 1.5rem;
-      letter-spacing: -0.005em;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
       margin-top: 1.6em;
       margin-bottom: 0.5em;
     }
     & :where(h4) {
       font-size: var(--text-h4);
-      line-height: 1.5rem;
+      line-height: 1.25;
       margin-top: 1.4em;
       margin-bottom: 0.4em;
     }
@@ -979,16 +1366,16 @@
       font-size: 0.8em;
       font-weight: 600;
     }
-    /* A pull quote: a quiet tinted block with one green rule. */
+    /* A pull quote is a taped note, not a grey bar. */
     & :where(blockquote) {
       margin-block: 1.4em;
       padding: 0.75rem 1rem;
-      border: 0;
-      border-left: 4px solid var(--color-green);
-      border-radius: var(--radius-sm);
-      background-color: var(--color-green-tint);
+      border: 3px solid var(--color-ink);
+      border-radius: var(--radius-paper);
+      background-color: var(--color-yellow-tint);
+      box-shadow: var(--shadow-3);
       font-style: normal;
-      font-weight: 400;
+      font-weight: 500;
       quotes: none;
     }
     & :where(blockquote p) {
@@ -1001,23 +1388,24 @@
     & :where(hr) {
       margin-block: 2em;
       border: 0;
-      border-top: 1px solid var(--color-line);
+      border-top: 2px dashed var(--color-ink);
     }
     & :where(code):not(:where(pre code)) {
       font-family: var(--font-mono);
-      font-size: 0.8em;
-      font-weight: 500;
+      font-size: 0.78em;
+      font-weight: 600;
       padding: 0.15em 0.4em;
+      border: 2px solid var(--color-ink);
       border-radius: var(--radius-xs);
-      background-color: var(--color-mat-deep);
+      background-color: var(--color-white);
     }
     & :where(code)::before,
     & :where(code)::after {
       content: none;
     }
     & :where(pre) {
-      border: 2px solid var(--color-ink);
-      border-radius: var(--radius-md);
+      border: 3px solid var(--color-ink);
+      border-radius: var(--radius-paper);
       font-size: var(--text-data);
       line-height: 1.6;
       white-space: pre-wrap;
@@ -1025,27 +1413,32 @@
     }
     & :where(kbd) {
       font-family: var(--font-mono);
-      font-size: 0.75em;
+      font-size: 0.7em;
       font-weight: 600;
       border: 2px solid var(--color-ink);
       border-radius: var(--radius-sm);
       background-color: var(--color-white);
-      box-shadow: none;
+      box-shadow: var(--shadow-key);
     }
-    /* Tables scroll inside their own box on phones; figures line up in tabular numerals. */
     & :where(table) {
       position: relative;
       display: block;
       max-width: 100%;
       overflow-x: auto;
-      font-size: var(--text-body-sm);
-      line-height: 1.25rem;
+      font-family: var(--font-mono);
+      font-stretch: 85%;
+      font-size: var(--text-data);
+      line-height: 1.45;
       font-variant-numeric: tabular-nums;
     }
     & :where(thead th) {
-      font-weight: 700;
-      color: var(--color-ink);
-      border-bottom-width: 2px;
+      font-size: var(--text-slug);
+      font-stretch: 75%;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-ink-3);
+      border-bottom-width: 1.5px;
       white-space: nowrap;
     }
     & :where(tbody td) {
@@ -1053,7 +1446,7 @@
     }
     & :where(figcaption) {
       font-size: var(--text-caption);
-      line-height: 1.25rem;
+      line-height: 1.4;
     }
     & :where(img, svg, video) {
       border-radius: var(--radius-sm);
@@ -1071,15 +1464,15 @@
   &.prose.prose-eco {
     font-size: var(--text-body);
     line-height: 1.5;
-    font-weight: 400;
+    font-weight: 500;
     & :where(p, ul, ol) {
       margin-top: 0.5em;
       margin-bottom: 0.5em;
     }
     & :where(h1, h2, h3, h4) {
       font-size: var(--text-h4);
-      line-height: 1.5rem;
-      letter-spacing: 0;
+      line-height: 1.25;
+      letter-spacing: -0.005em;
       margin-top: 1em;
       margin-bottom: 0.3em;
     }

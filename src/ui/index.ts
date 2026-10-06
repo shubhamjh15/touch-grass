@@ -13,13 +13,17 @@ export {
   HUES,
   HUE_DEEP_VAR,
   HUE_VAR,
+  ROTATE,
   SWATCH_VAR,
   TINT_BG,
   isCategoryId,
   isHue,
+  restRotation,
+  restTilt,
   type CategoryId,
   type CategoryStyle,
   type Hue,
+  type Rotation,
   type Swatch,
 } from './tokens';
 export { DURATIONS, EASINGS, SPRINGS, STAGGER, enterDelay, type SpringName } from './motion';
@@ -34,23 +38,8 @@ export type { UiLinkProps } from './linkContext';
 // Actions
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './Button';
 export { IconButton, type IconButtonProps, type IconButtonVariant } from './IconButton';
-export { Fab, type FabProps } from './Fab';
 
-// Page structure
-export {
-  PageContainer,
-  Section,
-  type PageContainerProps,
-  type SectionProps,
-} from './PageContainer';
-export {
-  PageHeader,
-  SectionHeading,
-  type PageHeaderProps,
-  type SectionHeadingProps,
-} from './headings';
-
-// Surfaces
+// Surfaces and printed matter
 export {
   Card,
   CardBody,
@@ -61,18 +50,14 @@ export {
   type CardTone,
 } from './Card';
 export { Panel, type PanelProps, type PanelVariant } from './Panel';
-export {
-  Accordion,
-  Disclosure,
-  type AccordionItem,
-  type AccordionProps,
-  type DisclosureProps,
-} from './Accordion';
-export { Banner, type BannerProps, type BannerTone } from './Banner';
 export { Ticket, TicketStub, type TicketProps, type TicketStubProps } from './Ticket';
+export { TearStub, type QuestKind, type TearStubProps, type TearStubState } from './TearStub';
+export { TapeNote, type TapeNoteProps } from './TapeNote';
+export { Receipt, type ReceiptProps, type ReceiptRow } from './Receipt';
 
 // Stickers, tags, marks
 export { Sticker, type StickerProps, type StickerSize } from './Sticker';
+export { StickerPill, type StickerPillProps } from './StickerPill';
 export { Chip, type ChipProps } from './Chip';
 export { Tag, type TagProps } from './Tag';
 export { Stamp, type StampProps } from './Stamp';
@@ -118,24 +103,16 @@ export { Slider, type SliderProps } from './Slider';
 
 // Overlays
 export { Modal, type ModalProps } from './Modal';
-export { BottomSheet, Sheet, type BottomSheetProps, type SheetProps } from './Sheet';
+export { Sheet, type SheetProps } from './Sheet';
 export { Tooltip, type TooltipProps } from './Tooltip';
 export { Popover, type PopoverProps } from './Popover';
-export {
-  DropdownMenu,
-  DropdownMenu as Menu,
-  type DropdownMenuProps,
-  type DropdownMenuProps as MenuProps,
-  type MenuItem,
-} from './DropdownMenu';
+export { DropdownMenu, type DropdownMenuProps, type MenuItem } from './DropdownMenu';
 export { Toaster } from './Toaster';
 export { ToastCard, type ToastCardProps, type ToastTone } from './ToastCard';
 export { dismissToast, toast, type ToastOptions } from './toast';
 
 // Data display
 export { Meter, type MeterProps, type MeterTone } from './Meter';
-export { ProgressBar, type ProgressBarProps } from './ProgressBar';
-export { Spinner, type SpinnerProps } from './Spinner';
 export { XPBar, type XPBarProps } from './XPBar';
 export { RingProgress, type RingProgressProps, type RingSize } from './RingProgress';
 export { StatReadout, type StatReadoutProps } from './StatReadout';
@@ -154,6 +131,12 @@ export {
   type OfflineBannerProps,
   type SkeletonProps,
 } from './states';
+
+// Headings, depth, callouts
+export { Marquee, SectionHeading, type MarqueeProps, type SectionHeadingProps } from './headings';
+export { Lettering, type LetteringFill, type LetteringProps } from './Lettering';
+export { TiltCard, type TiltCardProps } from './TiltCard';
+export { Callout, type CalloutProps } from './Callout';
 
 // Shell helpers
 export {

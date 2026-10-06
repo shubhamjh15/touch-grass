@@ -39,8 +39,7 @@ export interface SheetProps {
 /**
  * A bottom sheet (mobile) or a right-hand drawer (desktop), on Radix Dialog: focus is trapped and
  * returned, Esc closes. The bottom sheet can also be dragged down by its header; the close button
- * is always there, so dragging is never the only way. Its footer stays above the home indicator,
- * which keeps the one action of the sheet under the thumb.
+ * is always there, so dragging is never the only way.
  */
 export function Sheet({
   open,
@@ -149,15 +148,15 @@ export function Sheet({
           className={cn(
             'fixed z-(--z-drawer) flex flex-col overscroll-contain bg-card text-ink outline-hidden',
             bottom
-              ? 'inset-x-0 bottom-0 max-h-[88dvh] rounded-t-xl border-t-2 border-ink data-[state=closed]:animate-sheet-out data-[state=open]:animate-sheet-in md:mx-auto md:w-[min(100vw-32px,560px)] md:border-x-2'
-              : 'top-4 right-4 bottom-4 w-[min(420px,100vw-32px)] rounded-lg border-2 border-ink shadow-4 data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in',
+              ? 'inset-x-0 bottom-0 max-h-[88dvh] rounded-t-xl border-t-4 border-ink data-[state=closed]:animate-sheet-out data-[state=open]:animate-sheet-in md:mx-auto md:w-[min(100vw-32px,560px)] md:border-x-4'
+              : 'top-4 right-4 bottom-4 w-[min(420px,100vw-32px)] rounded-xl border-4 border-ink shadow-5 data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in',
             bottom && tall && 'h-[88dvh]',
             className,
           )}
         >
           <div
             className={cn(
-              'shrink-0 px-5',
+              'shrink-0 px-4',
               bottom && 'cursor-grab touch-none active:cursor-grabbing',
             )}
             onPointerDown={onPointerDown}
@@ -166,29 +165,29 @@ export function Sheet({
             onPointerCancel={onPointerEnd}
           >
             {bottom ? (
-              <div aria-hidden="true" className="mx-auto mt-2.5 h-1 w-10 rounded-pill bg-ink-4" />
+              <div aria-hidden="true" className="mx-auto mt-2 h-[5px] w-10 rounded-pill bg-ink" />
             ) : null}
-            <div className={cn('flex min-h-12 items-center gap-2', bottom ? 'pt-2' : 'pt-3')}>
+            <div className={cn('flex min-h-12 items-center gap-2', bottom ? 'pt-1' : 'pt-3')}>
               <Dialog.Title
-                className={cn('min-w-0 flex-1 truncate text-h2', hideTitle && 'sr-only')}
+                className={cn('min-w-0 flex-1 truncate text-h3', hideTitle && 'sr-only')}
               >
                 {title}
               </Dialog.Title>
               {hideTitle ? <span className="flex-1" /> : null}
               {headerExtra}
               <Dialog.Close asChild>
-                <IconButton label="Close" icon={X} variant="ghost" size="sm" tooltipSide={null} />
+                <IconButton label="Close" icon={X} size="sm" tooltipSide={null} />
               </Dialog.Close>
             </div>
             {description ? (
-              <Dialog.Description className="pb-1 text-body text-ink-2">
+              <Dialog.Description className="pb-1 text-body-sm text-ink-2">
                 {description}
               </Dialog.Description>
             ) : null}
           </div>
           <div
             className={cn(
-              'min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3 pb-5',
+              'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-2 pb-4',
               bodyClassName,
             )}
           >
@@ -197,8 +196,8 @@ export function Sheet({
           {footer ? (
             <div
               className={cn(
-                'shrink-0 border-t border-line px-5 pt-4',
-                bottom ? 'flex flex-col gap-2.5 pb-sheet' : 'flex justify-end gap-3 pb-5',
+                'shrink-0 border-t-[1.5px] border-ink px-4 pt-3',
+                bottom ? 'flex flex-col gap-2.5 pb-sheet' : 'flex justify-end gap-3 pb-4',
               )}
             >
               {footer}
@@ -210,15 +209,4 @@ export function Sheet({
       </Dialog.Portal>
     </Dialog.Root>
   );
-}
-
-export type BottomSheetProps = Omit<SheetProps, 'side' | 'modal'>;
-
-/**
- * The phone-first sheet: it rises from the bottom edge, takes its height from its content (88 % of
- * the screen at most), scrolls inside, and keeps its footer, the place for the one "Log it" button,
- * above the home indicator. Drag the header down, press Esc, or use the close button.
- */
-export function BottomSheet(props: BottomSheetProps) {
-  return <Sheet side="bottom" {...props} />;
 }

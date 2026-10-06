@@ -7,25 +7,31 @@ import { looseTag } from './polymorphic';
 export type PanelVariant = 'mat' | 'graph' | 'well' | 'paper';
 
 const VARIANT: Record<PanelVariant, string> = {
-  mat: 'relative z-(--z-content) bg-mat',
-  graph: 'rounded-lg border-2 border-ink bg-mat p-5',
-  well: 'rounded-md bg-mat-deep p-4',
-  paper: 'rounded-lg border-2 border-ink bg-paper p-5',
+  mat: 'graph-paper relative z-(--z-content)',
+  graph: 'graph-paper rounded-lg border-3 border-ink p-4',
+  well: 'rounded-md border-2 border-ink bg-mat-deep p-3 inset-shadow-deboss',
+  paper: 'rounded-paper border-3 border-ink bg-paper p-4 shadow-3',
 };
+
+const EDGE = {
+  'pinked-t': 'edge-pinked-t',
+  'pinked-l': 'edge-pinked-l',
+  none: '',
+} as const;
 
 export type PanelProps = Omit<ComponentProps<'div'>, 'ref'> & {
   ref?: Ref<HTMLElement>;
   /**
-   * `mat` the plain mint page surface · `graph` a framed piece of it · `well` a quiet tinted area
-   * inside a card · `paper` a warm card. None of them carries a pattern or a shadow.
+   * `mat` the desk (opaque graph paper, the only thing that may scroll over a stage) · `graph` a framed
+   * piece of mat · `well` a sunk area · `paper` printed matter.
    */
   variant: PanelVariant;
-  /** Retired: panels have no decorated edges. Accepted so older callers keep compiling. */
-  edge?: 'pinked-t' | 'pinked-l' | 'none';
+  /** The pinked edge on the side that faces a stage (`mat` only). */
+  edge?: keyof typeof EDGE;
   as?: ElementType;
 };
 
-export function Panel({ variant, edge: _edge, as = 'div', className, ...rest }: PanelProps) {
+export function Panel({ variant, edge = 'none', as = 'div', className, ...rest }: PanelProps) {
   const Comp = looseTag(as);
-  return <Comp className={cn(VARIANT[variant], className)} {...rest} />;
+  return <Comp className={cn(VARIANT[variant], EDGE[edge], className)} {...rest} />;
 }

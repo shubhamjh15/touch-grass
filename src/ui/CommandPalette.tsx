@@ -44,13 +44,13 @@ function PaletteBody({
       loop
       className="flex min-h-0 flex-1 flex-col"
     >
-      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-5">
-        <Search size={20} strokeWidth={1.75} aria-hidden="true" className="shrink-0 text-ink-3" />
+      <div className="flex h-14 shrink-0 items-center gap-3 border-b-[1.5px] border-ink px-4">
+        <Search size={20} strokeWidth={2.25} aria-hidden="true" className="shrink-0 text-ink-3" />
         <Command.Input
           value={query}
           onValueChange={onQueryChange}
           placeholder={placeholder}
-          className="h-full min-w-0 flex-1 bg-transparent text-body shadow-none outline-hidden placeholder:text-ink-4"
+          className="h-full min-w-0 flex-1 bg-transparent text-lead shadow-none outline-hidden placeholder:text-ink-4"
         />
         {desktop ? <Kbd>Esc</Kbd> : null}
       </div>
@@ -66,7 +66,7 @@ function PaletteBody({
         {children}
       </Command.List>
       {desktop ? (
-        <div className="flex h-10 shrink-0 items-center gap-4 border-t border-line px-5 text-body-sm text-ink-3">
+        <div className="flex h-10 shrink-0 items-center gap-4 border-t-[1.5px] border-ink px-4 type-slug text-ink-3">
           <span className="flex items-center gap-1.5">
             <Kbd aria-label="Up arrow">
               <ArrowUp size={12} strokeWidth={2.5} aria-hidden="true" />
@@ -133,7 +133,7 @@ export function CommandPalette({
         <Dialog.Content
           {...focusReturn}
           aria-describedby={undefined}
-          className="fixed top-[18vh] left-1/2 z-(--z-palette) flex w-[min(100vw-32px,640px)] -translate-x-1/2 flex-col overflow-hidden rounded-lg border-2 border-ink bg-card text-ink shadow-4 outline-hidden data-[state=closed]:animate-peel data-[state=open]:animate-stick"
+          className="fixed top-[18vh] left-1/2 z-(--z-palette) flex w-[min(100vw-32px,640px)] -translate-x-1/2 flex-col overflow-hidden rounded-xl border-4 border-ink bg-card text-ink shadow-5 outline-hidden data-[state=closed]:animate-peel data-[state=open]:animate-stick"
         >
           <Dialog.Title className="sr-only">{label}</Dialog.Title>
           <PaletteBody
@@ -150,7 +150,7 @@ export function CommandPalette({
 }
 
 export type CommandGroupProps = Omit<ComponentProps<typeof Command.Group>, 'heading'> & {
-  /** Group heading: "Log", "Go to". */
+  /** Mono group heading: "LOG", "GO TO". */
   heading: string;
 };
 
@@ -159,7 +159,7 @@ export function CommandGroup({ heading, className, ...rest }: CommandGroupProps)
     <Command.Group
       heading={heading}
       className={cn(
-        '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-body-sm [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-ink-3',
+        '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:type-slug [&_[cmdk-group-heading]]:text-ink-3',
         className,
       )}
       {...rest}
@@ -170,17 +170,17 @@ export function CommandGroup({ heading, className, ...rest }: CommandGroupProps)
 export type CommandItemProps = Omit<ComponentProps<typeof Command.Item>, 'children'> & {
   /** A 24 px sticker or a 20 px icon. */
   leading?: ReactNode;
-  /** A value, `Tag` or `Kbd` hints on the right. */
+  /** Mono value, `Tag` or `Kbd` hints on the right. */
   trailing?: ReactNode;
   children: ReactNode;
 };
 
-/** One result row. Selected = a mint tint, bold, and an ink bar on the left (never colour alone). */
+/** One result row. Selected = yellow tint, bold, and a 4 px ink bar on the left (never colour alone). */
 export function CommandItem({ leading, trailing, className, children, ...rest }: CommandItemProps) {
   return (
     <Command.Item
       className={cn(
-        'relative flex h-11 cursor-pointer items-center gap-3 rounded-sm px-3 text-body text-ink select-none before:absolute before:inset-y-1.5 before:left-0 before:w-1 before:rounded-pill before:bg-ink before:opacity-0 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:text-ink-4 data-[selected=true]:bg-mat-deep data-[selected=true]:font-bold data-[selected=true]:before:opacity-100',
+        'relative flex h-11 cursor-pointer items-center gap-3 rounded-sm px-3 text-body text-ink select-none before:absolute before:inset-y-1.5 before:left-0 before:w-1 before:rounded-pill before:bg-ink before:opacity-0 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:text-ink-4 data-[selected=true]:bg-yellow-tint data-[selected=true]:font-bold data-[selected=true]:before:opacity-100',
         className,
       )}
       {...rest}
@@ -188,7 +188,7 @@ export function CommandItem({ leading, trailing, className, children, ...rest }:
       {leading ? <span className="grid w-6 shrink-0 place-items-center">{leading}</span> : null}
       <span className="min-w-0 flex-1 truncate">{children}</span>
       {trailing ? (
-        <span className="flex shrink-0 items-center gap-1.5 text-body-sm font-medium text-ink-2 tabular-nums">
+        <span className="flex shrink-0 items-center gap-1.5 font-mono text-data font-medium text-ink-2">
           {trailing}
         </span>
       ) : null}

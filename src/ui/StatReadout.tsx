@@ -9,15 +9,15 @@ import { HonestyMark } from './HonestyMark';
 import { NumberTicker } from './NumberTicker';
 
 const FIGURE = {
-  md: 'text-h2',
-  lg: 'text-h1',
+  md: 'text-display-sm',
+  lg: 'text-display-md',
   hero: 'text-display-xl',
 } as const;
 
 const DELTA_ICON = { up: ArrowUp, down: ArrowDown, flat: Minus } as const;
 
 export type StatReadoutProps = Omit<ComponentProps<'div'>, 'children'> & {
-  /** What the number is, in plain words. It sits under the figure. */
+  /** The key, set as a mono slug above the figure. */
   label: string;
   /** A number rolls like an odometer; a string is printed as is. */
   value: number | string;
@@ -34,7 +34,7 @@ export type StatReadoutProps = Omit<ComponentProps<'div'>, 'children'> & {
   size?: keyof typeof FIGURE;
 };
 
-/** One number and what it means. A screen shows three at most. */
+/** A key and one proud figure. Group readouts in a single Ticket, never as separate coloured cards. */
 export function StatReadout({
   label,
   value,
@@ -53,23 +53,39 @@ export function StatReadout({
 
   return (
     <div className={cn('min-w-0 text-left', className)} {...rest}>
+      <p className="type-slug text-ink-3">{label}</p>
       {notEstimated ? (
-        <p className="text-body font-semibold text-ink-3">Not estimated</p>
+        <p className="mt-1.5 text-body font-semibold text-ink-3">Not estimated</p>
       ) : (
-        <p className="flex flex-wrap items-baseline gap-x-1.5">
-          {source ? <HonestyMark source={source} className="mr-0.5 self-center" /> : null}
-          <span className={cn('type-figure whitespace-nowrap', FIGURE[size])}>
+        <p className="mt-1.5 flex flex-wrap items-baseline gap-x-1">
+          {source ? <HonestyMark source={source} className="mr-1 self-center" /> : null}
+          <span
+            className={cn(
+              'type-figure whitespace-nowrap',
+              FIGURE[size],
+              source?.kind === 'ai' &&
+                'underline decoration-dotted decoration-2 underline-offset-4',
+            )}
+          >
             {estimate && !source ? <Approx /> : null}
             {estimate && source ? <span className="sr-only">approximately </span> : null}
             {typeof value === 'number' ? <NumberTicker value={value} format={format} /> : value}
           </span>
-          {unit ? <span className="text-body-sm font-semibold text-ink-2">{unit}</span> : null}
+          {unit ? (
+            <span
+              className={cn(
+                'font-semibold',
+                size === 'hero' ? 'text-body' : 'text-[0.75rem] lg:text-caption',
+              )}
+            >
+              {unit}
+            </span>
+          ) : null}
         </p>
       )}
-      <p className="mt-1 text-body-sm text-ink-2">{label}</p>
       {delta && DeltaIcon ? (
-        <p className="mt-1 flex items-center gap-1 text-body-sm text-ink-2">
-          <DeltaIcon size={16} strokeWidth={2} aria-hidden="true" />
+        <p className="mt-1.5 flex items-center gap-1 font-mono text-data text-ink-2">
+          <DeltaIcon size={16} strokeWidth={2.25} aria-hidden="true" />
           {delta.text}
         </p>
       ) : null}

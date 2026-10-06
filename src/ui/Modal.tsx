@@ -30,8 +30,8 @@ export interface ModalProps {
 }
 
 /**
- * A dialog over a plain scrim. Focus is trapped and returns to the trigger; Esc closes. Below `md`
- * every Modal renders as a bottom Sheet.
+ * A dialog pressed onto the page over the halftone scrim. Focus is trapped and returns to the
+ * trigger; Esc closes. Below `md` every Modal renders as a bottom Sheet.
  */
 export function Modal({
   open,
@@ -73,25 +73,25 @@ export function Modal({
           {...focusReturn}
           {...(description ? {} : { 'aria-describedby': undefined })}
           className={cn(
-            'fixed top-1/2 left-1/2 z-(--z-modal) max-h-[88dvh] w-[min(100vw-32px,var(--w))] -translate-x-1/2 -translate-y-1/2 overflow-auto overscroll-contain rounded-lg border-2 border-ink bg-card p-6 text-ink shadow-4 outline-hidden data-[state=closed]:animate-peel data-[state=open]:animate-stick',
+            'fixed top-1/2 left-1/2 z-(--z-modal) max-h-[88dvh] w-[min(100vw-32px,var(--w))] -translate-x-1/2 -translate-y-1/2 overflow-auto overscroll-contain rounded-xl border-4 border-ink bg-card p-6 text-ink shadow-5 outline-hidden data-[state=closed]:animate-peel data-[state=open]:animate-stick',
             WIDTH[size],
             className,
           )}
         >
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <Dialog.Title className="text-h2">{title}</Dialog.Title>
+              <Dialog.Title className="text-h3">{title}</Dialog.Title>
               {description ? (
-                <Dialog.Description className="mt-1.5 text-body text-ink-2">
+                <Dialog.Description className="mt-1.5 text-body-sm text-ink-2">
                   {description}
                 </Dialog.Description>
               ) : null}
             </div>
             <Dialog.Close asChild>
-              <IconButton label="Close" icon={X} variant="ghost" size="sm" tooltipSide={null} />
+              <IconButton label="Close" icon={X} size="sm" tooltipSide={null} />
             </Dialog.Close>
           </div>
-          {children ? <div className="mt-5">{children}</div> : null}
+          {children ? <div className="mt-4">{children}</div> : null}
           {footer ? <div className="mt-6 flex flex-wrap justify-end gap-3">{footer}</div> : null}
         </Dialog.Content>
       </Dialog.Portal>
