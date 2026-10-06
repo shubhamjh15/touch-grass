@@ -4,7 +4,6 @@
  */
 import {
   ACTION_SOURCE_ROWS,
-  CONFIDENCE_LEVELS,
   SOURCE_ROWS,
   contentSourceRows,
   type ActionSourceRow,
@@ -248,7 +247,3 @@ export function demoEstimate(): {
     },
   };
 }
-
-export const CONFIDENCE_ORDER: readonly FactorConfidence[] = CONFIDENCE_LEVELS.map(
-  (level) => level.id,
-);
