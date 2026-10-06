@@ -99,6 +99,7 @@ function shutter(el: HTMLDivElement | null): void {
 
 function ExploreDialog() {
   const dialog = useRef<HTMLDialogElement>(null);
+  const close = useRef<HTMLButtonElement>(null);
   const leads = useWorldStore((state) => state.exploreLandmark);
   const ready = useWorldStore((state) => state.status === 'ready');
   const props = useWorldStore((state) => state.snapshot.props);
@@ -117,6 +118,8 @@ function ExploreDialog() {
       if (typeof el.showModal === 'function') el.showModal();
       else el.setAttribute('open', '');
     }
+    // Start on Close: Enter or Escape leaves at once, Tab walks on to the controls.
+    close.current?.focus({ preventScroll: true });
     return () => {
       if (el.open && typeof el.close === 'function') el.close();
       if (opener?.isConnected) opener.focus({ preventScroll: true });
@@ -196,6 +199,7 @@ function ExploreDialog() {
             </details>
           </div>
           <button
+            ref={close}
             type="button"
             className={cn(ROUND, 'pointer-events-auto w-auto gap-2 px-4 text-body-sm font-bold')}
             onClick={() => {

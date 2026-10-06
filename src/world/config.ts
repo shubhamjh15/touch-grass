@@ -526,8 +526,8 @@ export const ORBIT = {
   freeTilt: [deg(-9), deg(42)],
   zoom: [0.42, 1.35],
   /** Where Explore starts and where its reset button returns to. */
-  exploreZoom: 0.86,
-  exploreTilt: deg(7),
+  exploreZoom: 1,
+  exploreTilt: deg(5),
 } as const;
 
 /** Runtime adaptation of the `auto` preference: resolution first, then the tier. */
