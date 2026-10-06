@@ -52,7 +52,7 @@
 <p align="center">
   <img src="docs/readme/log-receipt.webp" width="32%" alt="The Log page just after an action was stuck on: leaves burst from the tree and a receipt reads Stuck. Fern grew. About 1 kg CO2e, plus 25 XP, ring closed, with an Undo button.">
   <img src="docs/readme/planet.webp" width="32%" alt="The Impact page, The planet now: global temperature plus 1.4 degrees Celsius, CO2 in the air 428 ppm, CO2 per person 4.7 tonnes a year, each marked Live with its source.">
-  <img src="docs/readme/passport.webp" width="32%" alt="The Me page: a tree passport for Fern, an oak at day 200, with its growth rings, and the first row of badges.">
+  <img src="docs/readme/passport.webp" width="32%" alt="The Me page: a tree passport for Fern, an oak at day 200, with a disc of 167 growth rings, above tabs for Badges, Island, Settings and Data.">
 </p>
 <p align="center"><sub>Landing · Today · Explore · Log · Impact · Me. Click any picture to see it full size.</sub></p>
 
@@ -438,7 +438,7 @@ In a development build, `window.__game.help()` in the browser console lists time
 | Unit and component tests | 2,141 tests in 114 files, counted with `npx vitest list` on 7 October 2026 |
 | A year in a test | Three simulated users (lazy, typical, power) are played through a whole year; growth must never shrink on any day |
 | Claims test | Every number printed in a lesson, myth or fact must have a claim with a source, or the suite fails |
-| Responsive sweep | 14 pages at ten widths from 320 to 1,920 px, in four saved states: 0 issues |
+| Responsive sweep | 14 pages at ten widths from 320 to 1,920 px, in four saved states. The last full sweep, on 6 October 2026, found 0 issues |
 | End-to-end | Playwright, on a desktop and a phone profile, against a production build |
 | Types and lint | TypeScript in strict mode, ESLint, Prettier |
 
