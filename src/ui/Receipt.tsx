@@ -17,9 +17,14 @@ export type ReceiptProps = Omit<ComponentProps<'div'>, 'title' | 'children'> & {
   total?: ReceiptRow;
 };
 
-function Line({ label, value, strong = false }: ReceiptRow & { strong?: boolean }) {
+function Line({
+  label,
+  value,
+  strong = false,
+  className,
+}: ReceiptRow & { strong?: boolean; className?: string }) {
   return (
-    <div className={cn('flex items-baseline gap-1.5', strong && 'font-semibold')}>
+    <div className={cn('flex items-baseline gap-1.5', strong && 'font-semibold', className)}>
       <dt className="min-w-0 truncate">{label}</dt>
       <span
         aria-hidden="true"
@@ -48,9 +53,9 @@ export function Receipt({ title, meta, rows, total, className, ...rest }: Receip
           <Line key={row.label} {...row} />
         ))}
         {total ? (
-          <div className="mt-2 border-t-2 border-dashed border-ink pt-2">
-            <Line {...total} strong />
-          </div>
+          // One div per term and definition: a wrapper around the line would nest a div in a div,
+          // which a description list does not allow.
+          <Line {...total} strong className="mt-2 border-t-2 border-dashed border-ink pt-2" />
         ) : null}
       </dl>
     </div>
