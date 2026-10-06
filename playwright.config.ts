@@ -23,7 +23,7 @@ export default defineConfig({
   // The scene is software-rendered and several engineers share the machine: two browsers at a time.
   workers: 2,
   reporter: process.env.CI ? 'github' : 'list',
-  timeout: 90_000,
+  timeout: 120_000,
   expect: { timeout: 15_000 },
   use: {
     baseURL: `http://localhost:${PORT}`,

@@ -18,6 +18,7 @@ export const NEXT_MORNING = '2026-10-07T09:00:00+05:30';
  * context must fall back to the illustrated tree without complaint.
  */
 const NO_WEBGL = `(() => {
+  if ('__glAsked' in window) return;
   const asked = [];
   Object.defineProperty(window, '__glAsked', { value: asked });
   const wrap = (proto) => {
@@ -34,16 +35,40 @@ const NO_WEBGL = `(() => {
   if (typeof OffscreenCanvas !== 'undefined') wrap(OffscreenCanvas.prototype);
 })();`;
 
-/** Real WebGL, with a record of every context the page created. */
+/**
+ * Real WebGL, with a record of every context the page created (`__glContexts`, and their
+ * kinds in `__glMade`) and a count of every draw call (`__glDraws`), so a spec can tell
+ * whether the scene is rendering without asking the app.
+ */
 const COUNT_WEBGL = `(() => {
+  if ('__glMade' in window) return;
   const made = [];
+  const contexts = [];
   Object.defineProperty(window, '__glMade', { value: made });
+  Object.defineProperty(window, '__glContexts', { value: contexts });
+  const counter = { draws: 0 };
+  Object.defineProperty(window, '__glDraws', { get: () => counter.draws });
   const original = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (type, ...rest) {
     const context = original.call(this, type, ...rest);
-    if (context && /webgl/i.test(String(type))) made.push(String(type));
+    if (context && /webgl/i.test(String(type))) {
+      made.push(String(type));
+      contexts.push(context);
+    }
     return context;
   };
+  const count = (proto) => {
+    for (const name of ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) {
+      const fn = proto[name];
+      if (typeof fn !== 'function') continue;
+      proto[name] = function (...args) {
+        counter.draws += 1;
+        return fn.apply(this, args);
+      };
+    }
+  };
+  if (typeof WebGL2RenderingContext !== 'undefined') count(WebGL2RenderingContext.prototype);
+  if (typeof WebGLRenderingContext !== 'undefined') count(WebGLRenderingContext.prototype);
 })();`;
 
 export interface Health {
