@@ -80,6 +80,8 @@ export function CoachDrawer() {
           side={desktop ? 'right' : 'bottom'}
           modal={!desktop}
           tall
+          // Beside the page, under the top bar: the HUD, search and the tree stay reachable.
+          className={desktop ? 'top-24' : undefined}
           title="Moss"
           description="Your coach. It can be wrong; estimates link to their sources."
           bodyClassName="flex min-h-0 flex-col overflow-hidden p-0"

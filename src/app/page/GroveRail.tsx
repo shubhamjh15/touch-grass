@@ -13,9 +13,7 @@ import { ROUTES } from '../routes';
  */
 export function GroveRail() {
   const tree = useTreeStatus();
-  const meta = [tree.stage, `day ${formatNumber(tree.dayNumber)}`, tree.vitalityLabel]
-    .join(' · ')
-    .toUpperCase();
+  const meta = [tree.stage, `day ${formatNumber(tree.dayNumber)}`].join(' · ').toUpperCase();
 
   return (
     <aside aria-label="Your grove" className="sticky top-28 grid gap-3">

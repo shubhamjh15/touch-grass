@@ -110,7 +110,7 @@ const DIVIDER = 'border-l-2 border-dashed border-ink';
 /**
  * The desktop HUD: a strip of paper stubs in the top bar. Level and XP, the streak with its rain
  * clouds, and the lifetime estimate with its honesty mark. Level and streak show from `lg`; the
- * estimate joins at `xl`.
+ * estimate joins at 1440 px.
  */
 export function Hud({ className }: { className?: string }) {
   const hud = useHud();
@@ -159,8 +159,8 @@ export function Hud({ className }: { className?: string }) {
             className={cn(
               CELL,
               DIVIDER,
-              'cursor-pointer xl:rounded-none',
-              'max-xl:rounded-r-[7px]',
+              'cursor-pointer min-[1440px]:rounded-none',
+              'max-[1439px]:rounded-r-[7px]',
             )}
             data-hud-cell="streak"
           >
@@ -181,7 +181,10 @@ export function Hud({ className }: { className?: string }) {
         <StreakDetails hud={hud} />
       </Popover>
 
-      <div className={cn(CELL, DIVIDER, 'hidden rounded-r-[7px] xl:flex')} data-hud-cell="kg">
+      <div
+        className={cn(CELL, DIVIDER, 'hidden rounded-r-[7px] min-[1440px]:flex')}
+        data-hud-cell="kg"
+      >
         <HonestyMark source={totalSource()} size="sm" />
         <UiLink
           href={ROUTES.impact}

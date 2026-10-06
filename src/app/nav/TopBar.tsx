@@ -76,7 +76,7 @@ function TopLink({
 
 /**
  * The desktop top bar (`lg` and up): logo, the six destinations, the HUD, and the palette,
- * coach and tree buttons. Between `lg` and `xl` Impact and Community fold into a More menu.
+ * coach and tree buttons. Below 1440 px Impact and Community fold into a More menu.
  */
 export function TopBar({ section }: { section: RouteId }) {
   const profile = useProfile();
@@ -95,10 +95,10 @@ export function TopBar({ section }: { section: RouteId }) {
             href={item.href}
             label={item.label}
             current={item.id === section}
-            className={index >= TOP_LINKS_COMPACT ? 'hidden xl:inline-flex' : undefined}
+            className={index >= TOP_LINKS_COMPACT ? 'hidden min-[1440px]:inline-flex' : undefined}
           />
         ))}
-        <span className="xl:hidden">
+        <span className="min-[1440px]:hidden">
           <DropdownMenu
             label="More pages"
             align="start"
