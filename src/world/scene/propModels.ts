@@ -266,9 +266,10 @@ function compost(): PropModel {
   kit.ball(0.05, C.tomato, { at: [0.07, 0.35, 0.05], scale: [1, 0.7, 1] }, 0);
   kit.ball(0.06, C.lime, { at: [-0.08, 0.345, -0.03], scale: [1.2, 0.4, 0.8] }, 0);
   kit.ball(0.045, C.orange, { at: [-0.02, 0.35, 0.11], scale: [1, 0.5, 1.3] }, 0);
-  // The lid stands open at the back.
-  kit.rbox(0.52, 0.035, 0.5, 0.015, C.moss, { at: [0, 0.57, -0.3], rot: [-1.25, 0, 0] });
-  kit.ball(0.03, C.ink, { at: [0, 0.6, -0.28] }, 0);
+  // The lid leans open against the back of the crate.
+  kit.rbox(0.5, 0.03, 0.46, 0.014, C.green, { at: [0, 0.6, -0.33], rot: [-1.85, 0, 0] });
+  kit.rbox(0.5, 0.036, 0.06, 0.012, C.moss, { at: [0, 0.8, -0.39], rot: [-1.85, 0, 0] });
+  kit.rbox(0.16, 0.03, 0.03, 0.01, C.kraftDark, { at: [0, 0.62, -0.3] });
   return { body: kit.build(), height: 0.85 };
 }
 

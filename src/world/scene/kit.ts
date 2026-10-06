@@ -22,6 +22,8 @@ export interface Place {
   scale?: Vec3 | number;
   /** The part sways: `aTip` runs 0 at this height to 1 at the second one. */
   sway?: readonly [number, number];
+  /** A fixed `aTip` for the whole part (a wing that flaps, say). */
+  tip?: number;
 }
 
 const matrix = new THREE.Matrix4();
@@ -36,7 +38,7 @@ export class Kit {
 
   /** Adds any geometry, painted and placed. The geometry is consumed. */
   add(source: THREE.BufferGeometry, hex: string, place: Place = {}): this {
-    const { at = [0, 0, 0], rot = [0, 0, 0], scale = 1, sway } = place;
+    const { at = [0, 0, 0], rot = [0, 0, 0], scale = 1, sway, tip = 0 } = place;
     // Some of three's primitives are indexed and some are not: merge them all unindexed.
     const geometry = source.index ? source.toNonIndexed() : source;
     if (geometry !== source) source.dispose();
@@ -57,6 +59,8 @@ export class Kit {
       if (sway) {
         const share = (points.getY(i) - sway[0]) / Math.max(1e-4, sway[1] - sway[0]);
         tips[i] = Math.min(1, Math.max(0, share));
+      } else {
+        tips[i] = tip;
       }
     }
     geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3));
