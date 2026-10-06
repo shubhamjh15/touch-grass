@@ -44,7 +44,10 @@ export function PageSection({
           {lead ? <p className="max-w-prose text-body-sm text-ink-2">{lead}</p> : null}
         </div>
         {seeAll ? (
-          <TextLink href={seeAll.href} className="shrink-0 text-body-sm font-semibold">
+          <TextLink
+            href={seeAll.href}
+            className="hit-3 inline-flex shrink-0 items-center text-body-sm font-semibold"
+          >
             {seeAll.label ?? 'See all'}
           </TextLink>
         ) : (

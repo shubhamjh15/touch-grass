@@ -84,17 +84,19 @@ function MarketingFooter() {
           <ColorBar size="sm" />
         </div>
         <nav aria-label="Footer">
-          <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-body-sm font-semibold">
+          <ul className="flex flex-wrap items-center gap-x-5 gap-y-4 text-body-sm font-semibold">
             {FOOTER_LINKS.map((link) => (
               <li key={link.href}>
-                <TextLink href={link.href}>{link.label}</TextLink>
+                <TextLink href={link.href} className="hit-3">
+                  {link.label}
+                </TextLink>
               </li>
             ))}
             <li>
               <TextLink
                 href={BRAND.repoUrl}
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5"
+                className="hit-3 inline-flex items-center gap-1.5"
               >
                 <Github size={16} strokeWidth={2.4} aria-hidden="true" />
                 GitHub
