@@ -54,11 +54,6 @@ export function opensOn(opens: readonly LearnOpen[], day: DayKey): readonly Lear
   return openIndex(opens).get(day) ?? EMPTY;
 }
 
-/** Days that have at least one log, in ascending order. */
-export const loggedDays = memo((logs: readonly LogEntry[]): readonly DayKey[] =>
-  [...logIndex(logs).keys()].sort(),
-);
-
 export interface LifetimeLogStats {
   logs: number;
   rewardedActs: number;

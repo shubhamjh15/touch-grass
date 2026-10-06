@@ -369,14 +369,6 @@ export function rotationInput(state: Pick<GameState, 'profile' | 'settings'>): R
   };
 }
 
-// ── Periods, progress and claims ────────────────────────────────────────────
-
-export function questDef(kind: QuestKind, questId: string): QuestDef | EpicDef | undefined {
-  if (kind === 'daily') return DAILY_QUEST_BY_ID.get(questId);
-  if (kind === 'weekly') return WEEKLY_QUEST_BY_ID.get(questId);
-  return EPIC_BY_ID.get(questId);
-}
-
 /** The Monday-to-Sunday days of a week key such as `W2026-10-05`. */
 export function daysOfWeek(week: WeekKey): DayKey[] {
   const monday = week.slice(1);
