@@ -82,6 +82,7 @@ export function useDemo(onLand: (action: DemoAction, status: DemoStatus) => void
   const firstAction = useRef<DemoAction | null>(null);
   const flightsRef = useRef<readonly DemoFlight[]>([]);
   const flightSeq = useRef(0);
+  const landedFlights = useRef(new Set<number>());
   const flashTimer = useRef<number | null>(null);
   const onLandRef = useRef(onLand);
   useEffect(() => {
@@ -183,13 +184,18 @@ export function useDemo(onLand: (action: DemoAction, status: DemoStatus) => void
 
   const landFlight = useCallback(
     (key: number) => {
+      // A flight reports its landing twice (its timer, then the end of its animation): count one.
+      if (landedFlights.current.has(key)) return;
       const flight = flightsRef.current.find((entry) => entry.key === key);
-      if (flight) land(flight.action);
+      if (!flight) return;
+      landedFlights.current.add(key);
+      land(flight.action);
     },
     [land],
   );
 
   const endFlight = useCallback((key: number) => {
+    landedFlights.current.delete(key);
     flightsRef.current = flightsRef.current.filter((entry) => entry.key !== key);
     setFlights(flightsRef.current);
   }, []);
