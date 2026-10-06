@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AiClient } from '@/ai';
+import { PageHeader } from '@/app/shell';
 import { CATEGORY_IDS } from '@/data/catalogue';
 import {
   exportFileName,
@@ -12,7 +13,6 @@ import {
   gameStore,
   useActionStates,
   useProfile,
-  useTreeStatus,
   type LogResult,
   type LogSource,
   type SavedCustomAction,
@@ -24,14 +24,12 @@ import {
   CATEGORY_ICON,
   ConfirmDialog,
   EmptyState,
-  Marquee,
   SearchInput,
   TabPanel,
   Tabs,
   toast,
   type TabItem,
 } from '@/ui';
-import { WorldStage } from '@/world';
 import { CustomFlow, type CustomStickJob } from './components/CustomFlow';
 import { useLogMoment } from './components/LogMoment';
 import { MyActions } from './components/MyActions';
@@ -115,7 +113,6 @@ export interface LogScreenProps {
 export function LogScreen({ aiClient }: LogScreenProps) {
   const states = useActionStates();
   const profile = useProfile();
-  const tree = useTreeStatus();
   const tiles = useMemo(() => tileStates(states), [states]);
 
   const [tab, setTab] = useState<LogTab>('for-you');
@@ -254,29 +251,24 @@ export function LogScreen({ aiClient }: LogScreenProps) {
     tab === 'for-you' ? COPY.tabs.forYou : `${CATEGORY[tab].label} · ${COPY.sheet.label}`;
 
   return (
-    <div className="mx-auto w-full max-w-[1040px] px-4 pt-4 pb-32 md:px-6 lg:pt-6 lg:pb-16">
-      <header className="flex items-end justify-between gap-3">
-        <Marquee
-          slug={COPY.slug(ACTION_COUNT, CATEGORY_IDS.length)}
-          title={COPY.title}
-          lead={COPY.lead(profile.treeName)}
-        />
-        <div data-log-stage="" className="shrink-0 lg:hidden">
-          <WorldStage mode="companion" label={tree.sceneLabel} className="size-28" />
-        </div>
-      </header>
+    <div>
+      <PageHeader
+        slug={COPY.slug(ACTION_COUNT, CATEGORY_IDS.length)}
+        title={COPY.title}
+        lead={COPY.lead(profile.treeName)}
+      />
 
-      <div className="mt-5 lg:grid lg:grid-cols-[minmax(0,1fr)_336px] lg:items-start lg:gap-8">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8">
         <div className="min-w-0">
           <div
             ref={sentinel}
             aria-hidden="true"
-            className="h-px [--stick-top:0px] lg:[--stick-top:96px]"
+            className="h-px [--stick-top:0px] lg:[--stick-top:86px]"
           />
           <div
             data-stuck={stuck || undefined}
             className={cn(
-              'sticky top-0 z-(--z-sticky) -mx-4 px-4 py-2 md:-mx-6 md:px-6 lg:top-24 lg:mx-0 lg:px-0',
+              'sticky top-0 z-(--z-sticky) -mx-4 px-4 py-2 md:-mx-6 md:px-6 lg:top-[86px] lg:mx-0 lg:px-0',
               // The backing reaches down behind the tab strip, which sticks right under the field.
               'after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-[50px] after:border-b-[1.5px] after:border-transparent',
               'data-stuck:bg-mat data-stuck:after:border-ink data-stuck:after:bg-mat',
@@ -297,7 +289,7 @@ export function LogScreen({ aiClient }: LogScreenProps) {
             tabs={tabs}
             aria-label={COPY.tabs.label}
             className="mt-1.5"
-            listClassName="sticky! top-[58px] z-(--z-sticky) lg:top-[154px]"
+            listClassName="sticky! top-[58px] z-(--z-sticky) lg:top-[144px] lg:[&_[role=tab]]:px-2.5"
           >
             <TabPanel value={SEARCH_TAB} className="p-2 md:p-3">
               {results.length > 0 ? (
@@ -341,12 +333,17 @@ export function LogScreen({ aiClient }: LogScreenProps) {
             ))}
           </Tabs>
 
-          <div className="mt-6 flex items-center justify-between gap-3 rounded-lg dieline px-4 py-3">
+          <div className="mt-6 flex flex-col gap-3 rounded-lg dieline px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="min-w-0">
               <span className="block text-h4">{COPY.custom.slotTitle}</span>
               <span className="mt-0.5 block text-body-sm text-ink-2">{COPY.custom.slotBody}</span>
             </p>
-            <Button variant="neutral" icon={Plus} onClick={() => openCustom()}>
+            <Button
+              variant="neutral"
+              icon={Plus}
+              className="shrink-0 self-start sm:self-auto"
+              onClick={() => openCustom()}
+            >
               {COPY.custom.slotButton}
             </Button>
           </div>

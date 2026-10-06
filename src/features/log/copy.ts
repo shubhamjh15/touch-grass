@@ -55,7 +55,7 @@ export const COPY = {
   },
   custom: {
     slotTitle: 'Something else?',
-    slotBody: 'Log a custom action.',
+    slotBody: 'Describe it in a few words and get an honest estimate.',
     slotButton: 'Log a custom action',
     title: 'Log a custom action',
     whatLabel: 'What did you do?',
@@ -135,7 +135,7 @@ export const COPY = {
   quick: {
     stick: 'Stick it on',
     amount: 'How much?',
-    custom: 'Custom',
+    custom: 'Other',
     amountLabel: 'Amount',
     less: 'Less',
     more: 'More',

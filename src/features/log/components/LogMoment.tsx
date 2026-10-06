@@ -43,23 +43,15 @@ export interface LaunchOptions {
   commit: () => void;
 }
 
-const STAGE_SELECTOR = '[data-log-stage]';
-
 /**
- * Where the sticker lands: the point the world offers on the crown, or, when the tree is
- * scrolled out of view, the edge of the screen in the direction of the page's own stage.
+ * Where the sticker lands: the point the world offers on the crown or, when the tree is
+ * scrolled out of view on a phone (its sticker sits at the top right of the page header), the
+ * top edge of the screen above where the tree would be.
  */
-function landingPoint(): Point | null {
+function landingPoint(): Point {
   const onTree = getStickingPoint();
   if (onTree) return onTree;
-  const stage = document.querySelector(STAGE_SELECTOR);
-  if (!stage) return null;
-  const rect = stage.getBoundingClientRect();
-  if (rect.width === 0 || rect.height === 0) return null;
-  return {
-    x: rect.left + rect.width / 2,
-    y: Math.max(-SIZE, Math.min(window.innerHeight + SIZE, rect.top + rect.height * 0.4)),
-  };
+  return { x: Math.max(SIZE, window.innerWidth - 72), y: -SIZE };
 }
 
 /** A point on the quadratic arc from `from` to `to` whose control point is lifted above the middle. */

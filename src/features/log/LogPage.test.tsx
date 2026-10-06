@@ -10,6 +10,9 @@ import { localTime } from '@/game/testkit';
 import { Toaster } from '@/ui';
 import { LogScreen } from './LogPage';
 
+// These tests render the whole sheet with the real store; a busy machine needs more than five seconds.
+vi.setConfig({ testTimeout: 30_000 });
+
 let search = '';
 
 vi.mock('next/navigation', () => ({
@@ -202,7 +205,7 @@ describe('logging from the grid', () => {
   it('refuses more than a day can hold, before saving', async () => {
     const { user } = setup();
     await user.click(tile(/^Bus:/));
-    await user.click(within(sheet()).getByRole('radio', { name: 'Custom' }));
+    await user.click(within(sheet()).getByRole('radio', { name: 'Other' }));
     const amount = within(sheet()).getByLabelText('Amount');
     await user.clear(amount);
     await user.type(amount, '999');

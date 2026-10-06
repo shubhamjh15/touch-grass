@@ -27,7 +27,6 @@ import {
   HonestyMark,
   IconButton,
   Ledger,
-  ListRow,
   Receipt,
   SectionHeading,
   Sticker,
@@ -93,62 +92,61 @@ function LogRow({
   const tile = tileFor(log.actionId);
   const title = rowTitle(log);
   const quantified = log.co2eKg !== null && log.estimate !== 'none';
-  return (
-    <ListRow
-      className="animate-stick"
-      leading={
-        <Sticker
-          category={log.category}
-          icon={tile?.icon ?? CATEGORY_ICON[log.category]}
-          size={32}
-          rotate={-3}
-        />
-      }
-      title={title}
-      meta={rowMeta(log, system)}
-      value={
-        quantified ? (
-          <span className="inline-flex items-center gap-1.5">
-            <HonestyMark source={logEstimateSource(log, system)} size="sm" />
-            <span className="sr-only">approximately </span>
-            <span
-              className={
-                log.estimate === 'ai'
-                  ? 'underline decoration-dotted decoration-2 underline-offset-4'
-                  : undefined
-              }
-            >
-              {formatCo2Estimate(log.co2eKg ?? 0)}
-            </span>
-          </span>
-        ) : (
-          <span className="font-sans text-caption font-semibold text-ink-3">
-            {COPY.ledger.notQuantified}
-          </span>
-        )
-      }
-      trailing={
-        undoable ? (
-          <IconButton
-            label={`${COPY.ledger.undo}: ${title}`}
-            icon={Undo2}
-            size="sm"
-            variant="reward"
-            onClick={() => {
-              play('tap');
-              gameActions.undoLog(log.id);
-            }}
-          />
-        ) : (
-          <IconButton
-            label={`${COPY.ledger.delete}: ${title}`}
-            icon={Trash2}
-            size="sm"
-            onClick={() => onDelete(log)}
-          />
-        )
-      }
+  const action = undoable ? (
+    <IconButton
+      label={`${COPY.ledger.undo}: ${title}`}
+      icon={Undo2}
+      size="sm"
+      variant="reward"
+      onClick={() => {
+        play('tap');
+        gameActions.undoLog(log.id);
+      }}
     />
+  ) : (
+    <IconButton
+      label={`${COPY.ledger.delete}: ${title}`}
+      icon={Trash2}
+      size="sm"
+      onClick={() => onDelete(log)}
+    />
+  );
+  return (
+    <li className="flex animate-stick items-center gap-3 bg-card py-3 pr-2.5 pl-3.5">
+      <Sticker
+        category={log.category}
+        icon={tile?.icon ?? CATEGORY_ICON[log.category]}
+        size={32}
+        rotate={-3}
+        className="shrink-0"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 text-body font-bold break-words">{title}</p>
+        <p className="mt-0.5 font-mono text-data-lg leading-tight">
+          {quantified ? (
+            <span className="inline-flex items-center gap-1.5">
+              <HonestyMark source={logEstimateSource(log, system)} size="sm" />
+              <span className="sr-only">approximately </span>
+              <span
+                className={
+                  log.estimate === 'ai'
+                    ? 'underline decoration-dotted decoration-2 underline-offset-4'
+                    : undefined
+                }
+              >
+                {formatCo2Estimate(log.co2eKg ?? 0)}
+              </span>
+            </span>
+          ) : (
+            <span className="font-sans text-caption font-semibold text-ink-3">
+              {COPY.ledger.notQuantified}
+            </span>
+          )}
+        </p>
+        <p className="mt-1 type-slug leading-[1.35] text-ink-3">{rowMeta(log, system)}</p>
+      </div>
+      {action}
+    </li>
   );
 }
 
@@ -182,7 +180,7 @@ export function TodayLedger() {
   }
 
   return (
-    <section aria-labelledby="stuck-today" data-log-landing="">
+    <section aria-labelledby="stuck-today">
       <SectionHeading
         id="stuck-today-heading"
         title={COPY.ledger.title}
