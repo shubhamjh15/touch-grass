@@ -13,6 +13,8 @@ export const ROUTES = {
   me: '/me',
   methodology: '/methodology',
   privacy: '/privacy',
+  /** Opens the demo world: a grown tree in a sandbox that never touches saved data. */
+  demo: '/demo',
 } as const;
 
 /** Where a prefilled log came from; stored on the log entry. */
@@ -32,6 +34,8 @@ export const PARAMS = {
   touchGrass: 'break',
   /** `?coach=1` on any app route: open the coach drawer (the shell handles and removes it). */
   coach: 'coach',
+  /** `/demo?leave=home|start`: end the demo world and go home, or on to planting a tree. */
+  demoLeave: 'leave',
 } as const;
 
 /** `/log?a=bike-instead-of-car&q=5`: the Log page opens its sheet prefilled; it never logs by itself. */
@@ -40,6 +44,14 @@ export function logLink(actionId: string, qty?: number, source?: LogLinkSource):
   if (qty !== undefined && Number.isFinite(qty) && qty > 0) query.set(PARAMS.logQty, String(qty));
   if (source) query.set(PARAMS.logSource, source);
   return `${ROUTES.log}?${query.toString()}`;
+}
+
+/**
+ * Ends the demo world. `home` lands on the landing page and `start` on the planting flow;
+ * someone who has a tree of their own lands on their Today either way.
+ */
+export function demoLeaveLink(to: 'home' | 'start'): string {
+  return `${ROUTES.demo}?${PARAMS.demoLeave}=${to}`;
 }
 
 /** The custom-action flow of the Log page. */
@@ -79,6 +91,7 @@ export type RouteId =
   | 'me'
   | 'methodology'
   | 'privacy'
+  | 'demo'
   | 'unknown';
 
 export interface RouteInfo {
@@ -147,6 +160,10 @@ export function routeInfo(pathname: string): RouteInfo {
       title: 'Plant your tree',
       section: 'start',
     };
+  }
+  if (path === ROUTES.demo) {
+    // No chrome and no guard: it is the door between the real save and the demo world.
+    return { id: 'demo', shell: 'bare', frame: 'reading', title: 'Demo world', section: 'demo' };
   }
   return { id: 'unknown', shell: 'bare', frame: 'reading', title: 'Not found', section: 'unknown' };
 }

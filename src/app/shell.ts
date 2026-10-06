@@ -28,6 +28,7 @@ export {
   PARAMS,
   ROUTES,
   TOUCH_GRASS_LINK,
+  demoLeaveLink,
   logLink,
   type LogLinkSource,
 } from './routes';
