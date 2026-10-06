@@ -10,6 +10,9 @@ import {
   emitPulse,
   getStickingPoint,
   getWorldStats,
+  measureWorld,
+  onWorldHover,
+  onWorldTap,
   setWorldSnapshot,
   useWorldStore,
   type IslandPropId,
@@ -23,11 +26,13 @@ import {
 } from '@/world';
 
 /**
- * World lab (dev only, /__world). Drives the Grove exactly like the game bridge will:
+ * World lab (dev only, /__world). Drives the world exactly like the game bridge does:
  * `setWorldSnapshot()` plus `<WorldStage>` props. Every control is mirrored in the URL,
  * so a screenshot of any state can be scripted:
  *
  *   /__world?species=cherry&growth=0.6&hour=19&mode=hero&quality=high
+ *   /__world?stage=sapling&vitality=0.5     a growth stage by name, a thirsty tree
+ *   /__world?bare=1                         the stage alone, filling the window (for stills)
  *   /__world?pulse=level-up            fires that pulse about 600 ms after the world is ready
  *   /__world?props=all&landmarks=1     every prop, landmark callouts on
  *   /__world?preview=0.9               the stage previews that growth over the live snapshot
@@ -46,6 +51,30 @@ const PULSES: ReadonlyArray<{ id: string; label: string; pulse: WorldPulse }> = 
   { id: 'celebrate', label: 'Celebrate', pulse: { kind: 'celebrate' } },
 ];
 const INTERACTIVE = ['auto', 'on', 'off'] as const;
+
+/** The seven growth stages a judge can see, with the growth each one starts at. */
+const STAGES = [
+  { id: 'seed', label: 'Seed', growth: 0 },
+  { id: 'sprout', label: 'Sprout', growth: 0.03 },
+  { id: 'seedling', label: 'Seedling', growth: 0.07 },
+  { id: 'sapling', label: 'Sapling', growth: 0.14 },
+  { id: 'young', label: 'Young tree', growth: 0.36 },
+  { id: 'mature', label: 'Mature tree', growth: 0.66 },
+  { id: 'elder', label: 'Elder', growth: 0.95 },
+] as const;
+
+const VITALITIES = [
+  { id: 'thriving', label: 'Thriving', vitality: 1 },
+  { id: 'thirsty', label: 'Thirsty', vitality: 0.5 },
+  { id: 'dormant', label: 'Dormant', vitality: 0 },
+] as const;
+
+const HOURS = [
+  { label: 'Dawn', hour: 6.2 },
+  { label: 'Day', hour: 13 },
+  { label: 'Golden', hour: 18.2 },
+  { label: 'Night', hour: 23 },
+] as const;
 
 const MODES: readonly StageMode[] = ['hero', 'hub', 'companion', 'ceremony'];
 const QUALITIES: readonly WorldPreference[] = ['auto', 'low', 'medium', 'high', 'off'];
@@ -78,6 +107,8 @@ interface LabState {
   /** Growth the stage previews over the live snapshot; negative = no preview. */
   preview: number;
   capture: boolean;
+  /** The stage alone, filling the window: no controls. */
+  bare: boolean;
 }
 
 const DEFAULTS: LabState = {
@@ -101,6 +132,7 @@ const DEFAULTS: LabState = {
   interactive: 'auto',
   preview: -1,
   capture: false,
+  bare: false,
 };
 
 const BOX_CLASS: Record<BoxSize, string> = {
@@ -125,7 +157,12 @@ function readUrl(): LabState {
     query.has(name) ? !['0', 'false', 'off'].includes(query.get(name) ?? '') : fallback;
   return {
     species: oneOf(query.get('species'), SPECIES, DEFAULTS.species),
-    growth: numberIn(query.get('growth'), 0, 1, DEFAULTS.growth),
+    growth: numberIn(
+      query.get('growth'),
+      0,
+      1,
+      STAGES.find((stage) => stage.id === query.get('stage'))?.growth ?? DEFAULTS.growth,
+    ),
     vitality: numberIn(query.get('vitality'), 0, 1, DEFAULTS.vitality),
     age: numberIn(query.get('age') ?? query.get('ageDays'), 0, 100_000, DEFAULTS.age),
     hour: numberIn(query.get('hour'), 0, 24, DEFAULTS.hour),
@@ -149,6 +186,7 @@ function readUrl(): LabState {
     interactive: oneOf(query.get('interactive'), INTERACTIVE, DEFAULTS.interactive),
     preview: numberIn(query.get('preview'), -1, 1, DEFAULTS.preview),
     capture: flag('capture', DEFAULTS.capture),
+    bare: flag('bare', DEFAULTS.bare),
   };
 }
 
@@ -260,8 +298,13 @@ function Readout() {
   const [stats, setStats] = useState<WorldStats>(getWorldStats);
 
   useEffect(() => {
+    // The frame-time sampler is a dev tool: on while the lab is open.
+    measureWorld(true);
     const timer = window.setInterval(() => setStats(getWorldStats()), 400);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+      measureWorld(false);
+    };
   }, []);
 
   const rows: Array<[string, string]> = [
@@ -271,6 +314,10 @@ function Readout() {
     ['triangles', stats.triangles.toLocaleString('en')],
     ['fps', stats.fps.toFixed(0)],
     ['frame', `${stats.frameMs.toFixed(1)} ms`],
+    ['frame p95', `${stats.p95Ms.toFixed(1)} ms`],
+    ['frame worst', `${stats.worstMs.toFixed(1)} ms`],
+    ['script / frame', `${stats.cpuMs.toFixed(2)} ms`],
+    ['buffer', `${stats.bufferWidth} × ${stats.bufferHeight}`],
     ['dpr', stats.dpr.toFixed(2)],
     ['dpr scale', stats.dprScale.toFixed(2)],
     ['shown growth', stats.growth.toFixed(3)],
@@ -396,6 +443,18 @@ export default function WorldLabPage() {
   const status = useWorldStore((state) => state.status);
   const [lastLandmark, setLastLandmark] = useState<LandmarkId | null>(null);
   const [showSticking, setShowSticking] = useState(false);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [tapped, setTapped] = useState<string | null>(null);
+
+  // Hit-testing: the part under the pointer and the last part tapped.
+  useEffect(() => {
+    const stopHover = onWorldHover((hit) => setHovered(hit ? hit.part : null));
+    const stopTap = onWorldTap((hit) => setTapped(hit.part));
+    return () => {
+      stopHover();
+      stopTap();
+    };
+  }, []);
 
   // `?pulse=level-up` fires once, about 600 ms after the world is ready (for screenshots).
   const fired = useRef(false);
@@ -437,6 +496,24 @@ export default function WorldLabPage() {
   const sky = lab.sky === 'auto' ? undefined : lab.sky === 'on';
   const interactive = lab.interactive === 'auto' ? undefined : lab.interactive === 'on';
   const preview = lab.preview >= 0 ? { growth: lab.preview } : undefined;
+
+  if (lab.bare) {
+    return (
+      <main className="h-screen w-full">
+        <WorldStage
+          mode={lab.mode}
+          fit={lab.fit}
+          anchor={lab.anchor}
+          sky={sky}
+          interactive={interactive}
+          landmarks={lab.landmarks}
+          preview={preview}
+          label={`${lab.species} at growth ${lab.growth.toFixed(2)}`}
+          className="size-full"
+        />
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto grid max-w-[1400px] gap-6 p-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:p-6">
@@ -533,6 +610,54 @@ export default function WorldLabPage() {
         <p className="text-sm font-medium" role="status" data-lab="landmark">
           Last landmark: {lastLandmark ?? 'none'}
         </p>
+        <p className="text-sm font-medium" role="status" data-lab="hit">
+          Under the pointer: {hovered ?? 'nothing'} · last tapped: {tapped ?? 'nothing'}
+        </p>
+
+        <fieldset className="grid gap-2">
+          <legend className="text-sm mb-1 font-bold">Growth stage</legend>
+          <div className="grid grid-cols-4 gap-2">
+            {STAGES.map((stage) => (
+              <button
+                key={stage.id}
+                type="button"
+                data-stage={stage.id}
+                className={cn(labButton, 'text-sm bg-white px-1')}
+                onClick={() => change({ growth: stage.growth })}
+              >
+                {stage.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="grid gap-2">
+          <legend className="text-sm mb-1 font-bold">Vitality and time of day</legend>
+          <div className="grid grid-cols-3 gap-2">
+            {VITALITIES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                data-vitality={item.id}
+                className={cn(labButton, 'text-sm bg-white px-1')}
+                onClick={() => change({ vitality: item.vitality })}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {HOURS.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                className={cn(labButton, 'text-sm bg-white px-1')}
+                onClick={() => change({ hour: item.hour })}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
         <div className="grid gap-2">
           <label className="text-sm flex min-h-11 items-center gap-2 font-bold">
