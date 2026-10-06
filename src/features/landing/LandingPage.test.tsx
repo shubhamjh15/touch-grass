@@ -1,15 +1,25 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { STAGES, gameActions, getGameState } from '@/game';
 import { DEMO_CARRY_KEY, readDemoCarry } from '@/lib/demoCarry';
 import { mockDesktop } from '@/ui/testUtils';
+import { toast } from '@/ui';
 import type * as UiModule from '@/ui';
-import { emitPulse } from '@/world';
+import { emitPulse, getStickingPoint } from '@/world';
 import type * as WorldModule from '@/world';
 import LandingPage from './LandingPage';
 import { DEMO, FAQ, FINAL, HERO, TIMELAPSE_CAPTIONS } from './copy';
 import { DEMO_ACTIONS, TIMELAPSE_FRAMES } from './model';
+import { useDemo } from './useDemo';
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...rest }: ComponentProps<'a'> & { href: string }) => (
@@ -23,6 +33,7 @@ vi.mock('next/link', () => ({
 vi.mock('@/world', async (original) => ({
   ...(await original<typeof WorldModule>()),
   emitPulse: vi.fn(),
+  getStickingPoint: vi.fn(() => null),
 }));
 
 // The receipt toast needs the shell's outlet; the page prints the same receipt inline.
@@ -47,6 +58,34 @@ const demoSection = () => within(screen.getByRole('group', { name: DEMO.readoutL
 beforeEach(() => {
   gameActions.resetAll();
   vi.mocked(emitPulse).mockClear();
+  vi.mocked(toast).mockClear();
+});
+
+describe('useDemo', () => {
+  it('counts a flying sticker once, however often its flight reports landing', () => {
+    vi.mocked(getStickingPoint).mockReturnValue({ x: 120, y: 160 });
+    const onLand = vi.fn();
+    const { result } = renderHook(() => useDemo(onLand));
+    const action = DEMO_ACTIONS[0];
+    if (!action) throw new Error('no demo action');
+
+    act(() => result.current.stick(action, document.body));
+    const flight = result.current.flights[0];
+    if (!flight) throw new Error('the sticker did not take off');
+    expect(flight.to).toEqual({ x: 120, y: 160 });
+    // In the air: nothing has grown yet.
+    expect(result.current.taps).toBe(0);
+
+    act(() => result.current.landFlight(flight.key));
+    act(() => result.current.landFlight(flight.key));
+    act(() => result.current.endFlight(flight.key));
+
+    expect(result.current.taps).toBe(1);
+    expect(onLand).toHaveBeenCalledTimes(1);
+    expect(result.current.flights).toHaveLength(0);
+    expect(result.current.tally).toEqual([{ action, count: 1 }]);
+    vi.mocked(getStickingPoint).mockReturnValue(null);
+  });
 });
 
 describe('<LandingPage>', () => {
@@ -89,6 +128,22 @@ describe('<LandingPage>', () => {
     expect(demo.getByText(/1\.5 kg/, { selector: 'dd' })).toBeInTheDocument();
     expect(demo.getByText(/avoided vs\. a typical meal with meat/)).toBeInTheDocument();
     expect(demo.getByRole('button', { name: 'About this estimate' })).toBeInTheDocument();
+  });
+
+  it('adds a receipt toast only while the inline receipt is off screen', () => {
+    render(<LandingPage />);
+    const box = document.getElementById('try-it');
+    if (!box) throw new Error('readout missing');
+
+    // Below the fold, as on a phone at the top of the page.
+    box.getBoundingClientRect = () => ({ top: 900, bottom: 1100 }) as DOMRect;
+    stick(0);
+    expect(toast).toHaveBeenCalledTimes(1);
+
+    // In view, as beside the desktop stage: the inline receipt is enough.
+    box.getBoundingClientRect = () => ({ top: 300, bottom: 500 }) as DOMRect;
+    stick(1);
+    expect(toast).toHaveBeenCalledTimes(1);
   });
 
   it('reaches Sapling after five stickers and celebrates the stage once', () => {
