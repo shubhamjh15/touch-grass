@@ -1,11 +1,11 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/cn';
 import { prefersReducedMotion } from '@/lib/hooks';
-import { Sticker } from '@/ui';
+import { Co2e, Sticker } from '@/ui';
 import { WorldStage, type WorldStageProps } from '@/world';
 import { MiniTree } from './illustrations';
 import { FLIGHT_LAND_MS, type DemoFlight } from './useDemo';
@@ -50,12 +50,18 @@ export function Reveal({
   children,
   className,
   delay = 0,
+  threshold = 0.2,
   as: Tag = 'div',
 }: {
   children: ReactNode;
   className?: string;
   /** Stagger, in milliseconds, for siblings that arrive together. */
   delay?: number;
+  /**
+   * Share of the box that must be on screen. Lower it for items in a sideways row: the one
+   * peeking in at the edge is the only sign that the row scrolls, and must not stay hidden.
+   */
+  threshold?: number;
   as?: 'div' | 'li' | 'section';
 }) {
   const ref = useRef<HTMLElement | null>(null);
@@ -71,14 +77,14 @@ export function Reveal({
         node.dataset.reveal = 'in';
         observer.disconnect();
       },
-      { threshold: 0.2 },
+      { threshold },
     );
     observer.observe(node);
     return () => {
       observer.disconnect();
       delete node.dataset.reveal;
     };
-  }, []);
+  }, [threshold]);
 
   return (
     <Tag
@@ -90,6 +96,22 @@ export function Reveal({
     >
       {children}
     </Tag>
+  );
+}
+
+/** Copy is plain text; wherever it names the unit, the page sets it with a real subscript. */
+export function WithUnit({ text }: { text: string }) {
+  const parts = text.split('CO2e');
+  return (
+    <>
+      {parts.map((part, index) => (
+        // The parts of one fixed sentence never reorder.
+        <Fragment key={index}>
+          {index > 0 ? <Co2e /> : null}
+          {part}
+        </Fragment>
+      ))}
+    </>
   );
 }
 

@@ -21,7 +21,7 @@ import {
 } from '@/ui';
 import { TOUR } from './copy';
 import { Band } from './lower';
-import { Reveal, SectionHead } from './parts';
+import { Reveal, SectionHead, WithUnit } from './parts';
 
 // --- Quests: a real daily quest whose stub tears off (on this page only) -----------------------
 
@@ -78,7 +78,9 @@ function MythMini() {
         {MYTH.myth}
       </p>
       <div id="tour-myth-back" hidden={!flipped} className="mt-2.5 animate-stick">
-        <p className="text-body-sm text-ink-2">{MYTH.explanation}</p>
+        <p className="text-body-sm text-ink-2">
+          <WithUnit text={MYTH.explanation} />
+        </p>
         {source ? (
           <p className="mt-2 type-slug leading-[1.5] text-ink-3">
             Source: {source.publisher}, {source.year}
@@ -155,7 +157,7 @@ function ImpactMini() {
   return (
     <figure className="rounded-md border-3 border-ink bg-card p-3.5">
       <figcaption className="type-slug leading-[1.5] text-ink-3">
-        CO2 in the air, Mauna Loa, yearly mean
+        CO<sub>2</sub> in the air, Mauna Loa, yearly mean
       </figcaption>
       <p className="mt-2 flex items-baseline gap-2">
         <span className="type-figure text-display-md">{formatDecimal(CO2_LAST.value, 0)}</span>
@@ -246,6 +248,12 @@ function cardLine(line: string): string {
     .replace('{myths}', formatNumber(MYTHS.length));
 }
 
+/**
+ * On a phone the cards sit in a sideways row and the next one peeks in at the edge by about a
+ * tenth of its width. That sliver has to arrive with the row, or nothing says there is more.
+ */
+const PEEK_THRESHOLD = 0.02;
+
 /** Five things inside the app, each shown with a working miniature rather than a screenshot. */
 export function Tour() {
   return (
@@ -259,6 +267,7 @@ export function Tour() {
               as="li"
               key={card.id}
               delay={index * 28}
+              threshold={PEEK_THRESHOLD}
               className={cn(
                 'w-[82vw] max-w-[340px] shrink-0 snap-start lg:w-auto lg:max-w-none',
                 card.span,
@@ -269,7 +278,9 @@ export function Tour() {
                   <h3 className="text-h2">{copy.title}</h3>
                   <p className="mt-2 text-h4">{cardLine(copy.line)}</p>
                   <p className="mt-1.5 text-body-sm text-ink-2">{copy.body}</p>
-                  <div className="mt-auto pt-5">{card.mini}</div>
+                  {/* In the phone's row one card shows at a time: its sample sits in the middle of
+                      the spare height. In the desktop grid the samples line up along the bottom. */}
+                  <div className="my-auto pt-5 lg:mb-0">{card.mini}</div>
                 </Card>
               </TiltCard>
             </Reveal>
