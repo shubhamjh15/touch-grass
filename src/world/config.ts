@@ -108,78 +108,91 @@ export const MOTION = {
   popOvershoot: 0.19,
 } as const;
 
-// --- Quality tiers (bible 5.11) ------------------------------------------------------------
+// --- Quality tiers (direction 3.4) -----------------------------------------------------------
 
 export interface QualityTier {
-  /** Device-pixel-ratio cap. Never exceeds the real devicePixelRatio. */
+  /** Device-pixel-ratio cap on a fine pointer (desktop). Never exceeds the real devicePixelRatio. */
   dpr: number;
-  /** Icosphere subdivisions of a foliage clump. */
-  clumpDetail: number;
-  /** Share of leaf and blossom accents that is drawn. */
-  accentShare: number;
-  /** Segments around the island and sides of the trunk. */
+  /** The same cap on touch screens, whose pixels are smaller. */
+  dprTouch: number;
+  /** Side of the sun's shadow map in texels; 0 = no shadow pass, a soft blob under the crown. */
+  shadowMap: number;
+  /** Bloom, vignette and tone mapping through the effect composer. */
+  post: boolean;
+  /** Half-resolution ambient occlusion in the composer. */
+  ao: boolean;
+  /** Icosphere subdivisions of a foliage puff. */
+  puffDetail: number;
+  /** Share of the leaf cards on the crown that is drawn. */
+  leafShare: number;
+  /** Segments around the island. */
   islandSegments: number;
+  /** Sides of the trunk and of the branches. */
   trunkSides: number;
   branchSides: number;
-  /** Share of grass tufts and pebbles. */
-  scatterShare: number;
-  /** Printed halftone band between base and shade. Off = one hard edge. */
-  halftone: boolean;
-  /** Kiss-cut hairline around the white margin. */
-  keyline: boolean;
-  /** Whether the wood joins the sticker stack, or only island and canopy do. */
-  woodSticker: boolean;
-  /** Real projected sundial shadow, or a flat patch under the crown. */
-  castShadow: boolean;
+  /** Grass tufts, flowers and drifting motes. */
+  grassTufts: number;
+  flowers: number;
+  motes: number;
+  clouds: number;
 }
 
 export const QUALITY: Record<WorldQuality, QualityTier> = {
   low: {
-    dpr: 1.25,
-    clumpDetail: 2,
-    accentShare: 0.25,
-    islandSegments: 22,
+    dpr: 1,
+    dprTouch: 1.5,
+    shadowMap: 0,
+    post: false,
+    ao: false,
+    puffDetail: 2,
+    leafShare: 0.4,
+    islandSegments: 36,
     trunkSides: 6,
     branchSides: 4,
-    scatterShare: 0.4,
-    halftone: false,
-    keyline: false,
-    woodSticker: false,
-    castShadow: false,
+    grassTufts: 800,
+    flowers: 24,
+    motes: 0,
+    clouds: 4,
   },
   medium: {
-    dpr: 1.75,
-    clumpDetail: 3,
-    accentShare: 0.5,
-    islandSegments: 30,
+    dpr: 1.5,
+    dprTouch: 2,
+    shadowMap: 1024,
+    post: false,
+    ao: false,
+    puffDetail: 3,
+    leafShare: 0.7,
+    islandSegments: 48,
     trunkSides: 8,
     branchSides: 5,
-    scatterShare: 0.7,
-    halftone: true,
-    keyline: true,
-    woodSticker: true,
-    castShadow: true,
+    grassTufts: 1800,
+    flowers: 44,
+    motes: 28,
+    clouds: 6,
   },
   high: {
-    dpr: 2,
-    clumpDetail: 4,
-    accentShare: 1,
-    islandSegments: 40,
+    dpr: 1.5,
+    dprTouch: 2,
+    shadowMap: 2048,
+    post: true,
+    ao: true,
+    puffDetail: 3,
+    leafShare: 1,
+    islandSegments: 64,
     trunkSides: 10,
     branchSides: 6,
-    scatterShare: 1,
-    halftone: true,
-    keyline: true,
-    woodSticker: true,
-    castShadow: true,
+    grassTufts: 3000,
+    flowers: 64,
+    motes: 48,
+    clouds: 7,
   },
 };
 
-/** Budgets at growth 1, asserted by tests and shown in the world lab. */
+/** Budgets in view (direction 3.4), asserted against `renderer.info` in the world lab. */
 export const BUDGET: Record<WorldQuality, { drawCalls: number; triangles: number }> = {
-  low: { drawCalls: 60, triangles: 40_000 },
-  medium: { drawCalls: 60, triangles: 80_000 },
-  high: { drawCalls: 60, triangles: 120_000 },
+  low: { drawCalls: 60, triangles: 60_000 },
+  medium: { drawCalls: 100, triangles: 120_000 },
+  high: { drawCalls: 100, triangles: 150_000 },
 };
 
 // --- Tones ---------------------------------------------------------------------------------
@@ -477,22 +490,7 @@ export const ISLAND = {
   ticks: { inset: 0.04, length: 0.18, width: 0.04 },
 } as const;
 
-// --- Loose paper bits, creatures and props (bible 5.6, 5.9, 5.10, 5.11) --------------------
-
-/** Instance budgets of the three loose-bit pools, by tier. */
-export const LIFE: Record<
-  WorldQuality,
-  { chips: number; balls: number; motes: number; burstShare: number; creatures: boolean }
-> = {
-  low: { chips: 40, balls: 20, motes: 10, burstShare: 0.5, creatures: false },
-  medium: { chips: 84, balls: 36, motes: 28, burstShare: 0.8, creatures: true },
-  high: { chips: 150, balls: 48, motes: 40, burstShare: 1, creatures: true },
-};
-
-/** Puppets (creatures, blades, ripples, blinks) are stepped like stop-motion. */
-export const PUPPET_FPS = 12;
-/** Outline of loose bits in CSS pixels, whatever the stage size. */
-export const LOOSE_INK_PX = 1.5;
+// --- Interaction ---------------------------------------------------------------------------
 
 /** Drag, hover and idle rotation (bible 5.8, 5.9). Angles in radians, times in seconds. */
 export const ORBIT = {
