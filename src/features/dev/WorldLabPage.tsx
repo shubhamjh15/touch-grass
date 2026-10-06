@@ -30,7 +30,7 @@ import {
  * `setWorldSnapshot()` plus `<WorldStage>` props. Every control is mirrored in the URL,
  * so a screenshot of any state can be scripted:
  *
- *   /__world?species=cherry&growth=0.6&hour=19&mode=hero&quality=high
+ *   /__world?species=cherry&growth=0.6&hour=19&mode=hero&quality=high   (quality defaults to auto)
  *   /__world?stage=sapling&vitality=0.5     a growth stage by name, a thirsty tree
  *   /__world?bare=1                         the stage alone, filling the window (for stills)
  *   /__world?pulse=level-up            fires that pulse about 600 ms after the world is ready
@@ -124,7 +124,7 @@ const DEFAULTS: LabState = {
   anchor: 'bottom',
   sky: 'auto',
   box: 'hero',
-  quality: 'high',
+  quality: 'auto',
   motion: 'system',
   second: false,
   tall: false,
@@ -317,6 +317,7 @@ function Readout() {
     ['frame p95', `${stats.p95Ms.toFixed(1)} ms`],
     ['frame worst', `${stats.worstMs.toFixed(1)} ms`],
     ['script / frame', `${stats.cpuMs.toFixed(2)} ms`],
+    ['gpu / frame', stats.gpuMs > 0 ? `${stats.gpuMs.toFixed(2)} ms` : 'n/a'],
     ['buffer', `${stats.bufferWidth} × ${stats.bufferHeight}`],
     ['dpr', stats.dpr.toFixed(2)],
     ['dpr scale', stats.dprScale.toFixed(2)],
