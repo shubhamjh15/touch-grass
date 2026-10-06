@@ -371,6 +371,70 @@ describe('<LandingPage>', () => {
     expect(closing()).toHaveTextContent(FINAL.grownLines.join(''));
   });
 
+  it('sets the unit with a real subscript wherever the copy names it', () => {
+    render(<LandingPage />);
+    const line = screen.getByText(/Nobody can feel/);
+    expect(line).toHaveTextContent(/of CO2e\.$/);
+    expect(line.querySelector('sub')).toHaveTextContent('2');
+    // No sentence on the page is left with the unit typed flat.
+    const flat = [...document.body.querySelectorAll('p, h3, li')].filter((node) =>
+      [...node.childNodes].some(
+        (child) => child.nodeType === Node.TEXT_NODE && /CO2e/.test(child.textContent ?? ''),
+      ),
+    );
+    expect(flat.map((node) => node.textContent)).toEqual([]);
+  });
+
+  it('lets the tour card that peeks in at the edge of a phone show itself', () => {
+    const watched: { node: Element; threshold: number; enter: () => void }[] = [];
+    class Watcher {
+      private readonly threshold: number;
+      constructor(
+        private readonly callback: IntersectionObserverCallback,
+        options?: IntersectionObserverInit,
+      ) {
+        this.threshold = typeof options?.threshold === 'number' ? options.threshold : 0;
+      }
+      observe(node: Element) {
+        watched.push({
+          node,
+          threshold: this.threshold,
+          enter: () =>
+            this.callback(
+              [{ isIntersecting: true, target: node } as IntersectionObserverEntry],
+              this as unknown as IntersectionObserver,
+            ),
+        });
+      }
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    vi.stubGlobal('IntersectionObserver', Watcher);
+    // Everything starts below the fold, as the tour does on a real phone.
+    const below = vi
+      .spyOn(Element.prototype, 'getBoundingClientRect')
+      .mockReturnValue({ top: 5000, bottom: 5400, left: 0, right: 320 } as DOMRect);
+
+    try {
+      render(<LandingPage />);
+      const card = screen.getByRole('heading', { level: 3, name: 'Learn' }).closest('li');
+      if (!card) throw new Error('the Learn card is not a list item');
+      expect(card).toHaveAttribute('data-reveal', 'armed');
+      const entry = watched.find((item) => item.node === card);
+      if (!entry) throw new Error('the Learn card is not being watched');
+      // About a tenth of the next card shows beside the first: that must be enough.
+      expect(entry.threshold).toBeLessThanOrEqual(0.05);
+      act(() => entry.enter());
+      expect(card).toHaveAttribute('data-reveal', 'in');
+    } finally {
+      below.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('contains nothing the spec bans: no crowds, counters, testimonials or live claims', () => {
     render(<LandingPage />);
     const text = document.body.textContent ?? '';
