@@ -137,6 +137,8 @@ export const HOW = {
     },
   ],
   sampleLabel: 'Sample quest',
+  amountLabel: 'How far',
+  amounts: ['2 km', '5 km', '10 km'],
   ringLabel: 'A day ring, two of three actions in',
   rainLabel: 'Rain day banked',
 } as const;
@@ -145,7 +147,7 @@ export const HONEST = {
   slug: 'Honest numbers',
   title: 'An estimate, and it says so',
   lead: 'Every kilogram in the app is compared with something specific, carries a likely range and names its source. Kilograms never turn into points, so a bigger footprint cannot win.',
-  rowMetaLead: 'Per km',
+  rowMeta: 'Per km not driven',
   ledgerLabel: 'One factor from the table',
   openLabel: 'What the ≈ opens',
   rules: [

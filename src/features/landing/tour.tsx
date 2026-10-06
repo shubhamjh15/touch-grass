@@ -264,7 +264,7 @@ export function Tour() {
                 card.span,
               )}
             >
-              <TiltCard maxTilt={3} className="h-full">
+              <TiltCard maxTilt={3} className="h-full *:h-full">
                 <Card tone={card.tone} className="flex h-full flex-col">
                   <h3 className="text-h2">{copy.title}</h3>
                   <p className="mt-2 text-h4">{cardLine(copy.line)}</p>

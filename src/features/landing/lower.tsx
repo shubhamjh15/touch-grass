@@ -14,6 +14,7 @@ import {
   Approx,
   Button,
   Card,
+  Chip,
   CloudGlyph,
   Co2e,
   EstimateDetails,
@@ -47,7 +48,7 @@ export function Band({
   'aria-labelledby': string;
 }) {
   return (
-    <section className={cn('py-14 px-gutter lg:px-6 lg:py-24', className)} {...rest}>
+    <section className={cn('py-14 px-gutter lg:px-6 lg:py-20', className)} {...rest}>
       <div className="mx-auto max-w-[1120px]">{children}</div>
     </section>
   );
@@ -64,14 +65,25 @@ function howBody(body: string): string {
     .replace('{categories}', formatNumber(CATEGORIES.length));
 }
 
+/** The two picks of a log, drawn still: which action, and how much of it. */
 function LogMini() {
   return (
-    <div className="flex items-end justify-between gap-1">
-      <Sticker category="move" label="Move" size={44} />
-      <Sticker category="eat" label="Eat" size={44} />
-      <Sticker category="power" label="Power" size={44} />
-      <Sticker category="water" label="Water" size={44} />
-      <Sticker category="nature" ghost size={44} />
+    <div className="grid w-full gap-4">
+      <div className="flex items-end justify-between gap-1">
+        <Sticker category="move" label="Move" size={44} />
+        <Sticker category="eat" label="Eat" size={44} />
+        <Sticker category="power" label="Power" size={44} />
+        <Sticker category="water" label="Water" size={44} />
+        <Sticker category="nature" ghost size={44} />
+      </div>
+      <p className="flex flex-wrap items-center gap-2">
+        <span className="type-slug text-ink-3">{HOW.amountLabel}</span>
+        {HOW.amounts.map((amount, index) => (
+          <Chip as="span" key={amount} selected={index === 1}>
+            {amount}
+          </Chip>
+        ))}
+      </p>
     </div>
   );
 }
@@ -136,6 +148,8 @@ const HOW_MINI: Record<(typeof HOW.steps)[number]['id'], ReactNode> = {
   'keep-going': <KeepGoingMini />,
 };
 
+const HOW_FILL = { log: 'green', see: 'blue', 'keep-going': 'yellow' } as const;
+
 export function HowItWorks() {
   return (
     <Band id="how-it-works" aria-labelledby="how-title" className="scroll-mt-20">
@@ -150,14 +164,17 @@ export function HowItWorks() {
                 </StickerPill>
                 <h3 className="text-display-sm">
                   <span className="sr-only">Step {index + 1}: </span>
-                  <Lettering fill="white" tilt="none">
+                  <Lettering fill={HOW_FILL[step.id]} tilt="none">
                     {step.word}
                   </Lettering>
                 </h3>
               </div>
               <p className="mt-4 text-h4">{step.line}</p>
               <p className="mt-1.5 text-body-sm text-ink-2">{howBody(step.body)}</p>
-              <div className="mt-auto pt-6">{HOW_MINI[step.id]}</div>
+              {/* One tray per card, all the same height: the samples line up across the row. */}
+              <div className="mt-5 grid flex-1 place-items-center rounded-md border-2 border-ink bg-mat-deep p-4 inset-shadow-deboss">
+                {HOW_MINI[step.id]}
+              </div>
             </Panel>
           </Reveal>
         ))}
@@ -184,7 +201,7 @@ function factorExample(): {
   const value = formatCo2Estimate(estimate.kg);
   return {
     title: action.title,
-    meta: `${HONEST.rowMetaLead} · vs. ${action.counterfactual}`,
+    meta: HONEST.rowMeta,
     value,
     source: {
       code: 'Factor',
@@ -262,7 +279,7 @@ export function HonestNumbers() {
 
 export function KindAndPrivate() {
   return (
-    <div className="py-14 px-gutter lg:px-6 lg:py-24">
+    <div className="py-14 px-gutter lg:px-6 lg:py-20">
       <div className="mx-auto grid max-w-[1120px] gap-14 lg:grid-cols-2 lg:gap-12">
         <section aria-labelledby="kind-title">
           <SectionHead id="kind-title" slug={KIND.slug} title={KIND.title} />
@@ -270,7 +287,7 @@ export function KindAndPrivate() {
             {KIND.note}
           </TapeNote>
           <p className="mt-5 max-w-[30rem] text-body text-ink-2">{KIND.body}</p>
-          <ul className="mt-7 grid grid-cols-3 gap-3">
+          <ul className="mt-7 grid max-w-[30rem] grid-cols-3 gap-3 rounded-lg border-3 border-ink bg-card p-4">
             {KIND.states.map((state, index) => (
               <Reveal as="li" key={state.id} delay={index * 28}>
                 <div className="flex flex-col items-center text-center">
