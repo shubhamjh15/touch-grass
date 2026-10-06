@@ -34,6 +34,7 @@ import { CustomFlow, type CustomStickJob } from './components/CustomFlow';
 import { useLogMoment } from './components/LogMoment';
 import { MyActions } from './components/MyActions';
 import { QuickLogSheet, type QuickLogRequest, type StickJob } from './components/QuickLogSheet';
+import { SayIt } from './components/SayIt';
 import { HiddenTray, StickerGrid } from './components/StickerSheet';
 import { TodayLedger } from './components/TodayLedger';
 import { COPY } from './copy';
@@ -260,6 +261,13 @@ export function LogScreen({ aiClient }: LogScreenProps) {
 
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8">
         <div className="min-w-0">
+          <SayIt
+            tiles={tiles}
+            onStick={stickAction}
+            onCustom={openCustom}
+            onOpenTile={openTile}
+            client={aiClient}
+          />
           <div
             ref={sentinel}
             aria-hidden="true"
