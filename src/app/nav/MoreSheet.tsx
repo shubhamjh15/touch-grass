@@ -8,7 +8,9 @@ import type { RouteId } from '../routes';
 import { openCoach, openPalette, useShellStore } from '../shellStore';
 import { MORE_ENTRIES, type MoreEntry } from './navItems';
 
-const TILE = 'flex min-h-[72px] w-full items-center gap-3 p-3 text-left';
+/* Under 360 px two columns leave about 70 px for words beside the icon: the icon sits above them instead. */
+const TILE =
+  'flex min-h-[72px] w-full items-center gap-3 p-3 text-left max-[359px]:flex-col max-[359px]:items-start max-[359px]:gap-2';
 
 function MoreTile({
   entry,

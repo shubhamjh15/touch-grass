@@ -316,10 +316,11 @@ export default function CommandMenu() {
                   ) : undefined
                 }
               >
-                {action.title}
-                <span className="font-normal text-ink-3">
-                  {' '}
-                  · {formatDecimal(qty, action.decimals)} {action.unit}
+                <span className="flex min-w-0">
+                  <span className="truncate">{action.title}</span>
+                  <span className="shrink-0 pl-1 font-normal whitespace-nowrap text-ink-3">
+                    · {formatDecimal(qty, action.decimals)} {action.unit}
+                  </span>
                 </span>
               </CommandItem>
             );
