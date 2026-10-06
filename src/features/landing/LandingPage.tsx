@@ -8,7 +8,7 @@ import { SPECIES, type Species, type WorldSnapshot } from '@/world';
 import { DEMO, SPECIES_LABEL, TICKER, stageLabel } from './copy';
 import { DemoDock, DemoReadout, DragHint } from './demo';
 import { Faq, FinalCta, HonestNumbers, HowItWorks, KindAndPrivate } from './lower';
-import { estimateFor, type DemoAction } from './model';
+import { DEMO_ANCHOR, estimateFor, type DemoAction } from './model';
 import { StageSlot, StickerFlight } from './parts';
 import { Hero, Problem, TimeLapse } from './story';
 import { Tour } from './tour';
@@ -25,7 +25,15 @@ const SPECIES_OPTIONS = SPECIES.map((species) => ({
   label: SPECIES_LABEL[species],
 }));
 
+/** The inline receipt is on screen, with room to be read. */
+function readoutInView(): boolean {
+  const box = document.getElementById(DEMO_ANCHOR)?.getBoundingClientRect();
+  return box !== undefined && box.top < window.innerHeight - 120 && box.bottom > 0;
+}
+
+/** A receipt toast, for visitors whose inline receipt is below the fold (phones, mostly). */
 function printReceipt(action: DemoAction) {
+  if (readoutInView()) return;
   const estimate = estimateFor(action);
   toast({
     id: RECEIPT_TOAST_ID,
@@ -93,7 +101,7 @@ export default function LandingPage() {
 
   /** Small chips at the stage's top edge: what this is, and that it can be turned. */
   const stageChips = (
-    <div className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-1.5 lg:top-24 lg:left-8 lg:flex-row lg:items-center lg:gap-2">
+    <div className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-1.5 lg:top-28 lg:left-8 lg:flex-row lg:items-center lg:gap-2">
       <Tag hue="yellow">{DEMO.tag}</Tag>
       <DragHint used={turned} />
     </div>
@@ -103,7 +111,7 @@ export default function LandingPage() {
     <p
       key={demo.stageFlash}
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 top-[18%] animate-stick text-center text-display-lg"
+      className="pointer-events-none absolute inset-x-0 bottom-16 animate-stick text-center text-display-lg lg:bottom-48"
     >
       <Lettering fill="green" sweep>
         {demo.stageFlash}
@@ -112,7 +120,7 @@ export default function LandingPage() {
   ) : null;
 
   const lapseFurniture = (
-    <Tag hue="paper" className="absolute bottom-3 left-3 lg:bottom-10 lg:left-8">
+    <Tag hue="paper" className="absolute top-3 left-3 lg:top-28 lg:left-8">
       {lapse.moment.label}
     </Tag>
   );
@@ -127,6 +135,7 @@ export default function LandingPage() {
             mode="hero"
             preview={lapse.engaged ? lapsePreview : demoPreview}
             label={lapse.engaged ? lapseLabel : demoLabel}
+            anchor={lapse.engaged ? 'bottom' : 'center'}
             onTouched={onTouched}
             className="sticky top-0 h-dvh"
           >

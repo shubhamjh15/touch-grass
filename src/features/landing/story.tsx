@@ -43,8 +43,9 @@ export function Hero() {
       <StickerPill hue="pink" rotate={-2}>
         {HERO.pill}
       </StickerPill>
-      <h1 className="mt-3.5 lg:mt-6">
-        <span className="block text-display-hero lg:text-display-xl xl:text-display-hero">
+      {/* The shell moves focus here on arrival, for screen readers. A heading needs no ring. */}
+      <h1 className="mt-3.5 focus-visible:shadow-none focus-visible:outline-hidden lg:mt-6">
+        <span className="block text-display-hero lg:text-display-xl">
           <Lettering fill="green" sweep hoverTilt className="block w-fit">
             {HERO.titleLead}
           </Lettering>{' '}
@@ -56,7 +57,7 @@ export function Hero() {
             {HERO.titleTree}
           </Lettering>
         </span>{' '}
-        <span className="mt-2.5 block text-h2 lg:mt-5 lg:text-h1">{HERO.titleTail}</span>
+        <span className="mt-2.5 block text-h2 lg:mt-4">{HERO.titleTail}</span>
       </h1>
       <p className="mt-2.5 max-w-[34rem] text-body text-pretty text-ink-2 lg:mt-4 lg:text-lead">
         {HERO.sub}
@@ -87,9 +88,9 @@ function invisibleKg(): string {
 }
 
 const PROBLEM_ART: Record<(typeof PROBLEM.cards)[number]['id'], ReactNode> = {
-  invisible: <InvisibleSpot />,
-  'no-feedback': <NoFeedbackSpot />,
-  'all-doom': <AllDoomSpot />,
+  invisible: <InvisibleSpot className="h-auto w-full" />,
+  'no-feedback': <NoFeedbackSpot className="h-auto w-full" />,
+  'all-doom': <AllDoomSpot className="h-auto w-full" />,
 };
 
 const PROBLEM_FILL = { invisible: 'blue', 'no-feedback': 'yellow', 'all-doom': 'pink' } as const;
@@ -120,20 +121,20 @@ export function Problem() {
         {PROBLEM.cards.map((card, index) => (
           <Reveal as="li" key={card.id} delay={index * 28}>
             <Card className="h-full">
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="text-display-sm">
-                  <Lettering fill={PROBLEM_FILL[card.id]}>{card.word}</Lettering>
-                </h3>
-                <div className="-mt-1 w-[88px] shrink-0 md:w-[72px] lg:w-[88px]">
-                  <div className="origin-top-right scale-[0.73] md:scale-[0.6] lg:scale-[0.73]">
-                    {PROBLEM_ART[card.id]}
-                  </div>
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-display-sm">
+                    <Lettering fill={PROBLEM_FILL[card.id]}>{card.word}</Lettering>
+                  </h3>
+                  <p className="mt-3 text-h4">
+                    <ProblemLine line={card.line} />
+                  </p>
+                </div>
+                <div className="-mt-1 w-[84px] shrink-0 md:w-16 lg:w-[84px]">
+                  {PROBLEM_ART[card.id]}
                 </div>
               </div>
-              <p className="mt-3 text-h4">
-                <ProblemLine line={card.line} />
-              </p>
-              <p className="mt-1.5 text-body-sm text-ink-2">
+              <p className="mt-2 text-body-sm text-ink-2">
                 {card.body.replace('{km}', formatNumber(PROBLEM_KM))}
               </p>
             </Card>
