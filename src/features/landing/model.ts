@@ -55,6 +55,11 @@ export const DEMO_ACTIONS: readonly DemoAction[] = [
   },
 ];
 
+/** Where "Try it first" jumps without JavaScript: the demo's readout. */
+export const DEMO_ANCHOR = 'try-it';
+/** Marks the first demo sticker, which "Try it first" focuses. */
+export const FIRST_STICKER_ATTR = 'data-demo-first';
+
 /**
  * A visitor has told us nothing yet, so the demo uses what the app itself assumes before
  * onboarding: the world-average grid and car, and a gas-heated shower.

@@ -24,6 +24,9 @@ export const DEMO = {
   hint: 'Tap a sticker. The tree grows, and nothing is saved.',
   tag: 'Demo · sped up',
   speciesLabel: 'Demo tree species',
+  speciesShort: 'Tree',
+  readoutLabel: 'What the demo printed',
+  dragHint: 'Drag to turn',
   receiptTitle: 'Demo receipt',
   receiptMeta: 'Per sticker · nothing saved',
   receiptEmpty: 'Your receipt prints here.',
@@ -269,13 +272,6 @@ export const FINAL = {
   body: 'The demo goes back in the drawer when you leave. Yours stays, and grows a ring every day you show up.',
   action: 'Plant your tree',
   aside: 'About two minutes. No account, no email.',
-} as const;
-
-export const FOOTER = {
-  line: 'Self-reported estimates. No trackers.',
-  methodology: 'Methodology',
-  privacy: 'Privacy',
-  navLabel: 'Footer',
 } as const;
 
 export const SPECIES_LABEL = { oak: 'Oak', cherry: 'Cherry', pine: 'Pine' } as const;

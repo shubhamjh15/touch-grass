@@ -18,10 +18,16 @@ import { FLIGHT_LAND_MS, type DemoFlight } from './useDemo';
 export function StageSlot({
   show,
   className,
+  onTouched,
   ...stage
-}: Omit<WorldStageProps, 'className'> & { show: boolean; className?: string }) {
+}: Omit<WorldStageProps, 'className'> & {
+  show: boolean;
+  className?: string;
+  /** The visitor pressed on the scene itself (not on a control floating over it). */
+  onTouched?: () => void;
+}) {
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative', className)} onPointerDown={onTouched}>
       {show ? <WorldStage {...stage} className="absolute inset-0" /> : null}
     </div>
   );

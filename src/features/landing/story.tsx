@@ -9,38 +9,18 @@ import { estimateKg } from '@/game';
 import { cn } from '@/lib/cn';
 import { formatDecimal, formatNumber } from '@/lib/format';
 import { prefersReducedMotion } from '@/lib/hooks';
-import {
-  Approx,
-  Button,
-  Card,
-  Co2e,
-  HonestyMark,
-  Lettering,
-  Meter,
-  Panel,
-  Receipt,
-  Sticker,
-  StickerPill,
-  Tag,
-  TapeNote,
-} from '@/ui';
-import { DEMO, HERO, PROBLEM, TIMELAPSE, TIMELAPSE_CAPTIONS } from './copy';
+import { Approx, Button, Card, Lettering, Panel, StickerPill, Tag } from '@/ui';
+import { HERO, PROBLEM, TIMELAPSE, TIMELAPSE_CAPTIONS } from './copy';
 import { AllDoomSpot, InvisibleSpot, NoFeedbackSpot } from './illustrations';
 import {
-  DEMO_ACTIONS,
+  DEMO_ANCHOR,
   DEMO_CONTEXT,
-  DEMO_TAPS_TO_SAPLING,
+  FIRST_STICKER_ATTR,
   TIMELAPSE_FRAMES,
-  estimateFor,
   timelapseLabel,
   type TimelapseMoment,
 } from './model';
 import { Reveal } from './parts';
-import type { DemoState } from './useDemo';
-
-/** Where "Try it first" lands: the first demo sticker. */
-export const FIRST_STICKER_ID = 'demo-sticker-first';
-const DEMO_SECTION_ID = 'try-it';
 
 // --- Hero ------------------------------------------------------------------------------------
 
@@ -50,7 +30,7 @@ const DEMO_SECTION_ID = 'try-it';
  */
 export function Hero() {
   const tryIt = (event: MouseEvent<HTMLAnchorElement>) => {
-    const first = document.getElementById(FIRST_STICKER_ID);
+    const first = document.querySelector<HTMLElement>(`[${FIRST_STICKER_ATTR}]`);
     if (!first) return;
     // Without JavaScript this is a plain jump to the demo; with it, focus goes straight to a sticker.
     event.preventDefault();
@@ -59,11 +39,11 @@ export function Hero() {
   };
 
   return (
-    <div className="pt-5 px-gutter pb-5 lg:px-0 lg:pt-0 lg:pb-8">
+    <div className="pt-3 px-gutter pb-5 lg:px-0 lg:pt-0 lg:pb-8">
       <StickerPill hue="pink" rotate={-2}>
         {HERO.pill}
       </StickerPill>
-      <h1 className="mt-4 lg:mt-6">
+      <h1 className="mt-3.5 lg:mt-6">
         <span className="block text-display-hero lg:text-display-xl xl:text-display-hero">
           <Lettering fill="green" sweep hoverTilt className="block w-fit">
             {HERO.titleLead}
@@ -76,9 +56,9 @@ export function Hero() {
             {HERO.titleTree}
           </Lettering>
         </span>{' '}
-        <span className="mt-3 block text-h2 lg:mt-5 lg:text-h1">{HERO.titleTail}</span>
+        <span className="mt-2.5 block text-h2 lg:mt-5 lg:text-h1">{HERO.titleTail}</span>
       </h1>
-      <p className="mt-3 max-w-[34rem] text-body text-pretty text-ink-2 lg:mt-4 lg:text-lead">
+      <p className="mt-2.5 max-w-[34rem] text-body text-pretty text-ink-2 lg:mt-4 lg:text-lead">
         {HERO.sub}
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 lg:mt-6">
@@ -86,123 +66,12 @@ export function Hero() {
           <Link href={ROUTES.start}>{HERO.primary}</Link>
         </Button>
         <Button asChild variant="ghost" size="lg">
-          <a href={`#${DEMO_SECTION_ID}`} onClick={tryIt}>
+          <a href={`#${DEMO_ANCHOR}`} onClick={tryIt}>
             {HERO.secondary}
           </a>
         </Button>
       </div>
     </div>
-  );
-}
-
-// --- The demo strip ----------------------------------------------------------------------------
-
-function statusLine(demo: DemoState): string {
-  const { stage, tapsToSapling } = demo.status;
-  if (tapsToSapling === 0) return `Demo tree: ${stage}. Yours would take about nine days.`;
-  const more =
-    tapsToSapling === 1 ? 'One more sticker' : `${formatNumber(tapsToSapling)} more stickers`;
-  return `Demo tree: ${stage}. ${more} to Sapling.`;
-}
-
-/**
- * "Stick one on": three real catalogue actions as stickers. Each tap carries the sticker to
- * the tree, grows it and prints the estimate the real log sheet would show. Nothing is saved.
- */
-export function DemoPanel({ demo }: { demo: DemoState }) {
-  const flying = new Set(demo.flights.map((flight) => flight.action.id));
-  const lastEstimate = demo.last ? estimateFor(demo.last) : null;
-
-  return (
-    <section id={DEMO_SECTION_ID} aria-labelledby="try-it-title" className="scroll-mt-28">
-      <Panel variant="graph" className="bg-card bg-none p-4 shadow-3 md:border-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 id="try-it-title" className="text-h3">
-            {DEMO.title}
-          </h2>
-          <Tag hue="yellow">{DEMO.tag}</Tag>
-        </div>
-
-        <ul className="mt-3 grid grid-cols-3 justify-items-center gap-2">
-          {DEMO_ACTIONS.map((action, index) => (
-            <li key={action.id}>
-              <Sticker
-                id={index === 0 ? FIRST_STICKER_ID : undefined}
-                category={action.category}
-                label={action.label}
-                size={66}
-                ghost={flying.has(action.id)}
-                className="w-24 scroll-mt-28"
-                onClick={() => {
-                  const origin = document.querySelector<HTMLElement>(
-                    `[data-demo-sticker="${action.id}"]`,
-                  );
-                  if (origin) demo.stick(action, origin);
-                }}
-                data-demo-sticker={action.id}
-              />
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-3 flex items-center gap-3 border-t-[1.5px] border-ink pt-3">
-          <p role="status" className="min-w-0 flex-1 text-body-sm text-ink-2">
-            {demo.taps === 0 ? DEMO.hint : statusLine(demo)}
-          </p>
-          <Meter
-            pips
-            size="sm"
-            tone="green"
-            value={Math.min(demo.taps, DEMO_TAPS_TO_SAPLING)}
-            max={DEMO_TAPS_TO_SAPLING}
-            label="Stickers on the way to Sapling"
-            className="w-20 shrink-0"
-          />
-        </div>
-      </Panel>
-
-      <div className="mt-5 grid gap-4">
-        {demo.tally.length === 0 ? (
-          <p className="grid min-h-24 place-items-center rounded-sm dieline px-4 text-center font-mono text-data text-ink-3">
-            {DEMO.receiptEmpty}
-          </p>
-        ) : (
-          <div>
-            <Receipt
-              title={DEMO.receiptTitle}
-              meta={DEMO.receiptMeta}
-              rows={demo.tally.map(({ action, count }) => ({
-                label: count > 1 ? `${action.label}, ${formatNumber(count)} times` : action.label,
-                value: (
-                  <>
-                    <Approx weight="mono" />
-                    {estimateFor(action)?.text}
-                  </>
-                ),
-              }))}
-            />
-            {lastEstimate && demo.last ? (
-              <p className="mt-4 flex items-start gap-2.5 text-body-sm text-ink-2">
-                <HonestyMark source={lastEstimate.source} className="mt-px" />
-                <span>
-                  {demo.last.label}: <Approx />
-                  {lastEstimate.text} <Co2e explain /> avoided vs. {lastEstimate.comparedWith}.
-                </span>
-              </p>
-            ) : null}
-          </div>
-        )}
-
-        {demo.taps >= 3 ? (
-          <TapeNote rotate={-1} className="animate-stick">
-            {DEMO.note}{' '}
-            <Link href={ROUTES.start} className="link whitespace-nowrap">
-              {DEMO.noteAction}
-            </Link>
-          </TapeNote>
-        ) : null}
-      </div>
-    </section>
   );
 }
 
