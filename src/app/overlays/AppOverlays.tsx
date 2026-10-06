@@ -1,5 +1,7 @@
 'use client';
 
+// Loaded for its effect: keeps the coach's chat inside a sandbox while the demo world is on.
+import '../bridge/coachSandbox';
 import { CoachDrawer } from '../coach/CoachDrawer';
 import { Shortcuts } from '../palette/Shortcuts';
 
