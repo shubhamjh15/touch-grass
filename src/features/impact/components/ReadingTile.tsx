@@ -52,10 +52,10 @@ export function ReadingTile({ reading, state, size = 'lg', stacked = false }: Re
           href={reading.signal.source.url}
           target="_blank"
           rel="noreferrer noopener"
-          className="mt-0.5 inline-flex min-h-8 items-center gap-1 justify-self-start text-caption text-ink-3 underline decoration-ink-4 underline-offset-4 focus-inset hover:text-ink hover:decoration-ink"
+          className="justify-self-start py-1.5 text-caption text-ink-3 underline decoration-ink-4 underline-offset-4 focus-inset hover:text-ink hover:decoration-ink"
         >
           {sourceLine(reading.signal)}
-          <ArrowUpRight size={14} aria-hidden="true" className="shrink-0" />
+          <ArrowUpRight size={14} aria-hidden="true" className="ml-1 inline-block align-[-2px]" />
           <span className="sr-only">(opens the source in a new tab)</span>
         </a>
       </dd>

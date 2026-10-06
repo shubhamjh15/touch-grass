@@ -13,10 +13,10 @@ export function LiveBadge({ state, className }: { state: Freshness; className?: 
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 px-2 py-0.5 type-slug whitespace-nowrap',
+        'inline-flex shrink-0 items-center gap-1.5 border-2 px-2 py-0.5 type-slug whitespace-nowrap',
         live
-          ? 'border-ink bg-green-tint text-ink'
-          : 'border-dashed border-ink-3 bg-white text-ink-2',
+          ? 'rounded-full border-ink bg-green-tint text-ink'
+          : 'rounded-sm border-dashed border-ink-3 bg-white text-ink-2',
         className,
       )}
       title={live ? `Fetched from the source on ${state.date}` : undefined}
