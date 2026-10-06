@@ -22,7 +22,7 @@ export const COPY = {
   banner: {
     region: 'Demo world',
     label: 'Demo world',
-    note: 'Nothing here is saved',
+    note: 'Nothing is saved',
     tour: 'Tour',
     tourResume: 'Show the tour step',
     tourRestart: 'Start the tour again',
