@@ -22,7 +22,9 @@ export const HERO = {
 export const DEMO = {
   title: 'Stick one on',
   hint: 'Tap a sticker. The tree grows, and nothing is saved.',
-  tag: 'Demo · sped up',
+  tag: 'Demo',
+  /** Rest of the tag; visually dropped where the species picker needs the width. */
+  tagDetail: ' · sped up',
   speciesLabel: 'Demo tree species',
   speciesShort: 'Tree',
   readoutLabel: 'What the demo printed',

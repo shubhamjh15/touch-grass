@@ -102,7 +102,11 @@ export default function LandingPage() {
   /** Small chips at the stage's top edge: what this is, and that it can be turned. */
   const stageChips = (
     <div className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-1.5 lg:top-28 lg:left-8 lg:flex-row lg:items-center lg:gap-2">
-      <Tag hue="yellow">{DEMO.tag}</Tag>
+      <Tag hue="yellow">
+        {DEMO.tag}
+        {/* On the narrowest phones the species picker shares this edge and needs the room. */}
+        <span className="max-[359px]:sr-only">{DEMO.tagDetail}</span>
+      </Tag>
       <DragHint used={turned} />
     </div>
   );
