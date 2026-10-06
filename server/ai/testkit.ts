@@ -207,10 +207,6 @@ export function parseEvents(text: string): ParsedEvent[] {
     });
 }
 
-export async function readAll(response: Response): Promise<string> {
-  return response.text();
-}
-
 export const GROQ_KEY = 'gsk_' + 'k'.repeat(40);
 export const GEMINI_KEY = 'AIza' + 'g'.repeat(35);
 
