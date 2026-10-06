@@ -69,6 +69,10 @@ describe('format', () => {
     expect(formatCo2(0)).toBe('0 kg');
     expect(formatCo2(0.08)).toBe('80 g');
     expect(formatCo2(0.85)).toBe('850 g');
+    expect(formatCo2(0.819)).toBe('820 g');
+    expect(formatCo2(0.0864)).toBe('86 g');
+    expect(formatCo2(0.0046)).toBe('5 g');
+    expect(formatCo2(0.9949)).toBe('990 g');
     expect(formatCo2(1.26)).toBe('1.3 kg');
     expect(formatCo2(42.4)).toBe('42 kg');
     expect(formatCo2(1250)).toBe('1.25 t');

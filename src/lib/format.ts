@@ -28,14 +28,24 @@ export function formatCompact(value: number): string {
   return compact.format(value);
 }
 
+/** Rounds to two significant figures: 819 → 820, 86.4 → 86, 4.6 → 5. */
+function twoFigures(value: number): number {
+  const abs = Math.abs(value);
+  if (abs < 10) return Math.round(value);
+  const magnitude = 10 ** (Math.floor(Math.log10(abs)) - 1);
+  return Math.round(value / magnitude) * magnitude;
+}
+
 /**
  * A mass of CO2e with a unit that fits its size: grams below 1 kg, kilograms
- * up to a tonne, tonnes beyond. Always an estimate, so precision stays modest.
+ * up to a tonne, tonnes beyond. Always an estimate, so precision stays modest: grams
+ * keep two significant figures (819 g reads "820 g"), the same as one decimal of a kilogram,
+ * so one logged action shows one figure on every page.
  */
 export function formatCo2(kg: number): string {
   const abs = Math.abs(kg);
   if (abs === 0) return '0 kg';
-  if (abs < 0.995) return `${integer.format(Math.round(kg * 1000))} g`;
+  if (abs < 0.995) return `${integer.format(twoFigures(kg * 1000))} g`;
   if (abs < 10) return `${oneDecimal.format(kg)} kg`;
   if (abs < 1000) return `${integer.format(kg)} kg`;
   return `${twoDecimals.format(kg / 1000)} t`;
