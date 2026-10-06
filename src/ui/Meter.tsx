@@ -25,7 +25,7 @@ const METER_FILL: Record<MeterTone, string> = {
   nature: 'bg-cat-nature',
 };
 
-const HEIGHT = { sm: 'h-2.5', md: 'h-4', lg: 'h-5' } as const;
+const HEIGHT = { sm: 'h-2', md: 'h-2.5', lg: 'h-3.5' } as const;
 
 export type MeterProps = Omit<ComponentProps<'div'>, 'children'> & {
   value: number;
@@ -42,7 +42,7 @@ export type MeterProps = Omit<ComponentProps<'div'>, 'children'> & {
   valueText?: string;
 };
 
-/** A progress bar that moves by transform only, or a row of pips. */
+/** A thin outlined bar that moves by transform only, or a row of pips. */
 export function Meter({
   value,
   max,
@@ -74,7 +74,7 @@ export function Meter({
           <span
             key={index}
             className={cn(
-              'h-2 w-3.5 rounded-[3px] border-2 border-ink transition-colors duration-(--dur-fast)',
+              'h-2 w-3.5 rounded-pill border-2 border-ink transition-colors duration-(--dur-fast)',
               index < value ? METER_FILL[tone] : 'bg-white',
             )}
           />
@@ -96,13 +96,13 @@ export function Meter({
     >
       {projectedFraction > fraction ? (
         <span
-          className="absolute inset-y-0 left-0 border-r-2 border-ink hatch [--hatch:var(--color-ink-3)]"
+          className="absolute inset-y-0 left-0 hatch [--hatch:var(--color-ink-4)]"
           style={{ width: `${projectedFraction * 100}%` }}
         />
       ) : null}
       <span
         className={cn(
-          'absolute inset-0 border-r-2 border-ink transition-transform duration-(--dur-slow) ease-mech',
+          'absolute inset-0 rounded-pill transition-transform duration-(--dur-slow) ease-mech',
           METER_FILL[tone],
         )}
         style={{ transform: `translateX(${-(1 - fraction) * 100}%)` }}

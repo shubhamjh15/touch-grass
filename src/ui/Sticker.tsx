@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn';
 import { clamp } from '@/lib/math';
 import { CATEGORY_ICON } from './categoryIcons';
 import { STICKER_SHAPES } from './stickerShapes';
-import { CATEGORY, restRotation, type CategoryId } from './tokens';
+import { CATEGORY, type CategoryId } from './tokens';
 
 export type StickerSize = 32 | 44 | 66 | 96;
 
@@ -88,7 +88,7 @@ function StickerArt({
               y={20 + shape.iconDy}
               width={26}
               height={26}
-              strokeWidth={2.25}
+              strokeWidth={2}
               color="var(--color-ink-4)"
             />
           ) : null}
@@ -156,7 +156,7 @@ function StickerArt({
               y={20 + shape.iconDy}
               width={26}
               height={26}
-              strokeWidth={2.25}
+              strokeWidth={2}
               color={INK}
             />
             {selected ? (
@@ -191,7 +191,7 @@ export type StickerProps = Omit<ComponentProps<'button'>, 'children' | 'onClick'
   /** Overrides the category's default glyph. */
   icon?: LucideIcon;
   size?: StickerSize;
-  /** Resting rotation in degrees (clamped to ±5). Defaults to a stable pick from the label. */
+  /** Resting rotation in degrees (clamped to ±5). Stickers sit straight unless one is the screen's playful accent. */
   rotate?: number;
   /** The empty album slot: only the dashed silhouette. */
   ghost?: boolean;
@@ -208,8 +208,9 @@ export type StickerProps = Omit<ComponentProps<'button'>, 'children' | 'onClick'
 };
 
 /**
- * The shape-coded action sticker. Category is coded three ways: silhouette, glyph and colour.
- * With `onClick` it is a button that rotates upright on hover and presses onto its shadow.
+ * The shape-coded action sticker, and the one place (with badges and the tree) that keeps the
+ * die-cut look. Category is coded three ways: silhouette, glyph and colour. With `onClick` it is a
+ * button that rises a little on hover and presses onto its shadow.
  */
 export function Sticker({
   category,
@@ -226,7 +227,7 @@ export function Sticker({
   className,
   ...rest
 }: StickerProps) {
-  const turn = clamp(rotate ?? restRotation(`${category}:${label ?? ''}`, 4), -5, 5);
+  const turn = clamp(rotate ?? 0, -5, 5);
   const art = (interactive: boolean, title?: string) => (
     <StickerArt
       category={category}
@@ -265,7 +266,7 @@ export function Sticker({
         if (!disabled) onClick();
       }}
       className={cn(
-        'group/sticker inline-flex shrink-0 flex-col items-center gap-2 rounded-sm text-center text-body-sm leading-[1.2] font-semibold text-ink aria-disabled:cursor-not-allowed aria-disabled:text-ink-3',
+        'group/sticker inline-flex shrink-0 flex-col items-center gap-2 rounded-sm text-center text-body-sm font-semibold text-ink aria-disabled:cursor-not-allowed aria-disabled:text-ink-3',
         COLUMN[size],
         className,
       )}

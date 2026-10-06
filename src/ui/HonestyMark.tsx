@@ -11,13 +11,9 @@ import type { EstimateSource } from './estimate';
 
 function Leader({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-baseline gap-1.5">
-      <dt className="shrink-0 type-slug text-ink-3">{label}</dt>
-      <span
-        aria-hidden="true"
-        className="min-w-3 flex-1 -translate-y-0.5 border-b-2 border-dotted border-ink-4"
-      />
-      <dd className="text-right font-mono text-data text-ink">{value}</dd>
+    <div className="flex items-baseline justify-between gap-3 text-body-sm">
+      <dt className="shrink-0 text-ink-3">{label}</dt>
+      <dd className="text-right font-medium text-ink tabular-nums">{value}</dd>
     </div>
   );
 }
@@ -30,14 +26,14 @@ export function EstimateDetails({
 }: ComponentProps<'div'> & { source: EstimateSource }) {
   return (
     <div className={cn('text-ink', className)} {...rest}>
-      <div className="flex flex-wrap items-center gap-2">
+      <p className="flex flex-wrap items-center gap-2 text-body font-bold">
+        How we got this
         <Tag hue="yellow">{source.code}</Tag>
-        <span className="type-slug text-ink-3">How we got this</span>
-      </div>
+      </p>
       {source.kind === 'ai' ? (
-        <p className="mt-2.5 text-body-sm font-bold">AI estimate, low confidence</p>
+        <p className="mt-2.5 text-body-sm font-semibold">AI estimate, low confidence</p>
       ) : null}
-      <p className="mt-2.5 font-mono text-data font-semibold break-words">{source.formula}</p>
+      <p className="mt-2.5 text-body-sm font-semibold break-words tabular-nums">{source.formula}</p>
       <p className="mt-2 text-body-sm text-ink-2">{source.comparedWith}</p>
       <dl className="mt-3 grid gap-1.5">
         {source.range ? <Leader label="Likely range" value={source.range} /> : null}
@@ -51,7 +47,7 @@ export function EstimateDetails({
         className="mt-3 inline-flex min-h-11 items-center gap-1 link text-body-sm"
       >
         Open methodology
-        <ArrowRight size={16} strokeWidth={2.25} aria-hidden="true" />
+        <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
       </UiLink>
     </div>
   );
@@ -75,7 +71,7 @@ export function HonestyMark({ source, size = 'md', className, ...rest }: Honesty
       type="button"
       aria-label="About this estimate"
       className={cn(
-        'hit-3 inline-grid shrink-0 place-items-center rounded-xs border-2 border-ink bg-yellow-tint align-middle text-ink transition-transform duration-(--dur-fast) ease-out active:bg-yellow aria-expanded:bg-yellow data-[state=open]:bg-yellow fine:hover:-translate-y-px',
+        'hit-3 inline-grid shrink-0 place-items-center rounded-full border-2 border-ink bg-yellow-tint align-middle text-ink transition-colors duration-(--dur-fast) ease-out active:bg-yellow aria-expanded:bg-yellow data-[state=open]:bg-yellow fine:hover:bg-yellow',
         size === 'md' ? 'size-[22px] text-[1.2rem]' : 'size-[18px] text-[1rem]',
         className,
       )}

@@ -30,7 +30,7 @@ function DigitColumn({
       {/* In-flow twin: gives the column its width and baseline. */}
       <span className="invisible">{digit}</span>
       <span
-        className="absolute top-0 left-0 flex flex-col transition-transform ease-mech will-change-transform"
+        className="absolute top-0 left-0 flex flex-col transition-transform ease-mech"
         style={
           {
             transform: `translateY(${-digit * 10}%)`,
@@ -57,7 +57,7 @@ function DigitColumn({
 export function NumberTicker({
   value,
   format = formatNumber,
-  duration = 600,
+  duration = 400,
   className,
   ...rest
 }: NumberTickerProps) {

@@ -4,12 +4,12 @@ import { Check } from 'lucide-react';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { clamp01 } from '@/lib/math';
-import { HUE_VAR, type Hue } from './tokens';
+import { HUE_DEEP_VAR, type Hue } from './tokens';
 
-export type RingSize = 48 | 64 | 96 | 160;
+export type RingSize = 32 | 48 | 64 | 96 | 160;
 
-const THICKNESS: Record<RingSize, number> = { 48: 6, 64: 8, 96: 10, 160: 14 };
-const CHECK: Record<RingSize, number> = { 48: 18, 64: 24, 96: 36, 160: 56 };
+const THICKNESS: Record<RingSize, number> = { 32: 4, 48: 5, 64: 6, 96: 8, 160: 10 };
+const CHECK: Record<RingSize, number> = { 32: 16, 48: 22, 64: 28, 96: 40, 160: 60 };
 
 export type RingProgressProps = Omit<ComponentProps<'div'>, 'children'> & {
   value: number;
@@ -20,15 +20,15 @@ export type RingProgressProps = Omit<ComponentProps<'div'>, 'children'> & {
   label: string;
   /** Spoken value. Defaults to "value of max". */
   valueText?: string;
-  /** Centre content: a mono "2/3" or one proud figure. Replaced by a check when complete. */
+  /** Centre content: a short "2/3" or one figure. Replaced by a check when complete. */
   children?: ReactNode;
   /** Keep the children instead of the check when the ring completes (timers). */
   keepChildren?: boolean;
 };
 
 /**
- * The ring: an ink track, a white channel and a flat arc from 12 o'clock, ending in an ink tick.
- * Complete = the disc turns yellow and a check sticks in. The day ring, locked badges, the break timer.
+ * A thin ring: a pale track and one arc from 12 o'clock. Complete = the disc fills green and a
+ * check lands. Lesson progress, the day's ring, the break timer.
  */
 export function RingProgress({
   value,
@@ -44,10 +44,11 @@ export function RingProgress({
 }: RingProgressProps) {
   const t = THICKNESS[size];
   const centre = size / 2;
-  const radius = centre - (t + 4) / 2 - 1;
+  const radius = centre - t / 2;
   const circumference = 2 * Math.PI * radius;
   const fraction = clamp01(value / Math.max(max, 1));
   const complete = fraction >= 1;
+  const showCheck = complete && !keepChildren;
 
   return (
     <div
@@ -67,56 +68,33 @@ export function RingProgress({
         viewBox={`0 0 ${size} ${size}`}
         aria-hidden="true"
         focusable="false"
-        className="absolute inset-0 overflow-visible"
+        className="absolute inset-0"
       >
         <circle
           cx={centre}
           cy={centre}
           r={radius}
-          fill={complete ? 'var(--color-yellow)' : 'var(--color-white)'}
-          stroke="var(--color-ink)"
-          strokeWidth={t + 4}
+          fill={showCheck ? 'var(--color-green)' : 'none'}
+          stroke="var(--color-line)"
+          strokeWidth={t}
         />
         <circle
           cx={centre}
           cy={centre}
           r={radius}
           fill="none"
-          stroke="var(--color-white)"
+          stroke={HUE_DEEP_VAR[tone]}
           strokeWidth={t}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - fraction)}
+          transform={`rotate(-90 ${centre} ${centre})`}
+          opacity={fraction > 0 ? 1 : 0}
         />
-        <g transform={`rotate(-90 ${centre} ${centre})`}>
-          <circle
-            cx={centre}
-            cy={centre}
-            r={radius}
-            fill="none"
-            stroke={HUE_VAR[tone]}
-            strokeWidth={t}
-            strokeDasharray={circumference}
-            strokeDashoffset={circumference * (1 - fraction)}
-            className="transition-[stroke-dashoffset] duration-(--dur-slow) ease-mech"
-          />
-          {fraction > 0 && !complete ? (
-            <line
-              x1={centre + radius - t / 2}
-              x2={centre + radius + t / 2}
-              y1={centre}
-              y2={centre}
-              stroke="var(--color-ink)"
-              strokeWidth={2}
-              className="transition-transform duration-(--dur-slow) ease-mech"
-              style={{
-                transformOrigin: `${centre}px ${centre}px`,
-                transform: `rotate(${fraction * 360}deg)`,
-              }}
-            />
-          ) : null}
-        </g>
       </svg>
-      <span className="relative grid place-items-center text-center font-mono text-data leading-none text-ink">
-        {complete && !keepChildren ? (
-          <Check size={CHECK[size]} strokeWidth={3} aria-hidden="true" className="animate-pop" />
+      <span className="relative grid place-items-center text-center text-body-sm leading-none font-semibold text-ink tabular-nums">
+        {showCheck ? (
+          <Check size={CHECK[size]} strokeWidth={2.5} aria-hidden="true" className="animate-pop" />
         ) : (
           children
         )}

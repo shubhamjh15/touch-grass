@@ -16,9 +16,9 @@ export type XPBarProps = Omit<ComponentProps<'div'>, 'children'> & {
   xpForNext: number;
   /** XP from the action that just happened: drawn yellow for 600 ms, then it turns green. */
   justEarned?: number;
-  /** The HUD form: a 96 px bar, no level figure, no count. */
+  /** The top-bar form: a 96 px bar, no level figure, no count. */
   compact?: boolean;
-  /** Hide the level figure when a neighbour already shows it (a Ticket stub). */
+  /** Hide the level figure when a neighbour already shows it. */
   hideLevel?: boolean;
   /** Hide the "425/600" count when a neighbour already shows it. */
   hideCount?: boolean;
@@ -53,9 +53,8 @@ export function XPBar({
   return (
     <div className={cn('flex min-w-0 items-center gap-2.5', className)} {...rest}>
       {compact || hideLevel ? null : (
-        <span className="type-figure text-display-sm">
-          <span className="sr-only">Level </span>
-          <NumberTicker value={level} />
+        <span className="shrink-0 text-body font-bold whitespace-nowrap">
+          Level <NumberTicker value={level} />
         </span>
       )}
       <div
@@ -66,22 +65,22 @@ export function XPBar({
         aria-valuenow={Math.min(xp, xpForNext)}
         aria-valuetext={`Level ${level}, ${formatNumber(xp)} of ${formatNumber(xpForNext)} XP`}
         className={cn(
-          'relative h-4 overflow-hidden rounded-pill border-2 border-ink bg-white',
+          'relative h-3 overflow-hidden rounded-pill border-2 border-ink bg-white',
           compact ? 'w-24 shrink-0' : 'min-w-12 flex-1',
         )}
       >
         <span
-          className="absolute inset-0 border-r-2 border-ink bg-yellow transition-transform duration-(--dur-slow) ease-mech"
+          className="absolute inset-0 rounded-pill bg-yellow transition-transform duration-(--dur-slow) ease-mech"
           style={{ transform: `translateX(${-(1 - now) * 100}%)` }}
         />
         <span
-          className="absolute inset-0 border-r-2 border-ink bg-green transition-transform duration-(--dur-slow) ease-mech"
+          className="absolute inset-0 rounded-pill bg-green transition-transform duration-(--dur-slow) ease-mech"
           style={{ transform: `translateX(${-(1 - before) * 100}%)` }}
         />
       </div>
       {compact || hideCount ? null : (
-        <span className="shrink-0 font-mono text-data text-ink-2" aria-hidden="true">
-          {formatNumber(xp)}/{formatNumber(xpForNext)}
+        <span className="shrink-0 text-body-sm text-ink-2 tabular-nums" aria-hidden="true">
+          {formatNumber(xp)} / {formatNumber(xpForNext)} XP
         </span>
       )}
     </div>
