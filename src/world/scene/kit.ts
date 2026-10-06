@@ -26,6 +26,9 @@ export interface Place {
   tip?: number;
 }
 
+/** Bevels below this radius are not modelled (see `rbox`). */
+const BEVEL_FROM = 0.013;
+
 const matrix = new THREE.Matrix4();
 const position = new THREE.Vector3();
 const quaternion = new THREE.Quaternion();
@@ -82,6 +85,9 @@ export class Kit {
     hex: string,
     place?: Place,
   ): this {
+    // A bevel this small is under a pixel at any distance the camera reaches: a plain
+    // box is a ninth of the triangles.
+    if (radius < BEVEL_FROM) return this.box(width, height, depth, hex, place);
     return this.add(new RoundedBoxGeometry(width, height, depth, 1, radius), hex, place);
   }
 

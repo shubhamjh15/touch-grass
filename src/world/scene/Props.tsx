@@ -34,6 +34,8 @@ import { useDispose, useScene } from './sceneStore';
 /** Toys are drawn a little larger than their footprints: they are small next to the tree. */
 const TOY_SCALE = 1.1;
 const DROP_SECONDS = 0.34;
+/** Toys shorter than this do not cast a shadow. */
+const CAST_FROM = 0.55;
 
 const GROUND: readonly GroundModelId[] = [
   'mushrooms',
@@ -101,6 +103,9 @@ function Toy({ part, anchor, model, material, shadows }: ToyProps) {
     [glass, halo],
   );
   useHitTarget(part, outer);
+  // Only the taller toys throw a shadow worth a second draw; the small ones sit on their
+  // painted patch.
+  const casts = shadows && model.height >= CAST_FROM;
 
   useEffect(() => {
     places.set(part, { x: anchor.x, y: anchor.y, z: anchor.z, radius: anchor.radius });
@@ -230,7 +235,7 @@ function Toy({ part, anchor, model, material, shadows }: ToyProps) {
         <mesh
           geometry={model.body}
           material={material}
-          castShadow={shadows}
+          castShadow={casts}
           receiveShadow={shadows}
         />
         {model.moving && (
@@ -239,7 +244,7 @@ function Toy({ part, anchor, model, material, shadows }: ToyProps) {
             geometry={model.moving.geometry}
             material={material}
             position={model.moving.pivot}
-            castShadow={shadows}
+            castShadow={casts}
           />
         )}
         {model.glow && glass && <mesh geometry={model.glow} material={glass} />}
