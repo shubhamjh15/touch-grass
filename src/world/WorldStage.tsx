@@ -446,6 +446,7 @@ export function Stage({
       aria-describedby={group ? (operable ? `${hintId} ${islandId}` : islandId) : undefined}
       tabIndex={operable ? 0 : undefined}
       data-world-stage={mode}
+      data-world-growth={merged.growth.toFixed(4)}
       className={cn(
         'relative isolate',
         operable &&
