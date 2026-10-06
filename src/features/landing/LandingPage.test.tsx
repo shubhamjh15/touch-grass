@@ -41,11 +41,8 @@ const stick = (index: number, times = 1) => {
   for (let count = 0; count < times; count += 1) fireEvent.click(sticker(index));
 };
 
-const demoSection = () => {
-  const section = screen.getByRole('heading', { name: DEMO.title }).closest('section');
-  if (!section) throw new Error('demo section missing');
-  return within(section);
-};
+/** Where the demo answers: status line, receipt and the offer to plant. */
+const demoSection = () => within(screen.getByRole('group', { name: DEMO.readoutLabel }));
 
 beforeEach(() => {
   gameActions.resetAll();
@@ -110,6 +107,21 @@ describe('<LandingPage>', () => {
       vi.mocked(emitPulse).mock.calls.filter(([pulse]) => pulse.kind === 'celebrate'),
     ).toHaveLength(1);
     expect(demoSection().getByText('Biked 5 km, 4 times')).toBeInTheDocument();
+  });
+
+  it('puts the stickers under their own heading, and "Try it first" on the first one', () => {
+    render(<LandingPage />);
+    const tray = screen.getByRole('heading', { level: 2, name: DEMO.title }).closest('section');
+    if (!tray) throw new Error('sticker tray missing');
+    expect(within(tray).getAllByRole('button')).toHaveLength(DEMO_ACTIONS.length);
+
+    const tryIt = screen.getByRole('link', { name: HERO.secondary });
+    // Without JavaScript the link is a plain jump to the demo's readout.
+    expect(tryIt).toHaveAttribute('href', '#try-it');
+    expect(document.getElementById('try-it')).toBeInTheDocument();
+    Element.prototype.scrollIntoView = vi.fn();
+    fireEvent.click(tryIt);
+    expect(sticker(0)).toHaveFocus();
   });
 
   it('offers to plant for real after the third sticker, not before', () => {
@@ -229,6 +241,17 @@ describe('<LandingPage>', () => {
     // The story stage and the closing stage: the phone-only slots stay empty.
     expect(document.querySelectorAll('[data-world-stage="hero"]')).toHaveLength(2);
     expect(screen.getAllByRole('group', { name: /demo oak tree/i })).toHaveLength(2);
+    // The sticker tray rides on the story stage, with the species picker beside it.
+    const storyStage = document.querySelector<HTMLElement>('[data-world-stage="hero"]');
+    if (!storyStage) throw new Error('story stage missing');
+    expect(within(storyStage).getAllByRole('button', { name: /lunch|Biked|shower/ })).toHaveLength(
+      DEMO_ACTIONS.length,
+    );
+    expect(
+      within(storyStage).getByRole('radiogroup', { name: DEMO.speciesLabel }),
+    ).toBeInTheDocument();
+    // The illustrated tree does not turn, so nothing says it does.
+    expect(screen.queryByText(DEMO.dragHint)).not.toBeInTheDocument();
 
     const list = screen
       .getByRole('heading', { name: 'A first year, sped up' })
