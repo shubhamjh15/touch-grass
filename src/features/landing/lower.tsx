@@ -8,7 +8,7 @@ import { ACTIONS, ACTION_BY_ID, CATEGORIES, SOURCES } from '@/data/catalogue';
 import { actionAnchor } from '@/data/content';
 import { DAILY_QUEST_BY_ID } from '@/data/quests';
 import { DAILY_GOAL, estimateKg } from '@/game';
-import { BRAND } from '@/lib/brand';
+import { cn } from '@/lib/cn';
 import { formatCo2Estimate, formatNumber } from '@/lib/format';
 import {
   Approx,
@@ -16,9 +16,7 @@ import {
   Card,
   CloudGlyph,
   Co2e,
-  ColorBar,
   EstimateDetails,
-  LeafMark,
   Ledger,
   Lettering,
   ListRow,
@@ -32,7 +30,7 @@ import {
   isCategoryId,
   type EstimateSource,
 } from '@/ui';
-import { FAQ, FINAL, FOOTER, HONEST, HOW, KIND, PRIVATE } from './copy';
+import { FAQ, FINAL, HONEST, HOW, KIND, PRIVATE } from './copy';
 import { MiniTree } from './illustrations';
 import { DEMO_ACTIONS, DEMO_CONTEXT, demoEstimate } from './model';
 import { Reveal, SectionHead } from './parts';
@@ -49,7 +47,7 @@ export function Band({
   'aria-labelledby': string;
 }) {
   return (
-    <section className={`py-14 px-gutter lg:px-6 lg:py-24 ${className ?? ''}`} {...rest}>
+    <section className={cn('py-14 px-gutter lg:px-6 lg:py-24', className)} {...rest}>
       <div className="mx-auto max-w-[1120px]">{children}</div>
     </section>
   );
@@ -408,34 +406,5 @@ export function FinalCta({
         </div>
       </div>
     </section>
-  );
-}
-
-export function Footer() {
-  return (
-    <footer className="border-t-4 border-ink bg-card py-8 px-gutter lg:px-6">
-      <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-x-8 gap-y-4">
-        <p className="flex items-center gap-2.5 text-h4">
-          <LeafMark size={28} />
-          {BRAND.name}
-        </p>
-        <ColorBar size="md" />
-        <nav aria-label={FOOTER.navLabel} className="flex items-center gap-1">
-          <Link
-            href={ROUTES.methodology}
-            className="inline-flex min-h-11 items-center link px-2 text-body-sm"
-          >
-            {FOOTER.methodology}
-          </Link>
-          <Link
-            href={ROUTES.privacy}
-            className="inline-flex min-h-11 items-center link px-2 text-body-sm"
-          >
-            {FOOTER.privacy}
-          </Link>
-        </nav>
-        <p className="type-slug text-ink-3 lg:ml-auto">{FOOTER.line}</p>
-      </div>
-    </footer>
   );
 }

@@ -1,15 +1,16 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useBreakpoint, useReducedMotion } from '@/lib/hooks';
 import { useHydrated } from '@/lib/useHydrated';
-import { Approx, Co2e, Lettering, Marquee, Segmented, Tag, toast } from '@/ui';
+import { Approx, Co2e, Lettering, Marquee, Panel, Segmented, Tag, toast } from '@/ui';
 import { SPECIES, type Species, type WorldSnapshot } from '@/world';
 import { DEMO, SPECIES_LABEL, TICKER, stageLabel } from './copy';
+import { DemoDock, DemoReadout, DragHint } from './demo';
 import { Faq, FinalCta, HonestNumbers, HowItWorks, KindAndPrivate } from './lower';
 import { estimateFor, type DemoAction } from './model';
 import { StageSlot, StickerFlight } from './parts';
-import { DemoPanel, Hero, Problem, TimeLapse } from './story';
+import { Hero, Problem, TimeLapse } from './story';
 import { Tour } from './tour';
 import { useDemo } from './useDemo';
 import { useTimelapse } from './useTimelapse';
@@ -54,6 +55,8 @@ export default function LandingPage() {
 
   const demo = useDemo(useCallback((action: DemoAction) => printReceipt(action), []));
   const lapse = useTimelapse(desktop, reduced);
+  const [turned, setTurned] = useState(false);
+  const onTouched = useCallback(() => setTurned(true), []);
 
   const { species } = demo;
   const base = useMemo<Partial<WorldSnapshot>>(
@@ -77,35 +80,39 @@ export default function LandingPage() {
   const demoLabel = stageLabel(species, demo.status.stage, true);
   const lapseLabel = stageLabel(species, lapse.moment.stage, false);
 
-  const demoFurniture = (
-    <>
-      <Tag hue="yellow" className="absolute bottom-3 left-3 lg:bottom-12 lg:left-12">
-        {DEMO.tag}
-      </Tag>
-      <Segmented<Species>
-        size="sm"
-        aria-label={DEMO.speciesLabel}
-        value={species}
-        onValueChange={demo.setSpecies}
-        options={SPECIES_OPTIONS}
-        className="absolute top-3 right-3 lg:top-auto lg:right-12 lg:bottom-10"
-      />
-      {demo.stageFlash ? (
-        <p
-          key={demo.stageFlash}
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-[18%] animate-stick text-center text-display-lg"
-        >
-          <Lettering fill="green" sweep>
-            {demo.stageFlash}
-          </Lettering>
-        </p>
-      ) : null}
-    </>
+  const speciesPicker = (className?: string) => (
+    <Segmented<Species>
+      size="sm"
+      aria-label={DEMO.speciesLabel}
+      value={species}
+      onValueChange={demo.setSpecies}
+      options={SPECIES_OPTIONS}
+      className={className}
+    />
   );
 
+  /** Small chips at the stage's top edge: what this is, and that it can be turned. */
+  const stageChips = (
+    <div className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-1.5 lg:top-24 lg:left-8 lg:flex-row lg:items-center lg:gap-2">
+      <Tag hue="yellow">{DEMO.tag}</Tag>
+      <DragHint used={turned} />
+    </div>
+  );
+
+  const stageFlash = demo.stageFlash ? (
+    <p
+      key={demo.stageFlash}
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-0 top-[18%] animate-stick text-center text-display-lg"
+    >
+      <Lettering fill="green" sweep>
+        {demo.stageFlash}
+      </Lettering>
+    </p>
+  ) : null;
+
   const lapseFurniture = (
-    <Tag hue="paper" className="absolute bottom-3 left-3 lg:bottom-12 lg:left-12">
+    <Tag hue="paper" className="absolute bottom-3 left-3 lg:bottom-10 lg:left-8">
       {lapse.moment.label}
     </Tag>
   );
@@ -120,9 +127,22 @@ export default function LandingPage() {
             mode="hero"
             preview={lapse.engaged ? lapsePreview : demoPreview}
             label={lapse.engaged ? lapseLabel : demoLabel}
+            onTouched={onTouched}
             className="sticky top-0 h-dvh"
           >
-            {lapse.engaged ? lapseFurniture : demoFurniture}
+            {lapse.engaged ? (
+              lapseFurniture
+            ) : (
+              <>
+                {stageChips}
+                {stageFlash}
+                <DemoDock
+                  demo={demo}
+                  extra={speciesPicker()}
+                  className="absolute bottom-7 left-1/2 w-max max-w-[calc(100%-3rem)] -translate-x-1/2"
+                />
+              </>
+            )}
           </StageSlot>
         </div>
 
@@ -135,12 +155,23 @@ export default function LandingPage() {
             mode="hero"
             preview={demoPreview}
             label={demoLabel}
-            className="h-[clamp(200px,calc(100svh-600px),300px)] lg:hidden"
+            onTouched={onTouched}
+            className="h-[clamp(200px,calc(100svh-540px),340px)] lg:hidden"
           >
-            {demoFurniture}
+            {stageChips}
+            {speciesPicker('absolute top-3 right-3')}
+            {stageFlash}
           </StageSlot>
-          <div className="pt-5 px-gutter max-lg:edge-pinked-t lg:pt-0 lg:pr-10 lg:pl-11">
-            <DemoPanel demo={demo} />
+          <div className="max-lg:edge-pinked-t">
+            {/* On a phone the tray straddles the foot of the stage: tree and stickers in one glance. */}
+            {desktop ? null : (
+              <div className="relative -top-11 z-(--z-content) -mb-11 px-gutter lg:hidden">
+                <DemoDock demo={demo} />
+              </div>
+            )}
+            <div className="pt-4 px-gutter lg:pt-0 lg:pr-10 lg:pl-11">
+              <DemoReadout demo={demo} />
+            </div>
           </div>
           <div className="lg:pr-10 lg:pl-11">
             <Problem />
@@ -173,11 +204,14 @@ export default function LandingPage() {
         className="relative z-(--z-content)"
       />
 
-      <HowItWorks />
-      <HonestNumbers />
-      <KindAndPrivate />
-      <Tour />
-      <Faq />
+      {/* The desk: opaque, so the grove never shows through the reading sections. */}
+      <Panel variant="mat">
+        <HowItWorks />
+        <HonestNumbers />
+        <KindAndPrivate />
+        <Tour />
+        <Faq />
+      </Panel>
 
       <FinalCta
         grown={demo.taps > 0}
