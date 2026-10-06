@@ -271,19 +271,19 @@ What they are not: measurements, offsets or carbon accounting. They rely on you 
 
 ### One log, start to finish
 
-Every change goes through one function. The rules engine is pure TypeScript: the same state, clock and operation always give the same result, which is why the tests can play a whole year.
+Every change goes through one function, `transact(state, now, operation)`. The rules engine is pure TypeScript: the same state, clock and operation always give the same result, which is why the tests can play a whole year.
 
 ```mermaid
 flowchart TD
-    you(["You tap a sticker, confirm a coach chip<br/>or confirm a say-it match"])
-    ui["<b>Interface</b><br/>gameActions.logAction(input)"]
-    store["<b>Store</b><br/>the single mutation path"]
-    engine["<b>Rules engine</b><br/>transact(state, now, operation)<br/>settle the calendar, score the act,<br/>reconcile badges, quests and levels"]
+    you(["You tap a sticker,<br/>confirm a coach chip<br/>or a say-it match"])
+    ui["<b>Interface</b><br/>gameActions.logAction()"]
+    store["<b>Store</b><br/>one mutation path"]
+    engine["<b>Rules engine</b><br/>transact(state, now, op)<br/>settle the calendar,<br/>score the act, reconcile<br/>badges and quests"]
     disk[("localStorage")]
-    views["<b>Selectors</b><br/>React re-renders only what changed"]
-    feedback["<b>Feedback layer</b><br/>receipt with Undo, sound, celebrations"]
+    views["<b>Selectors</b><br/>React re-renders<br/>only what changed"]
+    feedback["<b>Feedback layer</b><br/>receipt with Undo,<br/>sound, celebrations"]
     bridge["<b>World bridge</b><br/>events become pulses"]
-    island(["<b>The island</b><br/>leaves burst, the tree takes a growth step"])
+    island(["<b>The island</b><br/>leaves burst, the tree<br/>takes a growth step"])
 
     you --> ui --> store --> engine
     engine -- "next state" --> disk
@@ -299,31 +299,32 @@ flowchart TD
 Nothing in the core loop needs a server. The server does two small jobs: it relays coach messages, so the AI key stays off the browser, and it fetches the public climate readings, so the browser never calls a third party.
 
 ```mermaid
-flowchart LR
-    subgraph browser["In your browser"]
-        pages["<b>Pages and shell</b><br/>src/features · src/app · src/ui"]
-        game["<b>Game</b><br/>src/game · src/data<br/>rules engine, store, content"]
-        world["<b>World</b><br/>src/world<br/>the three.js island, loaded after first paint"]
-        coach["<b>Coach</b><br/>src/ai<br/>client, and the built-in coach"]
-        disk[("localStorage<br/>your whole tree")]
-    end
-    subgraph server["On the server: four route handlers"]
-        ai["<b>/api/chat · /api/estimate · /api/status</b><br/>server/ai"]
-        climate["<b>/api/climate</b><br/>server/climate"]
-    end
+flowchart TB
+    pages["<b>Pages and shell</b><br/>src/features · src/app · src/ui"]
+    game["<b>Game</b><br/>src/game · src/data<br/>rules, store, content"]
+    world["<b>World</b><br/>src/world<br/>the three.js island"]
+    coach["<b>Coach</b><br/>src/ai<br/>client and built-in coach"]
+    disk[("localStorage<br/>your whole tree")]
+    ai["<b>/api/chat · estimate · status</b><br/>server/ai"]
+    climate["<b>/api/climate</b><br/>server/climate"]
     provider(["An AI provider<br/>only when a key is set"])
-    sources(["NASA GISTEMP · NOAA · World Bank"])
+    sources(["NASA GISTEMP · NOAA<br/>World Bank"])
 
     pages --> game
     pages --> world
     pages --> coach
+    game -. "snapshot, pulses" .-> world
     game --> disk
-    game -. "snapshot and pulses" .-> world
     coach --> ai
-    pages --> climate
+    pages ---> climate
     ai --> provider
     climate --> sources
+
+    classDef server stroke-dasharray: 6 4
+    class ai,climate server
 ```
+
+Solid boxes run in your browser. Dashed boxes are the four route handlers on the server.
 
 <details>
 <summary><b>Where things live</b></summary>
