@@ -112,7 +112,7 @@ try {
           const canvas = [...document.querySelectorAll('canvas')].sort(
             (a, b) => b.width * b.height - a.width * a.height,
           )[0];
-          const stage = document.querySelector('[data-world-stage]');
+          const anyStage = document.querySelector('[data-world-stage]');
           const intervals = [];
           let drift = 0;
           let last = performance.now();
@@ -120,6 +120,9 @@ try {
           const tick = (now) => {
             intervals.push(now - last);
             last = now;
+            // The stage the world stands in right now: a long page hands it from one stage
+            // to the next while it scrolls, and only its own stage is the reference.
+            const stage = canvas?.closest('[data-world-stage]');
             if (canvas && stage) {
               const a = canvas.getBoundingClientRect();
               const b = stage.getBoundingClientRect();
@@ -142,7 +145,7 @@ try {
                 p99Ms: Number(at(0.99).toFixed(1)),
                 worstMs: Number((sorted[sorted.length - 1] ?? 0).toFixed(1)),
                 over20: `${((sorted.filter((v) => v > 20).length / Math.max(1, sorted.length)) * 100).toFixed(1)} %`,
-                driftPx: stage ? Number(drift.toFixed(1)) : 'no [data-world-stage] element',
+                driftPx: anyStage ? Number(drift.toFixed(1)) : 'no [data-world-stage] element',
               });
             }
           };
