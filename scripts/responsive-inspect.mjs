@@ -97,6 +97,15 @@ export function inspect(phone) {
       if (over > 8 && style.pointerEvents !== 'none')
         push('cut-off', el, `${Math.round(over)}px past its container`);
     }
+    // Inside a fixed bar or sheet: past the bar's own edge or out of the viewport, where nothing scrolls it back.
+    if (isContent && clip && clip.fixed && style.pointerEvents !== 'none') {
+      const box = clip.node.getBoundingClientRect();
+      const over = Math.max(
+        rect.right - Math.min(box.right, vw),
+        Math.max(box.left, 0) - rect.left,
+      );
+      if (over > 8) push('cut-off', el, `${Math.round(over)}px past its fixed bar`);
+    }
     if (ownText(el)) {
       const size = parseFloat(style.fontSize);
       if (size < 11) push('text-small', el, `${size}px`);
