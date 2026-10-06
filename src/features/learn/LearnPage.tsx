@@ -129,7 +129,7 @@ export default function LearnPage() {
 
       <p className="text-body-sm text-ink-2">
         {LEARN_COPY.sourcesNote}{' '}
-        <TextLink href={ROUTES.methodology} className="inline-flex items-center gap-1">
+        <TextLink href={ROUTES.methodology} className="inline-flex min-h-11 items-center gap-1">
           {LEARN_COPY.sourcesLink}
           <ArrowRight size={14} strokeWidth={2.5} aria-hidden="true" />
         </TextLink>
