@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { ROUTES } from '@/app/shell';
 import { Button, Lettering, Meter, Panel, Tag, UiLink } from '@/ui';
 import { COPY } from './copy';
-import { LEAVE_PARAM, exitDemo, startDemo } from './demo';
+import { LEAVE_PARAM, cancelDemoStart, exitDemo, startDemo } from './demo';
 import { useDemoStore } from './demoStore';
 import { DEMO_DAYS } from './model/demoWorld';
 
@@ -36,6 +36,7 @@ export default function DemoEntryPage() {
     });
     return () => {
       current = false;
+      cancelDemoStart();
     };
   }, [router]);
 

@@ -14,11 +14,11 @@ import {
 } from '@/game';
 import { dayKey } from '@/lib/dates';
 import { COPY, TOUR_COPY } from './copy';
-import { exitDemo, isDemoOn, leaveLink, startDemo } from './demo';
+import { cancelDemoStart, exitDemo, isDemoOn, leaveLink, startDemo } from './demo';
 import DemoChrome from './DemoChrome';
 import { DEMO_TOUR_KEY, resetDemoStore, tourSend, useDemoStore } from './demoStore';
 import { DEMO_DAYS, DEMO_TREE_NAME } from './model/demoWorld';
-import { DEMO_CACHE_KEY } from './model/grow';
+import { DEMO_CACHE_KEY, forgetDemoWorld } from './model/grow';
 
 // Growing the world plays two hundred days through the engine: seconds, on a busy machine.
 vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
@@ -156,6 +156,22 @@ describe('startDemo', () => {
   it('is one start however often it is asked for', async () => {
     const [a, b] = await Promise.all([startDemo(), startDemo()]);
     expect([a, b]).toEqual([true, true]);
+    expect(await startDemo()).toBe(true);
+    expect(isDemoOn()).toBe(true);
+  });
+
+  it('does not switch on under someone who left while the world was growing', async () => {
+    forgetDemoWorld();
+    const before = device();
+    const asked = startDemo();
+    cancelDemoStart();
+    expect(await asked).toBe(false);
+    expect(isDemoOn()).toBe(false);
+    expect(getGameState().onboarding.completedAt).toBeNull();
+    expect(device()).toEqual(before);
+    expect(useDemoStore.getState().tour).toEqual({ status: 'idle' });
+
+    // The world it grew is kept: asking again shows it at once.
     expect(await startDemo()).toBe(true);
     expect(isDemoOn()).toBe(true);
   });

@@ -25,6 +25,8 @@ export function isDemoOn(): boolean {
 }
 
 let starting: Promise<boolean> | null = null;
+/** Somebody is still waiting for the demo. Growing takes a moment; they may have walked off. */
+let wanted = false;
 
 async function begin(): Promise<boolean> {
   if (!isDemoOn()) {
@@ -33,6 +35,11 @@ async function begin(): Promise<boolean> {
       const state = await growDemoWorld(Date.now(), ({ day, days }) => {
         if (useDemoStore.getState().day !== day) useDemoStore.setState({ day, days });
       });
+      if (!wanted) {
+        // The world stays grown for the next time; the app is left as it is.
+        useDemoStore.setState({ phase: 'idle' });
+        return false;
+      }
       game.enterSandbox(state);
     } catch {
       useDemoStore.setState({ phase: 'failed' });
@@ -50,10 +57,19 @@ async function begin(): Promise<boolean> {
  * is under way share its result.
  */
 export function startDemo(): Promise<boolean> {
+  wanted = true;
   starting ??= begin().finally(() => {
     starting = null;
   });
   return starting;
+}
+
+/**
+ * Takes back a `startDemo()` that has not finished: the page that asked for it has gone, and
+ * a sandbox must never switch on under someone who is looking at something else by then.
+ */
+export function cancelDemoStart(): void {
+  wanted = false;
 }
 
 /**
