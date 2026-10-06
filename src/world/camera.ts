@@ -88,6 +88,11 @@ export interface ViewInput {
   /** Where the trunk stands. */
   treeX: number;
   treeZ: number;
+  /**
+   * Share of the stage height at its top that page chrome covers (a floating header over
+   * a bleed stage): the crown is kept below it.
+   */
+  chrome?: number;
 }
 
 export interface View {
@@ -118,12 +123,14 @@ export function viewFor(input: ViewInput, out: View): View {
   const tan = Math.tan(deg(FOV) / 2);
   const aspect = clamp(input.aspect, 0.3, 4);
   const fit = clamp(input.fit, 0.2, 1);
-  const forHeight = tall / 2 / tan / 0.95;
+  const chrome = clamp(input.chrome ?? 0, 0, 0.35);
+  const forHeight = tall / 2 / tan / (0.95 - chrome);
   const forWidth = half / (tan * aspect) / fit;
   const distance = Math.max(forHeight, forWidth);
   const span = 2 * distance * tan;
 
-  const centred = (top - below) / 2;
+  // With chrome over the top of the stage the frame's own centre sits lower on screen.
+  const centred = (top - below) / 2 + (span * chrome) / 2;
   // Standing on the bottom edge: the lowest framed point sits just above the stage's edge.
   const grounded = -below + (span / 2) * 0.97;
   out.targetX = input.treeX;

@@ -66,7 +66,7 @@ export const CAMERA = {
   /** The subject plus this headroom must fit the stage height. */
   headroom: 1.08,
   /** Pixels of page chrome kept free at the top of a bleed stage (hero, hub). */
-  bleedChrome: 64,
+  bleedChrome: 84,
 } as const satisfies Record<string, unknown>;
 
 /** Stage defaults by mode: share of the stage width the lawn takes, and the anchor. */

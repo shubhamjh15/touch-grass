@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { clamp, clamp01, damp } from '@/lib/math';
 import { atmosphereAt, moodAt } from '../atmosphere';
 import { viewFor, type View } from '../camera';
-import { MOTION } from '../config';
+import { CAMERA, MOTION } from '../config';
 import { hourDelta, wrapHour } from '../daylight';
 import { emitWorldHover, emitWorldTap, onTap, pointer } from '../interaction';
 import { PulseScheduler, type BurstKind } from '../pulses';
@@ -174,6 +174,11 @@ export function CameraRig({ frame }: { frame: RefObject<WorldFrame | null> }) {
         treeHalfWidth: tree.halfWidth,
         treeX: tree.x,
         treeZ: tree.z,
+        // Bleed stages run under the page's floating header.
+        chrome:
+          live.mode === 'hero' || live.mode === 'hub'
+            ? CAMERA.bleedChrome / Math.max(1, three.size.height)
+            : 0,
       },
       wanted,
     );
