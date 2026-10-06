@@ -9,16 +9,16 @@ import { cn } from '@/lib/cn';
 import { useBreakpoint } from '@/lib/hooks';
 import { play } from '@/lib/sfx';
 import { Button, IconButton, StickerPill, Tag } from '@/ui';
-import { WorldStage, useWorldStore, type LandmarkId } from '@/world';
+import { WorldStage, type LandmarkId } from '@/world';
 import { BREAK_COPY, COPY } from '../copy';
 import { worldExplore } from '../explore';
 import { LANDMARK_ROUTE, landmarkMeta, printSlug, sceneLabel, specimenLines } from '../model';
 
 /** The stage box at rest and while Today's own Explore mode has it. Skeleton and page share it. */
 export const STAGE_BOX =
-  'relative w-full h-[clamp(340px,56dvh,560px)] lg:h-[clamp(500px,74dvh,840px)]';
-const STAGE_BOX_EXPLORING =
-  'relative w-full h-[calc(100dvh-var(--tabbar-h)-var(--safe-b))] min-h-[420px] lg:h-dvh';
+  'relative w-full h-[clamp(320px,50dvh,540px)] lg:h-[clamp(500px,74dvh,840px)]';
+/** The page asks the shell to put its bars away while exploring, so the stage is the screen. */
+const STAGE_BOX_EXPLORING = 'relative w-full h-dvh min-h-[420px]';
 
 /** Chips sit below the shell's bars: the floating app bar on a phone, the top bar on a desk. */
 const BELOW_BARS = 'top-[calc(var(--safe-t)+72px)] lg:top-28';
@@ -35,8 +35,9 @@ export interface TodayStageProps {
  * The hero of the app home: the grove in hub mode, as large as the first screen allows, with
  * a heads-up display at its edges and nothing over the tree. Top left, the hang tag (name,
  * species, stage, day, mood). Bottom right, Explore. The shell's own bars carry level and
- * streak along the top edge. The world draws the scene; this component only places chips in
- * front of it and turns a landmark into a route.
+ * streak along the top edge. While exploring, the stage is the whole screen and its controls
+ * move to the top edge, clear of the landmarks. The world draws the scene; this component
+ * only places chips in front of it and turns a landmark into a route.
  */
 export function TodayStage({ exploring, onExploringChange, away = false }: TodayStageProps) {
   const router = useRouter();
@@ -45,12 +46,9 @@ export function TodayStage({ exploring, onExploringChange, away = false }: Today
   const today = useToday();
   const now = useGameNow();
   const desktop = useBreakpoint('lg');
-  const worldStatus = useWorldStore((state) => state.status);
   const frame = useRef<HTMLDivElement>(null);
 
   const landmarks = exploring && !away;
-  // Without WebGL the world lists the landmarks along the bottom edge, so the controls move up.
-  const listed = landmarks && worldStatus === 'fallback';
   const lines = specimenLines(tree);
 
   useEffect(() => {
@@ -87,7 +85,6 @@ export function TodayStage({ exploring, onExploringChange, away = false }: Today
   return (
     <div
       ref={frame}
-      data-coachmark="tree"
       data-exploring={exploring ? '' : undefined}
       className={exploring ? STAGE_BOX_EXPLORING : STAGE_BOX}
     >
@@ -109,9 +106,34 @@ export function TodayStage({ exploring, onExploringChange, away = false }: Today
               </StickerPill>
             </div>
           </>
+        ) : exploring ? (
+          <div className="absolute inset-x-3 top-[calc(var(--safe-t)+12px)] flex items-start justify-between gap-3 lg:inset-x-8 lg:top-6">
+            <p
+              role="status"
+              className="max-w-[24ch] min-w-0 rounded-sm border-2 border-ink bg-paper px-2.5 py-1.5 text-caption text-ink shadow-2 lg:max-w-none"
+            >
+              {COPY.exploreHint}
+            </p>
+            <div className="flex shrink-0 items-center gap-2 lg:gap-3">
+              <IconButton label="Turn left" icon={ChevronLeft} onClick={() => turn('ArrowLeft')} />
+              <IconButton
+                label="Turn right"
+                icon={ChevronRight}
+                onClick={() => turn('ArrowRight')}
+              />
+              <Button
+                size={desktop ? 'md' : 'sm'}
+                variant="ink"
+                icon={Check}
+                onClick={toggleExplore}
+              >
+                {COPY.exploreDone}
+              </Button>
+            </div>
+          </div>
         ) : (
           <>
-            <div className={cn('absolute left-3 lg:left-8', BELOW_BARS)}>
+            <div data-coachmark="tree" className={cn('absolute left-3 lg:left-8', BELOW_BARS)}>
               <Tag
                 variant="specimen"
                 title={tree.name}
@@ -121,50 +143,18 @@ export function TodayStage({ exploring, onExploringChange, away = false }: Today
               />
             </div>
 
-            {exploring ? (
-              <p
-                role="status"
-                className={cn(
-                  'absolute inset-x-3 mx-auto w-fit max-w-[calc(100%-24px)] rounded-sm border-2 border-ink bg-paper px-2.5 py-1 text-center text-caption text-ink shadow-2',
-                  listed ? 'bottom-44' : 'bottom-20 lg:bottom-24',
-                )}
-              >
-                {COPY.exploreHint}
-              </p>
-            ) : null}
-
-            <div
-              className={cn(
-                'absolute right-3 flex items-center gap-2 lg:right-8 lg:gap-3',
-                listed ? 'bottom-28' : 'bottom-5 lg:bottom-8',
-              )}
-            >
-              {exploring ? (
-                <>
-                  <IconButton
-                    label="Turn left"
-                    icon={ChevronLeft}
-                    onClick={() => turn('ArrowLeft')}
-                  />
-                  <IconButton
-                    label="Turn right"
-                    icon={ChevronRight}
-                    onClick={() => turn('ArrowRight')}
-                  />
-                </>
-              ) : null}
+            <div className="absolute right-3 bottom-5 lg:right-8 lg:bottom-8">
               <Button
                 size={desktop ? 'md' : 'sm'}
-                variant={exploring ? 'ink' : 'neutral'}
-                icon={exploring ? Check : Compass}
-                aria-pressed={exploring}
+                icon={Compass}
+                variant="neutral"
                 onClick={toggleExplore}
               >
-                {exploring ? COPY.exploreDone : desktop ? COPY.explore : COPY.exploreShort}
+                {desktop ? COPY.explore : COPY.exploreShort}
               </Button>
             </div>
 
-            {desktop && !exploring ? (
+            {desktop ? (
               <p
                 aria-hidden="true"
                 className="pointer-events-none absolute bottom-9 left-8 rounded-xs border-2 border-ink bg-paper px-2 py-1 type-tick text-ink-2"

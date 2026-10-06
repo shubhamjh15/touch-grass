@@ -103,7 +103,7 @@ function Notices() {
   if (!clock.skewed && !storageTrouble && notices.length === 0 && !recap.pending) return null;
 
   return (
-    <div className="grid max-w-[720px] gap-4">
+    <div className="grid gap-4">
       {clock.skewed ? (
         <TapeNote tone="blue" tape="yellow" rotate={0} role="status" className="mx-1 mt-2">
           {COPY.clockSkew}
@@ -159,16 +159,13 @@ function Today() {
   }, []);
 
   const away = phase === 'away' || phase === 'returning';
-  // The break is the whole screen: the shell puts its bars away until the user is back.
-  useHideChrome(away);
+  const looking = exploring && phase === 'idle';
+  // A break and Explore each take the whole screen: the shell puts its bars away meanwhile.
+  useHideChrome(away || looking);
 
   return (
     <div>
-      <TodayStage
-        exploring={exploring && phase === 'idle'}
-        onExploringChange={onExploring}
-        away={away}
-      />
+      <TodayStage exploring={looking} onExploringChange={onExploring} away={away} />
 
       <Panel variant="mat" edge="pinked-t" className={DESK} data-today-desk="">
         <div className={CONTENT}>
@@ -191,10 +188,9 @@ function Today() {
                 </div>
               </div>
 
-              <Notices />
-
               <div className={GROUPS}>
                 <div className={cn(COLUMN, 'lg:col-span-7')}>
+                  <Notices />
                   <QuickStickers />
                   <TodayQuests />
                 </div>
