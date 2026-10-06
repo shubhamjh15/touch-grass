@@ -28,8 +28,13 @@ describe('server-side files', () => {
     expect(files.length).toBeGreaterThan(10);
   });
 
-  it('keeps app/api to the three endpoints, so nothing else is exposed as a route', () => {
-    expect(readdirSync(join(root, 'app/api')).sort()).toEqual(['chat', 'estimate', 'status']);
+  it('keeps app/api to the four endpoints, so nothing else is exposed as a route', () => {
+    expect(readdirSync(join(root, 'app/api')).sort()).toEqual([
+      'chat',
+      'climate',
+      'estimate',
+      'status',
+    ]);
   });
 
   it.each(files)('%s uses plain relative imports and no alias', (file) => {
