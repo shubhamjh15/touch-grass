@@ -34,7 +34,6 @@
     "cmdk": "^1.1.1",
     "framer-motion": "^12.33.0",
     "lucide-react": "^0.562.0",
-    "maath": "^0.10.8",
     "next": "^16.3.8",
     "postprocessing": "^6.39.5",
     "radix-ui": "^1.6.7",
@@ -43,14 +42,12 @@
     "react-markdown": "^10.1.0",
     "recharts": "^3.6.0",
     "remark-gfm": "^4.0.1",
-    "simplex-noise": "^4.0.3",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
     "three": "^0.186.1",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
