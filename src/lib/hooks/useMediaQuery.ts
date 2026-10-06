@@ -38,11 +38,6 @@ export function useBreakpoint(breakpoint: Breakpoint): boolean {
   return useMediaQuery(BREAKPOINTS[breakpoint]);
 }
 
-/** True below `lg`: the tab-bar shell (phones and tablets). */
-export function useIsMobile(): boolean {
-  return !useMediaQuery(BREAKPOINTS.lg);
-}
-
 /** True when the primary pointer can hover precisely (mouse, trackpad). Tilt and hover flourishes only. */
 export function useFinePointer(): boolean {
   return useMediaQuery('(hover: hover) and (pointer: fine)');
