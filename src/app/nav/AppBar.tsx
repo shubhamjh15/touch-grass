@@ -81,13 +81,16 @@ export function AppBar({ overlay }: { overlay: boolean }) {
             <RainClouds bank={hud.rainBank} />
           </StickerPill>
         </button>
-        <Avatar
-          kind="moss"
-          size={44}
-          className="pointer-events-auto shadow-2"
-          label="Ask Moss, your coach"
-          onClick={() => openCoach()}
-        />
+        {/* The wrapper has no box of its own: it only names the button for the demo's tour. */}
+        <span data-tour="nav-coach" className="contents">
+          <Avatar
+            kind="moss"
+            size={44}
+            className="pointer-events-auto shadow-2"
+            label="Ask Moss, your coach"
+            onClick={() => openCoach()}
+          />
+        </span>
       </header>
 
       {/* Zero height, so going offline never pushes the page down. */}

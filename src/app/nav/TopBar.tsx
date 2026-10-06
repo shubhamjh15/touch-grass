@@ -22,7 +22,16 @@ export function useModifierLabel(): string {
 }
 
 /** The logo tile and the product name. */
-export function Logo({ href, className }: { href: string; className?: string }) {
+export function Logo({
+  href,
+  className,
+  nameClassName,
+}: {
+  href: string;
+  className?: string;
+  /** Lets a tight bar fold the wordmark away; the link keeps its accessible name. */
+  nameClassName?: string;
+}) {
   return (
     <UiLink
       href={href}
@@ -35,7 +44,7 @@ export function Logo({ href, className }: { href: string; className?: string }) 
       >
         <LeafMark size={22} />
       </span>
-      <span className="text-h3 whitespace-nowrap">{BRAND.name}</span>
+      <span className={cn('text-h3 whitespace-nowrap', nameClassName)}>{BRAND.name}</span>
     </UiLink>
   );
 }
@@ -44,11 +53,13 @@ const LINK =
   'relative inline-flex h-10 items-center rounded-ctl border-3 border-transparent px-3.5 text-label whitespace-nowrap';
 
 function TopLink({
+  id,
   href,
   label,
   current,
   className,
 }: {
+  id: RouteId;
   href: string;
   label: string;
   current: boolean;
@@ -57,6 +68,8 @@ function TopLink({
   return (
     <UiLink
       href={href}
+      // What the demo's tour points at.
+      data-tour={`nav-${id}`}
       aria-current={current ? 'page' : undefined}
       className={cn(LINK, current ? 'font-bold' : 'fine:hover:bg-mat-deep', className)}
     >
@@ -86,12 +99,17 @@ export function TopBar({ section }: { section: RouteId }) {
 
   return (
     <header className="fixed inset-x-6 top-4 z-(--z-nav) mx-auto hidden h-16 max-w-[1392px] items-center gap-1.5 rounded-lg border-4 border-ink bg-white px-3.5 shadow-3 lg:flex">
-      <Logo href={ROUTES.today} className="mr-3" />
+      <Logo
+        href={ROUTES.today}
+        className="mr-1 min-[1180px]:mr-3"
+        nameClassName="max-[1179px]:sr-only"
+      />
 
       <nav aria-label="Main" className="flex items-center gap-1">
         {TOP_LINKS.map((item, index) => (
           <TopLink
             key={item.id}
+            id={item.id}
             href={item.href}
             label={item.label}
             current={item.id === section}
@@ -112,6 +130,7 @@ export function TopBar({ section }: { section: RouteId }) {
             trigger={
               <button
                 type="button"
+                data-tour="nav-more"
                 className={cn(
                   LINK,
                   'cursor-pointer gap-1',
@@ -141,7 +160,10 @@ export function TopBar({ section }: { section: RouteId }) {
           <Search size={14} strokeWidth={2.5} aria-hidden="true" />
           <span aria-hidden="true">{modifier} K</span>
         </button>
-        <Avatar kind="moss" size={44} label="Ask Moss, your coach" onClick={() => openCoach()} />
+        {/* The wrapper has no box of its own: it only names the button for the demo's tour. */}
+        <span data-tour="nav-coach" className="contents">
+          <Avatar kind="moss" size={44} label="Ask Moss, your coach" onClick={() => openCoach()} />
+        </span>
         <Avatar
           kind="tree"
           species={profile.species ?? undefined}

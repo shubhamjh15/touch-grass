@@ -7,6 +7,7 @@ import { prefersReducedMotion, useBreakpoint } from '@/lib/hooks';
 import { play } from '@/lib/sfx';
 import { DURATIONS } from '@/ui';
 import { useWorldStore } from '@/world';
+import { DemoSlot } from '../demo/DemoSlot';
 import { Main } from '../Main';
 import { AppBar } from '../nav/AppBar';
 import { MoreSheet } from '../nav/MoreSheet';
@@ -64,32 +65,36 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const carry = useCarryThud(info.frame);
 
   return (
-    <div className="relative min-h-dvh">
-      {chromeHidden ? null : (
-        <>
-          <TopBar section={info.section} />
-          <AppBar overlay={info.frame === 'bleed'} />
-        </>
-      )}
+    <>
+      {/* Outside the frame below, so on a phone the banner pushes the app down instead of covering it. */}
+      <DemoSlot />
+      <div className="relative min-h-dvh">
+        {chromeHidden ? null : (
+          <>
+            <TopBar section={info.section} />
+            <AppBar overlay={info.frame === 'bleed'} />
+          </>
+        )}
 
-      <Main className={cn(!chromeHidden && 'max-lg:pb-tabbar')}>
-        <div className={frame.outer}>
-          {info.frame === 'rail' && desktop ? (
-            <div className="lg:col-span-3">
-              <GroveRail />
+        <Main className={cn(!chromeHidden && 'max-lg:pb-tabbar')}>
+          <div className={frame.outer}>
+            {info.frame === 'rail' && desktop ? (
+              <div className="lg:col-span-3">
+                <GroveRail />
+              </div>
+            ) : null}
+            <div className={frame.content}>
+              <RouteTransition routeKey={pathname} carry={carry}>
+                {children}
+              </RouteTransition>
             </div>
-          ) : null}
-          <div className={frame.content}>
-            <RouteTransition routeKey={pathname} carry={carry}>
-              {children}
-            </RouteTransition>
           </div>
-        </div>
-      </Main>
+        </Main>
 
-      {chromeHidden ? null : <TabBar section={info.section} />}
-      <MoreSheet section={info.section} />
-      <AppOverlays />
-    </div>
+        {chromeHidden ? null : <TabBar section={info.section} />}
+        <MoreSheet section={info.section} />
+        <AppOverlays />
+      </div>
+    </>
   );
 }

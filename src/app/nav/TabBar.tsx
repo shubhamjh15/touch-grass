@@ -34,11 +34,13 @@ function isTouchTyping(): boolean {
 }
 
 function Tab({
+  id,
   href,
   label,
   icon: Icon,
   current,
 }: {
+  id: RouteId;
   href: string;
   label: string;
   icon: LucideIcon;
@@ -47,6 +49,8 @@ function Tab({
   return (
     <UiLink
       href={href}
+      // What the demo's tour points at.
+      data-tour={`nav-${id}`}
       aria-current={current ? 'page' : undefined}
       className={cn(
         'flex h-14 w-full max-w-[78px] flex-col items-center gap-1 rounded-ctl text-tab',
@@ -98,6 +102,7 @@ function LogSticker({ onLog }: { onLog: boolean }) {
     <UiLink
       href={ROUTES.log}
       onClick={onClick}
+      data-tour="nav-log"
       aria-label="Log an action"
       aria-current={onLog ? 'page' : undefined}
       className="group relative z-(--z-fab) -mt-[42px] flex w-full max-w-[78px] flex-col items-center gap-2.5 rounded-[22px] text-tab font-bold text-ink"
@@ -148,6 +153,7 @@ export function TabBar({ section }: { section: RouteId }) {
       <button
         type="button"
         onClick={() => setMoreOpen(true)}
+        data-tour="nav-more"
         aria-haspopup="dialog"
         aria-expanded={moreOpen}
         className={cn(

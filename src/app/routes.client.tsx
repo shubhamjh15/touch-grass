@@ -48,6 +48,11 @@ export const OnboardingRoute = dynamic(() => import('@/features/onboarding/Onboa
   loading: PageLoading,
 });
 
+export const DemoRoute = dynamic(() => import('@/features/demo/DemoEntryPage'), {
+  ssr: false,
+  loading: PageLoading,
+});
+
 // Development workbenches. In production the import is dropped, so their code never ships.
 export const UiKitRoute = dynamic(
   () =>
