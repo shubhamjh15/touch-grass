@@ -194,7 +194,7 @@ export function TimeLapse({
           </header>
 
           <div className="relative mt-4 min-h-0 flex-1 lg:mt-0 lg:pl-9">
-            <StageRuler frame={moment.frame} />
+            <StageRuler frame={moment.frame} progress={moment.progress} />
             <ol ref={listRef} className="grid lg:block">
               {TIMELAPSE_FRAMES.map((frame, index) => {
                 const caption = TIMELAPSE_CAPTIONS[frame.id];
@@ -239,12 +239,19 @@ export function TimeLapse({
  * The ruler: one tick per frame, the current one marked. Along the top of the caption on
  * phones, down the desk's edge on desktop. Decorative; `aria-current` on the caption says the same.
  */
-function StageRuler({ frame }: { frame: number }) {
+function StageRuler({ frame, progress }: { frame: number; progress: number }) {
   return (
     <div
       aria-hidden="true"
-      className="mb-3 flex items-center gap-1 lg:absolute lg:inset-y-0 lg:left-0 lg:mb-0 lg:w-5 lg:flex-col lg:gap-0"
+      className="relative mb-3 flex items-center gap-1 lg:absolute lg:inset-y-0 lg:left-0 lg:mb-0 lg:w-5 lg:flex-col lg:gap-0"
     >
+      {/* Desktop: a line from the first tick to the last that inks itself in as the year goes by. */}
+      <span className="absolute top-[6.25%] bottom-[6.25%] left-1/2 hidden w-1 -translate-x-1/2 overflow-hidden rounded-pill bg-ink/15 lg:block">
+        <span
+          className="block size-full origin-top bg-ink transition-transform duration-(--dur-fast) ease-out"
+          style={{ transform: `scaleY(${progress})` }}
+        />
+      </span>
       {TIMELAPSE_FRAMES.map((entry, index) => (
         <span
           key={entry.id}
@@ -252,7 +259,7 @@ function StageRuler({ frame }: { frame: number }) {
         >
           <span
             className={cn(
-              'block h-1.5 w-full rounded-pill border-[1.5px] border-ink transition-colors duration-(--dur-fast) lg:size-3.5 lg:border-2',
+              'relative block h-1.5 w-full rounded-pill border-[1.5px] border-ink transition-colors duration-(--dur-fast) lg:size-3.5 lg:border-2',
               index < frame && 'bg-green',
               index === frame && 'bg-yellow',
               index > frame && 'bg-white',
