@@ -26,10 +26,10 @@
         "restDaysPending": [0],
         "restDaysFrom": "2026-10-12",
         "hiddenActions": [],
-        "sound": true,
+        "sound": false,
         "haptics": true,
         "motion": "system",
-        "graphics": "auto",
+        "graphics": "off",
         "sky": "local",
         "celebrations": "full",
         "shareStatsWithCoach": true

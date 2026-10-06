@@ -26,10 +26,10 @@
         "restDaysPending": null,
         "restDaysFrom": null,
         "hiddenActions": [],
-        "sound": true,
+        "sound": false,
         "haptics": true,
         "motion": "system",
-        "graphics": "auto",
+        "graphics": "off",
         "sky": "local",
         "celebrations": "full",
         "shareStatsWithCoach": true
