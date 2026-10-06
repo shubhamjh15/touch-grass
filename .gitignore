@@ -40,3 +40,7 @@ dev-dist
 .next
 .next-*
 next-env.d.ts
+
+# Default output of scripts/shot.mjs when no --out is given
+/shot.png
+/shot-*.png
