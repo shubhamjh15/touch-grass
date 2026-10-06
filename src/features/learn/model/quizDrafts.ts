@@ -1,11 +1,14 @@
 import { LESSON_IDS } from '@/data/content';
-import { STORAGE_PREFIX, gameEvents } from '@/game';
+import { STORAGE_PREFIX, game, gameEvents } from '@/game';
 import { parseDrafts, type QuizDraft } from './quiz';
 
 /**
  * Unfinished quizzes, kept on the device so a quiz left midway resumes where it stopped. The key
  * sits under the product's storage prefix, so "Reset" clears it with everything else. It is a
  * convenience, not game state: scores and XP are only ever written by the store.
+ *
+ * It is read and written through the game's own storage, so in the demo world the drafts live
+ * in the sandbox with everything else and the real ones are left alone.
  */
 export const QUIZ_DRAFTS_KEY = `${STORAGE_PREFIX}learn-quiz`;
 
@@ -26,7 +29,7 @@ export function readQuizDrafts(): Record<string, QuizDraft> {
   if (typeof window === 'undefined') return {};
   if (fallback) return { ...fallback };
   try {
-    const raw = window.localStorage.getItem(QUIZ_DRAFTS_KEY);
+    const raw = game.storage.getItem(QUIZ_DRAFTS_KEY);
     return raw === null ? {} : parseDrafts(JSON.parse(raw), KNOWN);
   } catch {
     // Unreadable or unparsable: start clean rather than trust it.
@@ -41,8 +44,8 @@ function write(drafts: Record<string, QuizDraft>): void {
     return;
   }
   try {
-    if (Object.keys(drafts).length === 0) window.localStorage.removeItem(QUIZ_DRAFTS_KEY);
-    else window.localStorage.setItem(QUIZ_DRAFTS_KEY, JSON.stringify(drafts));
+    if (Object.keys(drafts).length === 0) game.storage.removeItem(QUIZ_DRAFTS_KEY);
+    else game.storage.setItem(QUIZ_DRAFTS_KEY, JSON.stringify(drafts));
   } catch {
     fallback = { ...drafts };
   }
