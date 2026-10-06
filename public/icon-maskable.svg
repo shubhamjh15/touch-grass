@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Touch Grass">
+  <rect width="512" height="512" fill="#4ade80"/>
+  <g transform="rotate(-4 256 256)">
+    <g transform="translate(104 108) scale(12.5)" stroke="#18181b" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M5 19c-1.5-7 2.5-13.5 14.5-14.5C20.5 15 14 20.500 5 19z" fill="#18181b" transform="translate(1.1 1.1)"/>
+      <path d="M5 19c-1.5-7 2.5-13.5 14.5-14.5C20.5 15 14 20.500 5 19z" fill="#ffffff"/>
+      <path d="M4 20.5C7.5 15 11 11.5 15.5 9" fill="none"/>
+    </g>
+  </g>
+</svg>
