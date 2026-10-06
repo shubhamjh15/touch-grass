@@ -92,7 +92,9 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
     // GPU time of a frame, where the driver offers timer queries: the one number that
     // tells fill-rate cost apart from a busy main thread. Development only.
     const context = gl.getContext() as WebGL2RenderingContext;
-    const timer = IS_DEV ? context.getExtension('EXT_disjoint_timer_query_webgl2') : null;
+    const timerExtension = () =>
+      IS_DEV ? context.getExtension('EXT_disjoint_timer_query_webgl2') : null;
+    let timer = timerExtension();
     let query: WebGLQuery | null = null;
     const anchors = new Float32Array(LANDMARKS.length * 3);
     const callouts: CalloutFrame = {
@@ -123,6 +125,8 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
       event.preventDefault();
       lost = true;
       reported = false;
+      // A query of the lost context means nothing to the restored one.
+      query = null;
       hideAllCallouts();
       stickingPoint.valid = false;
       setStatus('fallback');
@@ -132,6 +136,8 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
       window.clearTimeout(lostTimer);
       lost = false;
       rendered = 0;
+      // Extensions belong to the context that was lost: ask the new one.
+      timer = timerExtension();
     };
     canvas.addEventListener('webglcontextlost', onLost);
     canvas.addEventListener('webglcontextrestored', onRestored);

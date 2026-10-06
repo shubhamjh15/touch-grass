@@ -83,11 +83,6 @@ export const MOTION = {
   /** Spring `carry` (170 / 17 / 1): the world between two stages, settles in about 0.47 s. */
   flightOmega: 13.04,
   flightZeta: 0.652,
-  /** The flight follows a shallow arc with its apex this many pixels above the straight line. */
-  flightArc: 24,
-  /** Carried: the sticker lifts off the page a little (scale) and tilts. */
-  carriedScale: 0.03,
-  carriedTilt: deg(-2),
   /** Reduced motion replaces the flight with a cut and a cross-fade of this length. */
   crossFadeMs: 150,
   /** First appearance: a soft relative of spring `pop`. */
