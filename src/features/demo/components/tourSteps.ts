@@ -18,6 +18,9 @@ export interface StepView {
 /** The world's stage on a page. */
 export const STAGE = '#main [data-world-stage]';
 
+/** Impact's switch between "Your impact" and "The planet now" (the page's first labelled group). */
+const IMPACT_VIEWS = '#main [role="group"][aria-label]';
+
 const nav = (id: string): string => `[data-tour="nav-${id}"]`;
 const COACH_BUTTON = '[data-tour="nav-coach"] button';
 
@@ -53,7 +56,7 @@ export function stepView(step: TourStepId, pathname: string, wide: boolean): Ste
       };
     case 'impact':
       return path === ROUTES.impact
-        ? { copy: copy.here, anchors: ['#main h1'], ring: false }
+        ? { copy: copy.here, anchors: [IMPACT_VIEWS], ring: true }
         : { copy: away, anchors: [nav('impact'), nav('more')], ring: true };
     case 'coach':
       return path === ROUTES.coach

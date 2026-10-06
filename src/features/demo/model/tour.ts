@@ -33,7 +33,7 @@ export type TourEvent =
   | { type: 'did'; step: TourStepId }
   /** Close button, "Skip tour" or Escape. */
   | { type: 'dismiss' }
-  /** The demo ended: an unfinished tour starts over next time, a closed one stays closed. */
+  /** The demo ended: an unfinished tour starts over next time, a closed or finished one stays closed. */
   | { type: 'leave' };
 
 export const TOUR_INITIAL: TourState = { status: 'idle' };
@@ -75,7 +75,9 @@ export function tourReducer(state: TourState, event: TourEvent): TourState {
       if (state.status === 'wrap') return { status: 'closed', finished: true };
       return state;
     case 'leave':
-      return state.status === 'closed' ? state : TOUR_INITIAL;
+      if (state.status === 'closed') return state;
+      // Leaving from the last card is the tour's own ending, not an interruption.
+      return state.status === 'wrap' ? { status: 'closed', finished: true } : TOUR_INITIAL;
   }
 }
 

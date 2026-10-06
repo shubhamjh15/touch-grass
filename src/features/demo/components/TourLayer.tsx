@@ -281,7 +281,11 @@ export function TourLayer() {
         {wrap ? `${title} ${body}` : copy ? `${stepSpoken}. ${title}. ${body}` : ''}
       </p>
 
-      {shown && !wrap && ring ? (
+      {/*
+        The ring marks what to try; once that is done it has nothing left to point at. Impact
+        is "done" on arrival, and its ring is on what to read next, so that one stays.
+      */}
+      {shown && !wrap && ring && (!running?.did || step === 'impact') ? (
         <span
           aria-hidden="true"
           className={cn(

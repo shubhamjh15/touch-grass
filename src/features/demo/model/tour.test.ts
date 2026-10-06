@@ -107,6 +107,19 @@ describe('the tour', () => {
     });
   });
 
+  it('counts leaving from the last card as finishing', () => {
+    const wrap = run([
+      { type: 'start' },
+      { type: 'next' },
+      { type: 'next' },
+      { type: 'next' },
+      { type: 'next' },
+    ]);
+    const left = tourReducer(wrap, { type: 'leave' });
+    expect(left).toEqual({ status: 'closed', finished: true });
+    expect(tourReducer(left, { type: 'start' })).toBe(left);
+  });
+
   it('ignores moves that make no sense where it stands', () => {
     expect(run([{ type: 'next' }])).toBe(TOUR_INITIAL);
     expect(run([{ type: 'back' }])).toBe(TOUR_INITIAL);
