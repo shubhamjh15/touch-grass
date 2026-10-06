@@ -2,12 +2,12 @@
 
 import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
-import { ROUTES } from '@/app/shell';
-import { useGameState } from '@/game';
+import { ROUTES, demoLeaveLink } from '@/app/shell';
+import { useGameState, useIsSandbox } from '@/game';
 import { BRAND } from '@/lib/brand';
-import { Button, ColorBar, Modal, TextLink } from '@/ui';
+import { Button, ColorBar, Modal, TextLink, UiLink } from '@/ui';
 import { APP_VERSION, COPY } from '../copy';
-import { SettingsGroup } from './SettingRow';
+import { SettingRow, SettingsGroup } from './SettingRow';
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
@@ -27,6 +27,7 @@ export function AboutBlock() {
   const content = useGameState((game) => game.contentVersion);
   const factors = useGameState((game) => game.factorsVersion);
   const [credits, setCredits] = useState(false);
+  const inDemo = useIsSandbox();
 
   return (
     <SettingsGroup title={COPY.settings.about.heading} label={COPY.settings.about.label}>
@@ -73,6 +74,18 @@ export function AboutBlock() {
         </nav>
         <ColorBar size="sm" />
       </li>
+      <SettingRow
+        title={COPY.settings.about.demo.title}
+        hint={inDemo ? COPY.settings.about.demo.inside : COPY.settings.about.demo.hint}
+      >
+        {(labelId) => (
+          <Button asChild variant="neutral" size="sm" aria-describedby={labelId}>
+            <UiLink href={inDemo ? demoLeaveLink('home') : ROUTES.demo}>
+              {inDemo ? COPY.settings.about.demo.exit : COPY.settings.about.demo.open}
+            </UiLink>
+          </Button>
+        )}
+      </SettingRow>
       <Modal
         open={credits}
         onOpenChange={setCredits}

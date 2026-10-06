@@ -239,6 +239,13 @@ export const COPY = {
     about: {
       heading: 'About',
       label: 'About this app',
+      demo: {
+        title: 'Demo world',
+        hint: 'Look around a tree at day 200. Nothing in it is saved, and your own data is left alone.',
+        open: 'Open the demo',
+        inside: 'You are looking at it. Nothing here is saved.',
+        exit: 'Exit the demo',
+      },
       app: 'App',
       content: 'Content',
       factors: 'Factors',
