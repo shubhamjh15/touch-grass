@@ -296,5 +296,3 @@ export const MYTHS: readonly Myth[] = [
     reviewBy: REVIEW_BY,
   },
 ];
-
-export const MYTH_BY_ID: ReadonlyMap<string, Myth> = new Map(MYTHS.map((myth) => [myth.id, myth]));

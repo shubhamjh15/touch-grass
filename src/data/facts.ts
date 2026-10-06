@@ -577,10 +577,6 @@ export const FACTS: readonly Fact[] = [
   ),
 ];
 
-export const FACT_BY_ID: ReadonlyMap<string, Fact> = new Map(
-  FACTS.map((entry) => [entry.id, entry]),
-);
-
 /** The fact for a given day, as the spec defines it. `dayIndex` is the days since 2026-01-01. */
 export function factForDay(dayIndex: number, userSeed: number): Fact {
   const length = FACTS.length;

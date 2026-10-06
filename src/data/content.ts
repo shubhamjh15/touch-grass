@@ -4,12 +4,11 @@
  * catalogue is separate (`@/data/catalogue`), owned by the engine.
  */
 export * from './lessons';
-export { MYTHS, MYTH_BY_ID } from './myths';
-export { FACTS, FACT_BY_ID, factForDay } from './facts';
+export { MYTHS } from './myths';
+export { FACTS, factForDay } from './facts';
 export {
   CONTENT_VERSION,
   EDITORIAL_AUTHOR,
-  EDITORIAL_BY_ID,
   EDITORIAL_LABEL,
   EDITORIAL_POSTS,
   type EditorialPost,

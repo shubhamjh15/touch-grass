@@ -245,7 +245,3 @@ export const EDITORIAL_POSTS: readonly EditorialPost[] = [
     reviewBy: REVIEW_BY,
   },
 ];
-
-export const EDITORIAL_BY_ID: ReadonlyMap<string, EditorialPost> = new Map(
-  EDITORIAL_POSTS.map((post) => [post.id, post]),
-);
