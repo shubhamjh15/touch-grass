@@ -265,14 +265,16 @@ export function Sticker({
         if (!disabled) onClick();
       }}
       className={cn(
-        'group/sticker inline-flex shrink-0 flex-col items-center gap-2 rounded-sm text-center text-body-sm leading-[1.2] font-semibold text-ink aria-disabled:cursor-not-allowed aria-disabled:text-ink-3',
+        'group/sticker inline-flex max-w-full shrink-0 flex-col items-center gap-2 rounded-sm text-center text-body-sm leading-[1.2] font-semibold text-ink aria-disabled:cursor-not-allowed aria-disabled:text-ink-3',
         COLUMN[size],
         className,
       )}
       {...rest}
     >
       {art(!disabled)}
-      {label && !hideLabel ? <span className="text-balance">{label}</span> : null}
+      {label && !hideLabel ? (
+        <span className="max-w-full text-balance hyphens-auto">{label}</span>
+      ) : null}
       {badge}
     </button>
   );

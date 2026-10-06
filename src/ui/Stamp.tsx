@@ -55,7 +55,7 @@ export function Stamp({
     >
       <span className="text-[0.75rem] tracking-[0.1em]">{label}</span>
       {date ? (
-        <span className="text-[0.5625rem] font-semibold tracking-[0.1em]">{date}</span>
+        <span className="text-[0.6875rem] font-semibold tracking-[0.1em]">{date}</span>
       ) : null}
     </span>
   );
