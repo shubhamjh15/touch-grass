@@ -1,121 +1,100 @@
-<div align="center">
+# Touch Grass
 
-# 🌱 Touch Grass
+**Grow a living tree by shrinking your footprint.**
 
-[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Space+Grotesk&weight=700&size=35&duration=3000&pause=1000&color=22c55e&center=true&vCenter=true&width=500&lines=Gamifying+Sustainability;Level+Up+Your+Green+Game;Save+the+Planet,+Earn+XP;Powered+by+AI+%26+You)](https://git.io/typing-svg)
+Touch Grass is a climate-habit companion. You log the small real-world actions you already take (a bus instead of a
+car, a plant-based meal, a shorter shower), you get an honest estimate of the CO2e avoided, and a living 3D tree on
+its own floating island grows with you. No account, no feed, no doomscrolling: everything stays on your device.
 
-**"Turn your daily eco-actions into a game. Save the planet, one level at a time."**
+## What is in it
 
-<div style="margin-top: 10px; margin-bottom: 20px;">
+- **A living world.** One WebGL island, rendered with three.js and React Three Fiber, that follows your clock (dawn,
+  day, golden hour, a moonlit night) and your tree's health. Seven growth stages, three species, props and landmarks
+  that arrive as you earn badges, creatures, an Explore mode with a photo button. Where WebGL is not available an
+  illustrated tree takes its place.
+- **Logging in seconds.** 51 catalogued actions in seven kinds, custom actions, and "say it in your own words".
+  Every log prints a receipt with Undo.
+- **Honest numbers.** Every figure is an estimate, shown as "≈" to two significant figures, with the comparison it
+  was made against, a likely range and its source. The whole factor table and all 55 sources are on `/methodology`.
+- **A game that is kind.** Daily rings, streaks that rest instead of breaking, quests that track themselves, 33
+  badges, levels. A missed day makes it rain; it never kills the tree.
+- **Impact, yours and the planet's.** Your savings by category and over time, next to live readings fetched by our
+  own server from public sources: global temperature (NASA GISTEMP), atmospheric CO2, methane and nitrous oxide
+  (NOAA), and CO2 per person by country (World Bank). A reading is marked "Live" only when the server fetched it
+  within 36 hours; otherwise it says "Snapshot from" and the date.
+- **A coach that works without a key.** Moss answers from a built-in offline coach. With one free API key it becomes
+  a live model that can turn a sentence into logged actions.
+- **Learn.** Ten short lessons with three-question quizzes, ten myth-busters and a daily fact, all sourced.
+- **Your data.** Stored in the browser only. Export as JSON or CSV, import, or delete everything from `/me` or
+  `/privacy`.
+- **A demo world.** "See day 200" on the landing page opens a grown island in a sandbox that never touches your own
+  data, with a four-step tour.
 
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![OpenRouter](https://img.shields.io/badge/AI-OpenRouter-412991?style=for-the-badge&logo=openai&logoColor=white)
+## Run it
 
-</div>
+Requires Node 20.19 or newer.
 
-[**Installation**](#-getting-started) • [**Features**](#-features) • [**Tech Stack**](#-tech-stack) • [**Report Bug**](https://github.com/issues)
-
-</div>
-
----
-
-## 🌍 Abstract & Motivation
-
-> **The Problem:**  
-> "Eco-Anxiety" and "Climate Doomism" are paralyzing. People often feel their individual actions are too small to matter in the face of global climate change.
->
-> **The Solution:**  
-> **Touch Grass** shifts the narrative from *fear* to *fun*. By applying game mechanics—XP, levels, badges, and streaks—we make sustainable living addictive. It bridges the gap between *knowing* you should help and actually *doing* it.
-
----
-
-## ✨ Features
-
-### 🎮 Gamified Engine
-- **XP & Leveling System**: Log real-world actions like "Meat-free Meal" (75 XP) or "Recycled Glass" (50 XP) to progress from a *Seedling* to a *Forest Guardian*.
-- **Smart Badge Unlocks**: Automatically unlock achievements like `10kg Club` (Save 10kg CO2) or `Eco Master` based on your aggregate stats.
-- **Streak Multipliers**: Maintain daily activity to earn XP bonuses, encouraging consistent habits.
-
-### 🤖 EcoBot: Your AI Coach
-- **Persona**: A witty, optimistic sustainability consultant that avoids boring lectures.
-- **Context-Aware**: The AI knows your specific stats (e.g., "I see you're Level 5!"). It provides tailored advice to help you reach the next milestone.
-- **Powered by LLMs**: Utilizes OpenRouter (Gemini/Llama) to generate high-quality, non-repetitive, and accurate responses.
-
-### 📊 Real-Time Visualization
-- **Live Impact Charts**: Visualize your carbon footprint reduction over time using interactive **Recharts** graphs.
-- **Action Logs**: Keep a granular history of every eco-friendly action, categorized with custom icons.
-- **Immediate Feedback**: See your "CO2 Saved" metric tick up instantly after every logged action.
-
----
-
-## 🔮 Future Roadmap
-
-- [ ] **Phase 1: Social & Multiplayer**  
-  Implement "Guilds" and global leaderboards to foster community competition using Supabase.
-- [ ] **Phase 2: Mobile Experience**  
-  Launch a React Native mobile app for on-the-go tracking and notifications.
-- [ ] **Phase 3: AI Computer Vision**  
-  Allow users to snap photos of their recycling to automatically verify actions and prevent cheating.
-- [ ] **Phase 4: Real-World Rewards**  
-  Partner with sustainable brands to exchange high-score points for real discounts.
-
----
-
-## 🚀 Getting Started
-
-Follow these steps to set up the project locally.
-
-<details> 
-<summary><b>🛠️ Installation Instructions (Click to Expand)</b></summary>
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/touchgrass.git
-cd touchgrass
-```
-
-### 2. Install Dependencies
 ```bash
 npm install
+npm run dev        # http://localhost:5173
 ```
 
-### 3. Configure Environment
-Create a `.env` file in the root directory and add your OpenRouter API key.
+The app is complete without any configuration. To switch the coach from the built-in one to a live model, copy
+`.env.example` to `.env.local` and fill in one key (a free Groq key is enough). Keys are read on the server only.
+
 ```bash
-# .env
-VITE_OPENROUTER_API_KEY=your_actual_api_key_here
+npm run typecheck  # tsc --noEmit
+npm run lint       # eslint
+npm run test       # vitest (unit and component tests)
+npm run build      # production build
+npm run start      # serve the production build
 ```
 
-### 4. Run Development Server
+## How it is built
+
+| Part | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router), React 19, TypeScript in strict mode |
+| Styling | Tailwind CSS 4 with design tokens in `src/styles/index.css`, Radix primitives, Framer Motion |
+| 3D | three.js, React Three Fiber, drei; loaded as a separate lazy chunk after first paint |
+| State | Zustand, persisted to `localStorage`; a pure rules engine under `src/game` |
+| Charts | Recharts, loaded only on Impact |
+| Server | Route handlers under `app/api`: the coach (`chat`, `estimate`, `status`) and `climate` |
+| Tests | Vitest and Testing Library; Playwright for end-to-end |
+
+```
+app/             routes, layouts, API route handlers
+server/          the code behind the API routes (AI providers, climate sources)
+src/app/         the shell: navigation, HUD, feedback for game events, command palette
+src/features/    one folder per page
+src/game/        rules engine, store, selectors, events
+src/world/       the 3D island, its stage component and the illustrated fallback
+src/ui/          the component kit
+src/data/        action catalogue, lessons, sources, bundled datasets
+src/ai/          browser client for the coach and the offline coach
+scripts/         screenshot, responsive-audit and frame-time tools, state fixtures
+```
+
+Useful when working on it:
+
 ```bash
-npm run dev
+node scripts/shot.mjs --route today --state day200 --device mobile --out today.png
+node scripts/responsive-audit.mjs --full --state day200
+node scripts/world-perf.mjs --route today --state day45
 ```
 
-The application will be available at `http://localhost:5173`.
+In a development build, `window.__game.help()` in the browser console lists time travel and other QA helpers, and
+`/__ui` and `/__world` open the component and world workbenches.
 
-</details>
+## What the numbers are, and are not
 
----
+The figures are estimates of emissions avoided against a stated alternative, good for scale and for ranking
+actions. They are not measurements, not offsets and not carbon accounting. The method, the confidence levels, the
+regional factors and the known gaps are written up on `/methodology`; what is stored and what can leave the device
+is on `/privacy`.
 
-## 🛠️ Tech Stack
+## Credits
 
-| Category | Utilities |
-|:---------|:----------|
-| **Core** | `React 18` • `Vite` • `TypeScript` |
-| **Styling** | `Tailwind CSS` • `Neo-Brutalism Design` |
-| **Animation** | `Framer Motion` |
-| **AI Integration** | `OpenRouter API` • `OpenAI SDK` |
-| **Data Viz** | `Recharts` |
-| **Persistence** | `LocalStorage` (Client-side) |
-
----
-
-<div align="center">
-
-**Built with 💚 for the planet.**  
-Don't just scroll. [**Start Saving the World!**](#-getting-started)
-
-</div>
+Climate data: NASA Goddard Institute for Space Studies, NOAA Global Monitoring Laboratory, the World Bank. Emission
+factors: the sources listed on `/methodology`. The island's models are generated in code; see
+`public/models/CREDITS.md`. Fonts: Space Grotesk, Tilt Warp and Martian Mono, self-hosted.
