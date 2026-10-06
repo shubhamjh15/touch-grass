@@ -8,6 +8,7 @@ import {
   within,
 } from '@testing-library/react';
 import type { ComponentProps } from 'react';
+import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { STAGES, gameActions, getGameState } from '@/game';
 import { DEMO_CARRY_KEY, readDemoCarry } from '@/lib/demoCarry';
@@ -85,6 +86,26 @@ describe('useDemo', () => {
     expect(result.current.flights).toHaveLength(0);
     expect(result.current.tally).toEqual([{ action, count: 1 }]);
     vi.mocked(getStickingPoint).mockReturnValue(null);
+  });
+});
+
+describe('<LandingPage> as server HTML', () => {
+  it('carries the whole story as text, with a still tree where the world will be', () => {
+    const html = renderToString(<LandingPage />);
+    const page = document.createElement('div');
+    page.innerHTML = html;
+    const text = page.textContent ?? '';
+
+    expect(page.querySelector('h1')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      'Grow a living tree by shrinking your footprint.',
+    );
+    expect(text).toContain(HERO.sub);
+    expect(page.querySelector('a[href="/start"]')).toHaveTextContent(HERO.primary);
+    for (const item of FAQ.items) expect(text).toContain(item.answer);
+    for (const frame of TIMELAPSE_FRAMES) expect(text).toContain(TIMELAPSE_CAPTIONS[frame.id].body);
+    // No world on the server: the stage boxes hold the illustrated poster instead.
+    expect(page.querySelector('[data-world-stage]')).toBeNull();
+    expect(page.querySelectorAll('svg[viewBox="0 0 96 104"]').length).toBeGreaterThan(0);
   });
 });
 
