@@ -15,4 +15,6 @@ export {
 } from './useReducedMotion';
 export { useOnlineStatus } from './useOnlineStatus';
 export { useInViewOnce } from './useInViewOnce';
+export { useInView } from './useInView';
+export { usePageVisible } from './usePageVisible';
 export { useDebouncedValue } from './useDebouncedValue';
