@@ -228,10 +228,13 @@ try {
     );
     const page = await context.newPage();
     let errors = [];
-    page.on(
-      'console',
-      (m) => m.type() === 'error' && errors.push(`console: ${m.text().slice(0, 200)}`),
-    );
+    page.on('console', (m) => {
+      if (m.type() !== 'error') return;
+      // The browser logs the deliberate 404 of the not-found route as a console error: that is the page working.
+      const expected404 =
+        m.text().includes('status of 404') && m.location().url.includes('this-page-does-not-exist');
+      if (!expected404) errors.push(`console: ${m.text().slice(0, 200)}`);
+    });
     page.on('pageerror', (e) => errors.push(`page: ${String(e).slice(0, 200)}`));
     page.on('response', (r) => {
       const expected404 = r.status() === 404 && r.url().includes('this-page-does-not-exist');
