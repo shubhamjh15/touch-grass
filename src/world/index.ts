@@ -3,14 +3,18 @@ export { WorldCanvas } from './WorldCanvas';
 export { WorldStage } from './WorldStage';
 export {
   captureWorld,
+  closeExplore,
   emitPulse,
   getStickingPoint,
   getWorldStats,
   measureWorld,
+  openExplore,
   setWorldSnapshot,
   useWorldStore,
 } from './store';
-export type { WorldStats } from './store';
+export type { PulseOptions, WorldStats } from './store';
+export { PROP_INFO, LANDMARK_INFO } from './props/info';
+export type { PartInfo } from './props/info';
 export { onWorldHover, onWorldTap } from './interaction';
 export type { WorldHit } from './interaction';
 export { anchorsFor } from './anchors';

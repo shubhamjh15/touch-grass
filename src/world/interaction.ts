@@ -20,6 +20,12 @@ export class OrbitController {
   pitch = 0;
   /** True while the user is dragging or the island is still coasting. */
   moving = false;
+  /** Multiplier of the camera's distance: below 1 is closer. Only Explore mode moves it. */
+  zoom = 1;
+
+  private zoomTarget = 1;
+  /** Explore mode: the camera stays where the user leaves it. */
+  private free = false;
 
   private user = 0;
   private velocity = 0;
@@ -58,6 +64,10 @@ export class OrbitController {
     const turn = dxShare * ORBIT.perStageWidth;
     this.user += turn;
     this.dragged += turn;
+    if (this.free) {
+      this.tilt = clamp(this.tilt + dyShare * 1.6, ORBIT.freeTilt[0], ORBIT.freeTilt[1]);
+      return;
+    }
     // Beyond the limit the tilt rubber-bands: each extra pixel moves it less.
     const over = Math.max(0, Math.abs(this.tilt) / ORBIT.maxTilt - 0.6);
     this.tilt = clamp(
@@ -65,6 +75,12 @@ export class OrbitController {
       -ORBIT.maxTilt * 1.3,
       ORBIT.maxTilt * 1.3,
     );
+  }
+
+  /** Explore mode: moves the camera in (factor below 1) or out, within its limits. */
+  zoomBy(factor: number): void {
+    this.zoomTarget = clamp(this.zoomTarget * factor, ORBIT.zoom[0], ORBIT.zoom[1]);
+    this.sinceRelease = 0;
   }
 
   dragEnd(): void {
@@ -86,19 +102,35 @@ export class OrbitController {
 
   /** Up and down arrow keys: tips the camera a step; it eases back like a released drag. */
   lift(steps: number): void {
-    this.tilt = clamp(this.tilt + steps * ORBIT.maxTilt * 0.6, -ORBIT.maxTilt, ORBIT.maxTilt * 1.3);
+    this.tilt = this.free
+      ? clamp(this.tilt + steps * 0.12, ORBIT.freeTilt[0], ORBIT.freeTilt[1])
+      : clamp(this.tilt + steps * ORBIT.maxTilt * 0.6, -ORBIT.maxTilt, ORBIT.maxTilt * 1.3);
     this.sinceRelease = 0;
   }
 
   /** Back to the rest pose (Home key). */
   reset(): void {
     this.pendingKeys = nearestTurn(this.user) - this.user;
+    this.zoomTarget = this.free ? ORBIT.exploreZoom : 1;
+    if (this.free) this.tilt = ORBIT.exploreTilt;
     this.sinceRelease = 0;
   }
 
-  step(dt: number, mode: StageMode, reduced: boolean, interactive: boolean): void {
+  /**
+   * `free` is Explore mode: the island stays where the user turned it, the tilt keeps its
+   * place over a wider range and the zoom is the user's. Outside it everything eases home.
+   */
+  step(dt: number, mode: StageMode, reduced: boolean, interactive: boolean, free = false): void {
     const idle = CAMERA.idle[mode];
     if (!interactive && this.dragging) this.dragEnd();
+    if (free !== this.free) {
+      this.free = free;
+      // Explore opens a little closer and a little higher, looking down on the lawn.
+      this.zoomTarget = free ? ORBIT.exploreZoom : 1;
+      if (free) this.tilt = ORBIT.exploreTilt;
+    }
+    this.zoom = reduced ? this.zoomTarget : damp(this.zoom, this.zoomTarget, 9, dt);
+    if (Math.abs(this.zoom - this.zoomTarget) < 1e-3) this.zoom = this.zoomTarget;
 
     // What the user drives.
     if (this.dragging) {
@@ -114,8 +146,10 @@ export class OrbitController {
       this.user += this.velocity * dt;
       this.velocity *= Math.exp(-dt / ORBIT.inertia);
       if (Math.abs(this.velocity) < 0.002) this.velocity = 0;
-      this.tilt = damp(this.tilt, 0, 8, dt);
-      if (Math.abs(this.tilt) < 1e-4) this.tilt = 0;
+      if (!free) {
+        this.tilt = damp(this.tilt, 0, 8, dt);
+        if (Math.abs(this.tilt) < 1e-4) this.tilt = 0;
+      }
     }
     if (this.pendingKeys !== 0) {
       const share = reduced ? 1 : 1 - Math.exp(-dt * 12);
@@ -127,7 +161,7 @@ export class OrbitController {
     // Modes with a front (hub, companion, ceremony) return to it; a hero keeps turning.
     const resumed = !this.dragging && this.sinceRelease >= ORBIT.resumeAfter;
     const hasFront = idle.turn === 0;
-    if (mode === 'ceremony' || (hasFront && resumed)) {
+    if (mode === 'ceremony' || (hasFront && resumed && !free)) {
       const rest = nearestTurn(this.user);
       // 720 ms to settle: an exponential that is within 1 % by then.
       this.user = reduced ? rest : damp(this.user, rest, 4.6 / ORBIT.returnTime, dt);
@@ -135,7 +169,7 @@ export class OrbitController {
     }
 
     // Idle motion: off while the user is in charge, eased back in afterwards.
-    const wantIdle = reduced || this.dragging || !resumed ? 0 : 1;
+    const wantIdle = reduced || this.dragging || !resumed || free ? 0 : 1;
     this.idleGain = damp(this.idleGain, wantIdle, wantIdle ? 1.4 : 10, dt);
     if (reduced) this.idleGain = 0;
     if (idle.turn > 0) {
@@ -163,7 +197,8 @@ export class OrbitController {
       this.dragging ||
       this.velocity !== 0 ||
       this.pendingKeys !== 0 ||
-      this.tilt !== 0 ||
+      this.zoom !== this.zoomTarget ||
+      (!free && this.tilt !== 0) ||
       Math.abs(this.hoverYaw - hx) > 1e-4;
   }
 }

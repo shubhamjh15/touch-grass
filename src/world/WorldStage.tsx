@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, ChartColumn, IdCard, Mail, Plus, Target } from 'lucide-react';
+import { BookOpen, ChartColumn, Expand, IdCard, Mail, Plus, Target } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -18,8 +18,16 @@ import { measureCallouts, registerCallouts, type CalloutElements } from './callo
 import { STAGE_DEFAULTS } from './config';
 import { LANDMARKS, type LandmarkId, type WorldStageProps } from './contract';
 import { FallbackTree } from './FallbackTree';
-import { clearPointer, createRectCache, emitTap, orbit, setPointer } from './interaction';
-import { stickingPoint, useWorldStore, type StageOptions } from './store';
+import {
+  clearPointer,
+  createRectCache,
+  emitTap,
+  onWorldTap,
+  orbit,
+  setPointer,
+} from './interaction';
+import { LANDMARK_INFO, describeIsland, describePart, type PartRef } from './props/info';
+import { openExplore, stickingPoint, useWorldStore, type StageOptions } from './store';
 
 /** Label, icon and disc colour of each landmark's callout (bible 5.7). */
 const CALLOUTS: Record<LandmarkId, { label: string; disc: string; icon: ReactNode }> = {
@@ -54,6 +62,18 @@ const isControl = (target: EventTarget | null) =>
   target instanceof Element &&
   target.closest('button, a, input, select, textarea, label, [data-world-ignore]') !== null;
 
+/** How long the note about a tapped prop stays up. */
+const NOTE_MS = 4200;
+
+interface Note {
+  ref: PartRef;
+  /** Where it was tapped, in pixels of the stage box. */
+  x: number;
+  y: number;
+  /** A new tap on the same thing shows the note afresh. */
+  stamp: number;
+}
+
 interface Drag {
   pointer: number;
   x: number;
@@ -75,7 +95,16 @@ interface Drag {
  * An interactive stage can be turned by dragging, with the arrow keys or by hovering;
  * a stage with `landmarks` carries one real button per landmark, tracked to the island.
  */
-export function WorldStage({
+export function WorldStage(props: WorldStageProps) {
+  return <Stage {...props} />;
+}
+
+/**
+ * The stage itself. `exploring` is the one thing the public component cannot ask for: it
+ * marks the full-screen stage of Explore mode (`WorldExplore.tsx`), where the camera is
+ * free and can zoom.
+ */
+export function Stage({
   mode = 'companion',
   preview,
   interactive,
@@ -86,13 +115,16 @@ export function WorldStage({
   anchor = STAGE_DEFAULTS[mode].anchor,
   priority = 0,
   sky,
+  explore = false,
+  exploring = false,
   label,
   className,
   children,
-}: WorldStageProps) {
+}: WorldStageProps & { exploring?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const id = useId();
   const hintId = useId();
+  const islandId = useId();
   const status = useWorldStore((state) => state.status);
   // There is one 3D world: it stands in the active stage, every other stage keeps its drawing.
   const active = useWorldStore((state) => state.activeStageId === id);
@@ -110,6 +142,7 @@ export function WorldStage({
   const still = status === 'fallback';
   const operable = canInteract && live;
 
+  const leads = onLandmark !== undefined;
   const onLandmarkRef = useRef(onLandmark);
   useEffect(() => {
     onLandmarkRef.current = onLandmark;
@@ -121,14 +154,14 @@ export function WorldStage({
       preview: previewKey ? (JSON.parse(previewKey) as StageOptions['preview']) : null,
       interactive: canInteract,
       landmarks,
-      onLandmark: (landmark) => onLandmarkRef.current?.(landmark),
+      onLandmark: leads ? (landmark) => onLandmarkRef.current?.(landmark) : null,
       fit,
       anchor,
       priority,
       sky: showSky,
-      explore: false,
+      explore: exploring,
     }),
-    [mode, previewKey, canInteract, landmarks, fit, anchor, priority, showSky],
+    [mode, previewKey, canInteract, landmarks, leads, fit, anchor, priority, showSky, exploring],
   );
 
   const latestOptions = useRef(options);
@@ -207,8 +240,61 @@ export function WorldStage({
     drag.current = null;
   };
 
+  // --- Explore: two fingers pinch, the wheel zooms (there is no page to scroll there). ---
+  const fingers = useRef(new Map<number, { x: number; y: number }>());
+  const spread = () => {
+    const [a, b] = [...fingers.current.values()];
+    return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+  };
+  useEffect(() => {
+    const el = ref.current;
+    if (!exploring || !operable || !el) return;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      orbit.zoomBy(Math.exp(Math.max(-120, Math.min(120, event.deltaY)) * 0.0022));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [exploring, operable]);
+
+  // --- A tap on a prop or a landmark says what it is and what earned it. ---
+  const [note, setNote] = useState<Note | null>(null);
+  useEffect(() => {
+    if (!operable) return;
+    return onWorldTap((hit) => {
+      const el = ref.current;
+      const part = describePart(hit.part);
+      if (!el || !part || useWorldStore.getState().activeStageId !== id) {
+        setNote(null);
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      setNote({
+        ref: part,
+        x: hit.clientX - rect.left,
+        y: hit.clientY - rect.top,
+        stamp: performance.now(),
+      });
+    });
+  }, [id, operable]);
+  const noteStamp = note?.stamp;
+  useEffect(() => {
+    if (noteStamp === undefined) return;
+    const timer = window.setTimeout(() => setNote(null), NOTE_MS);
+    return () => window.clearTimeout(timer);
+  }, [noteStamp]);
+  if (note && !operable) setNote(null);
+
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!operable || event.button !== 0 || !isActive() || isControl(event.target)) return;
+    if (exploring) {
+      fingers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (fingers.current.size === 2) {
+        // The second finger turns the drag into a pinch.
+        if (drag.current) endDrag(event.currentTarget, drag.current.pointer);
+        return;
+      }
+    }
     drag.current = {
       pointer: event.pointerId,
       x: event.clientX,
@@ -223,6 +309,15 @@ export function WorldStage({
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const el = event.currentTarget;
+    const finger = fingers.current.get(event.pointerId);
+    if (finger && fingers.current.size === 2) {
+      const before = spread();
+      finger.x = event.clientX;
+      finger.y = event.clientY;
+      const after = spread();
+      if (before > 8 && after > 8) orbit.zoomBy(before / after);
+      return;
+    }
     const current = drag.current;
     if (!current || current.pointer !== event.pointerId) {
       // Hover parallax and hover hit-testing are for fine pointers only.
@@ -241,20 +336,27 @@ export function WorldStage({
     if (!current.turning) {
       const travelX = Math.abs(event.clientX - current.startX);
       const travelY = Math.abs(event.clientY - current.startY);
-      // A vertical swipe on a touch screen belongs to the page (`touch-action: pan-y`).
-      if (travelX < 5 || (current.touch && travelY > travelX)) return;
+      // A vertical swipe on a touch screen belongs to the page (`touch-action: pan-y`),
+      // except in Explore, where there is no page to scroll and it tips the camera.
+      if (exploring ? travelX + travelY < 5 : travelX < 5 || (current.touch && travelY > travelX))
+        return;
       current.turning = true;
       el.setPointerCapture(event.pointerId);
       el.dataset.dragging = 'true';
       orbit.dragStart();
+      setNote(null);
     }
     current.x = event.clientX;
     current.y = event.clientY;
     const rect = rectOf(el);
-    orbit.dragMove(dx / Math.max(1, rect.width), current.touch ? 0 : dy / Math.max(1, rect.height));
+    orbit.dragMove(
+      dx / Math.max(1, rect.width),
+      current.touch && !exploring ? 0 : dy / Math.max(1, rect.height),
+    );
   };
 
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    fingers.current.delete(event.pointerId);
     const current = drag.current;
     if (!current || current.pointer !== event.pointerId) return;
     const tapped = !current.turning && event.timeStamp - current.startedAt < 500;
@@ -271,6 +373,7 @@ export function WorldStage({
   };
 
   const onPointerCancel = (event: PointerEvent<HTMLDivElement>) => {
+    fingers.current.delete(event.pointerId);
     if (drag.current?.pointer === event.pointerId) endDrag(event.currentTarget, event.pointerId);
   };
 
@@ -282,6 +385,9 @@ export function WorldStage({
     else if (event.key === 'ArrowUp') orbit.lift(1);
     else if (event.key === 'ArrowDown') orbit.lift(-1);
     else if (event.key === 'Home') orbit.reset();
+    else if (exploring && (event.key === '+' || event.key === '=')) orbit.zoomBy(0.82);
+    else if (exploring && (event.key === '-' || event.key === '_')) orbit.zoomBy(1.22);
+    else if (explore && !exploring && (event.key === 'e' || event.key === 'E')) openExplore();
     else return;
     event.preventDefault();
   };
@@ -337,13 +443,14 @@ export function WorldStage({
       role={group ? 'group' : 'img'}
       aria-label={label ?? 'Your tree'}
       aria-roledescription={operable ? 'rotatable scene' : undefined}
-      aria-describedby={operable ? hintId : undefined}
+      aria-describedby={group ? (operable ? `${hintId} ${islandId}` : islandId) : undefined}
       tabIndex={operable ? 0 : undefined}
       data-world-stage={mode}
       className={cn(
         'relative isolate',
         operable &&
-          'cursor-grab touch-pan-y focus-inset select-none data-world-hover:cursor-pointer data-[dragging=true]:cursor-grabbing',
+          'cursor-grab focus-inset select-none data-world-hover:cursor-pointer data-[dragging=true]:cursor-grabbing',
+        operable && (exploring ? 'touch-none' : 'touch-pan-y'),
         className,
       )}
       onPointerDown={onPointerDown}
@@ -365,6 +472,14 @@ export function WorldStage({
       {operable && (
         <span id={hintId} className="sr-only">
           Drag, or use the arrow keys, to look around the island. Home faces it front.
+          {exploring ? ' Plus and minus zoom.' : ''}
+          {explore && !exploring ? ' Press E to explore it full screen.' : ''} Tap anything on the
+          island to hear what it is.
+        </span>
+      )}
+      {group && (
+        <span id={islandId} className="sr-only">
+          {describeIsland(merged.props)}
         </span>
       )}
       {(!live || !faded) && size && (
@@ -444,6 +559,52 @@ export function WorldStage({
             </span>
           ))}
         </div>
+      )}
+      {note && (
+        <div
+          key={note.stamp}
+          data-world-note={note.ref.id}
+          className="pointer-events-none absolute z-20 w-56 -translate-x-1/2"
+          style={{
+            left: Math.min(Math.max(note.x, 120), Math.max(120, (size?.width ?? 240) - 120)),
+            // Above the finger when there is room, below it near the top edge.
+            top: note.y > 132 ? note.y - 18 : note.y + 22,
+          }}
+        >
+          <div className={cn(note.y > 132 && '-translate-y-full')}>
+            <div
+              role="status"
+              className="pointer-events-auto flex flex-col gap-1 rounded-md border-3 border-ink bg-white px-3 py-2 text-ink shadow-2 motion-safe:animate-pop"
+            >
+              <span className="text-body-sm font-bold">{note.ref.info.name}</span>
+              <span className="text-caption text-ink-2">{note.ref.info.note}</span>
+              {note.ref.kind === 'landmark' && leads && (
+                <button
+                  type="button"
+                  className="mt-1 inline-flex h-9 hard items-center justify-center rounded-pill border-2 border-ink bg-green px-3 text-body-sm font-bold text-ink lift-2"
+                  onClick={() => {
+                    const landmark = note.ref.id as LandmarkId;
+                    setNote(null);
+                    onLandmarkRef.current?.(landmark);
+                  }}
+                >
+                  {LANDMARK_INFO[note.ref.id as LandmarkId].action}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {explore && !exploring && live && (
+        <button
+          type="button"
+          data-world-explore=""
+          className={cn(CHIP, 'absolute right-3 bottom-3 z-10 pl-3 lg:right-6 lg:bottom-6')}
+          onClick={() => openExplore()}
+        >
+          <Expand size={16} strokeWidth={2.6} aria-hidden="true" />
+          Explore
+        </button>
       )}
       {children}
     </div>

@@ -522,6 +522,12 @@ export const ORBIT = {
   hoverSmoothing: 0.25,
   /** One arrow-key press. */
   keyStep: deg(30),
+  /** Explore mode: how far the camera may tip down and up, and move in and out. */
+  freeTilt: [deg(-9), deg(42)],
+  zoom: [0.42, 1.35],
+  /** Where Explore starts and where its reset button returns to. */
+  exploreZoom: 0.86,
+  exploreTilt: deg(7),
 } as const;
 
 /** Runtime adaptation of the `auto` preference: resolution first, then the tier. */

@@ -25,9 +25,11 @@ import { captureScene } from './capture';
 import { CameraRig, Director, IslandGroup, Pointer } from './Director';
 import { Effects } from './Effects';
 import { Island } from './Island';
+import { Life } from './Life';
 import { Lights } from './Lights';
 import { live } from './live';
 import { Meadow } from './Meadow';
+import { Moments } from './Moments';
 import { Props } from './Props';
 import { useScene } from './sceneStore';
 import { Sky } from './Sky';
@@ -322,6 +324,8 @@ function World(props: SceneProps) {
         <Water />
         <Tree />
         <Props shadows={tier.shadowMap > 0} />
+        <Life />
+        <Moments />
       </IslandGroup>
       <Bursts />
       {tier.motes > 0 && (

@@ -296,7 +296,13 @@ export function startTracker(layers: TrackerLayers): () => void {
 
     // The island's yaw belongs to the frame.
     const interactive = Boolean(stage && host && stage.options.interactive);
-    orbit.step(dt, stage ? stage.options.mode : frame.mode, reduced, interactive);
+    orbit.step(
+      dt,
+      stage ? stage.options.mode : frame.mode,
+      reduced,
+      interactive,
+      stage?.options.explore === true,
+    );
     frame.yaw = orbit.yaw;
     frame.tilt = orbit.pitch;
     frame.interacting = orbit.moving;

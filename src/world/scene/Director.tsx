@@ -4,11 +4,12 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import * as THREE from 'three';
 import { clamp, clamp01, damp } from '@/lib/math';
+import { play } from '@/lib/sfx';
 import { atmosphereAt, moodAt } from '../atmosphere';
 import { viewFor, type View } from '../camera';
 import { CAMERA, ISLAND, MOTION } from '../config';
 import { hourDelta, wrapHour } from '../daylight';
-import { emitWorldHover, emitWorldTap, onTap, pointer } from '../interaction';
+import { emitWorldHover, emitWorldTap, onTap, orbit, pointer } from '../interaction';
 import { PulseScheduler, type BurstKind } from '../pulses';
 import { onPulse, useWorldStore, worldStats } from '../store';
 import { createTerrain } from '../terrain';
@@ -201,6 +202,8 @@ const wanted: View = { targetX: 0, targetY: 1, targetZ: 0, distance: 14, pitch: 
 
 export function CameraRig({ frame }: { frame: RefObject<WorldFrame | null> }) {
   const shown = useRef<View & { ready: boolean }>({ ...wanted, ready: false });
+  /** Explore mode's entrance: 1 when it opens, eased to 0 as the camera swoops in. */
+  const flight = useRef({ on: false, left: 0 });
 
   useFrame((three) => {
     const current = frame.current;
@@ -219,8 +222,9 @@ export function CameraRig({ frame }: { frame: RefObject<WorldFrame | null> }) {
         treeX: tree.x,
         treeZ: tree.z,
         // Bleed stages run under the page's floating header.
-        chrome:
-          live.mode === 'hero' || live.mode === 'hub'
+        chrome: live.explore
+          ? 0.09
+          : live.mode === 'hero' || live.mode === 'hub'
             ? CAMERA.bleedChrome / Math.max(1, three.size.height)
             : 0,
       },
@@ -239,18 +243,32 @@ export function CameraRig({ frame }: { frame: RefObject<WorldFrame | null> }) {
       view.pitch = damp(view.pitch, wanted.pitch, lambda, live.dt);
       view.span = wanted.span;
     }
+    // Explore opens with a swoop: from high, far and to the side, down to the island.
+    const fly = flight.current;
+    if (live.explore !== fly.on) {
+      fly.on = live.explore;
+      fly.left = live.explore && !live.reduced ? 1 : 0;
+    }
+    fly.left = damp(fly.left, 0, 2.4, live.dt);
+    if (fly.left < 0.002) fly.left = 0;
+    const swoop = fly.left * fly.left;
     // The stage's orbit turns the camera about the tree; pulses push in a little.
     const push = live.reduced ? 0 : live.channels.push * 1.4;
-    const distance = (view.distance / Math.max(0.5, live.appear)) * (1 - push);
-    const pitch = clamp(view.pitch + live.tilt, 0.03, 0.9);
-    const yaw = -live.yaw;
+    const zoom = live.explore ? orbit.zoom : 1;
+    const distance =
+      (view.distance / Math.max(0.5, live.appear)) * (1 - push) * zoom * (1 + swoop * 0.9);
+    const pitch = clamp(view.pitch + live.tilt + swoop * 0.5, 0.03, 1.05);
+    const yaw = -live.yaw + swoop * 1.3;
     const flat = Math.cos(pitch) * distance;
+    // Close up, the camera looks at the lawn and what stands on it, not at the crown.
+    const near = clamp01((1 - zoom) * 1.8);
+    const targetY = view.targetY + (tree.y + 0.7 - view.targetY) * near;
     camera.position.set(
       view.targetX + Math.sin(yaw) * flat,
-      view.targetY + Math.sin(pitch) * distance,
+      targetY + Math.sin(pitch) * distance,
       view.targetZ + Math.cos(yaw) * flat,
     );
-    camera.lookAt(view.targetX, view.targetY, view.targetZ);
+    camera.lookAt(view.targetX, targetY, view.targetZ);
     worldStats.scale = three.size.height / Math.max(0.001, view.span);
   }, -20);
 
@@ -290,9 +308,15 @@ export function Pointer({ frame }: { frame: RefObject<WorldFrame | null> }) {
     const stop = onTap((u, v, clientX, clientY) => {
       const hit = hitTest(u, v, camera, clientX, clientY);
       if (!hit) return;
+      // Whatever flies nearby flinches.
+      live.startle = 1;
+      live.startleAt[0] = hit.point[0];
+      live.startleAt[1] = hit.point[1];
+      live.startleAt[2] = hit.point[2];
       // The world answers every touch: leaves shake loose, grass and water ripple.
       if (hit.part === 'tree') {
         live.shake = 1;
+        play('boop');
         spawnBurst(
           live.species === 'cherry' && live.growth > 0.45 ? 'petals' : 'leaves',
           9,

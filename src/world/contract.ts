@@ -116,6 +116,12 @@ export interface WorldStageProps {
    * `companion` (a bare sticker on whatever the page puts behind the box).
    */
   sky?: boolean;
+  /**
+   * Show an "Explore" button in the stage's corner that opens the full-screen Explore
+   * mode (`openExplore()`); the E key does the same while the stage has the focus.
+   * Default: false. A page with its own button calls `openExplore()` instead.
+   */
+  explore?: boolean;
   /** When several stages are visible the highest priority wins; ties go to the most visible. */
   priority?: number;
   /** Text alternative for the scene, e.g. "Juniper, a 12-day-old oak sapling, thriving". */

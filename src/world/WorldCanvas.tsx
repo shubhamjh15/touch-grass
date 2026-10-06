@@ -13,6 +13,7 @@ import {
 import { useWorldStore } from './store';
 import { detectSupport, resolveQuality } from './support';
 import { startTracker } from './tracker';
+import { WorldExplore } from './WorldExplore';
 import { WorldSky } from './WorldSky';
 
 // three.js, R3F and every shader live behind this import: the main bundle stays light
@@ -84,27 +85,30 @@ export function WorldCanvas() {
   }, []);
 
   return (
-    <div
-      ref={backdrop}
-      aria-hidden="true"
-      // Where the layer waits between two stages. `lvh`, not `inset-0`: the box must not
-      // resize every time a mobile URL bar slides away.
-      className="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh overflow-hidden"
-    >
-      {/* Moved between stage hosts by the tracker; React only ever sees it here. */}
-      <div ref={layer} className="absolute top-0 left-0 size-0 overflow-hidden opacity-0">
-        {/* The 3D scene paints its own sky: the printed one is for loading and fallback. */}
-        <WorldSky ref={sky} hidden={ready && use3d} />
-        <div className="absolute inset-0">
-          {use3d && (
-            <SceneBoundary onError={fail}>
-              <Suspense fallback={null}>
-                <WorldScene onFail={fail} adaptive={!support.software} />
-              </Suspense>
-            </SceneBoundary>
-          )}
+    <>
+      <WorldExplore />
+      <div
+        ref={backdrop}
+        aria-hidden="true"
+        // Where the layer waits between two stages. `lvh`, not `inset-0`: the box must not
+        // resize every time a mobile URL bar slides away.
+        className="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh overflow-hidden"
+      >
+        {/* Moved between stage hosts by the tracker; React only ever sees it here. */}
+        <div ref={layer} className="absolute top-0 left-0 size-0 overflow-hidden opacity-0">
+          {/* The 3D scene paints its own sky: the printed one is for loading and fallback. */}
+          <WorldSky ref={sky} hidden={ready && use3d} />
+          <div className="absolute inset-0">
+            {use3d && (
+              <SceneBoundary onError={fail}>
+                <Suspense fallback={null}>
+                  <WorldScene onFail={fail} adaptive={!support.software} />
+                </Suspense>
+              </SceneBoundary>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

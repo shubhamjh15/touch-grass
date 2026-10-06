@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { play } from '@/lib/sfx';
 import {
   DEFAULT_SNAPSHOT,
   type LandmarkId,
@@ -10,6 +11,7 @@ import {
   type WorldSnapshot,
   type WorldStatus,
 } from './contract';
+import { PULSE_SFX } from './pulses';
 
 /** Stage options after defaults are applied. */
 export interface StageOptions {
@@ -48,6 +50,10 @@ interface WorldState {
   snapshot: WorldSnapshot;
   stages: Record<string, StageRecord>;
   activeStageId: string | null;
+  /** Explore mode is open (the world full screen). */
+  exploring: boolean;
+  /** Where a landmark leads from Explore: the handler of the stage it was opened from. */
+  exploreLandmark: ((id: LandmarkId) => void) | null;
 
   registerStage: (id: string, el: HTMLElement, options: StageOptions) => void;
   updateStage: (id: string, options: StageOptions) => void;
@@ -91,6 +97,8 @@ export const useWorldStore = create<WorldState>()((set) => ({
   snapshot: DEFAULT_SNAPSHOT,
   stages: {},
   activeStageId: null,
+  exploring: false,
+  exploreLandmark: null,
 
   registerStage: (id, el, options) =>
     set((state) => {
@@ -145,9 +153,42 @@ export function setWorldSnapshot(patch: Partial<WorldSnapshot>): void {
 type PulseListener = (pulse: WorldPulse) => void;
 const pulseListeners = new Set<PulseListener>();
 
+export interface PulseOptions {
+  /**
+   * Also play the pulse's own sound (`PULSE_SFX`). Leave it off where the app's feedback
+   * layer already plays one with its DOM moment, or the sound is heard twice.
+   */
+  sound?: boolean;
+}
+
 /** Ask the world to play a one-shot reaction. Safe to call when 3D is off (it is a no-op). */
-export function emitPulse(pulse: WorldPulse): void {
+export function emitPulse(pulse: WorldPulse, options: PulseOptions = {}): void {
+  if (options.sound) play(PULSE_SFX[pulse.kind]);
   pulseListeners.forEach((listener) => listener(pulse));
+}
+
+// --- Explore: the world full screen. ---
+
+/**
+ * Opens Explore mode: the world fills the screen, the camera flies in, landmarks are
+ * labelled and the user can look around, zoom and take a photo. Landmarks lead where the
+ * stage it was opened from leads them. Closes with Escape, its Close button or
+ * `closeExplore()`.
+ */
+export function openExplore(): void {
+  const state = useWorldStore.getState();
+  if (state.exploring) return;
+  const stage = state.activeStageId ? state.stages[state.activeStageId] : undefined;
+  useWorldStore.setState({
+    exploring: true,
+    exploreLandmark: stage?.options.onLandmark ?? null,
+  });
+}
+
+export function closeExplore(): void {
+  if (useWorldStore.getState().exploring) {
+    useWorldStore.setState({ exploring: false, exploreLandmark: null });
+  }
 }
 
 /** Scene-side subscription. Returns an unsubscribe function. */
