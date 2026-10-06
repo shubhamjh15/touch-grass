@@ -1,0 +1,12 @@
+# One line ending everywhere, so formatting checks give the same answer on every machine.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.webp binary
+*.ico binary
+*.woff2 binary
+*.glb binary
+*.mp3 binary
+*.ogg binary
+*.wav binary

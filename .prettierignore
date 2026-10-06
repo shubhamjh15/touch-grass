@@ -11,3 +11,5 @@ package-lock.json
 .next
 .next-*
 next-env.d.ts
+# Saved as the endpoint answers, one line, so a refresh is a plain overwrite.
+server/climate/snapshot.json
