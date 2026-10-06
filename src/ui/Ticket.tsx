@@ -71,9 +71,11 @@ export function TicketStub({
       {...rest}
     >
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <span className="truncate type-slug text-ink-3">{label}</span>
+        <span className="shrink-0 type-slug text-ink-3">{label}</span>
         {meta ? (
-          <span className="shrink-0 font-mono text-data-sm leading-none text-ink-3">{meta}</span>
+          <span className="min-w-0 truncate font-mono text-data-sm leading-none text-ink-3 max-[379px]:hidden">
+            {meta}
+          </span>
         ) : null}
       </div>
       <div className="flex items-center gap-2">

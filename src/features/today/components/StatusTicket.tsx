@@ -57,7 +57,7 @@ export function StatusTicket({ xpJustEarned = 0 }: { xpJustEarned?: number }) {
         label="Level"
         meta={`${formatNumber(level.xpIntoLevel)}/${formatNumber(level.nextLevelXp - level.levelStartXp)}`}
         value={<NumberTicker value={level.level} />}
-        flex={1.45}
+        flex={1.6}
       >
         <XPBar
           level={level.level}
