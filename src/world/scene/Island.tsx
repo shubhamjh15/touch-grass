@@ -64,7 +64,10 @@ export function Island() {
   const lawn = useMemo(() => lawnGeometry(terrain, tier.islandSegments), [terrain, tier]);
   const rock = useMemo(() => rockGeometry(terrain, tier.islandSegments), [terrain, tier]);
   const lawnMaterial = useMemo(() => toyMaterial({ vertexColors: true }, { mood: true }), []);
-  const rockMaterial = useMemo(() => toyMaterial({ vertexColors: true, flatShading: true }), []);
+  const rockMaterial = useMemo(
+    () => toyMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide }),
+    [],
+  );
   const boulder = useMemo(() => boulderGeometry(5), []);
   const boulderMaterial = useMemo(() => toyMaterial({ flatShading: true }), []);
   const stone = useMemo(() => stoneGeometry(), []);
