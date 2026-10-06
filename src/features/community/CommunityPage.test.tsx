@@ -139,12 +139,13 @@ describe('the journal', () => {
     seed('day200');
     render(<CommunityPage />);
     const note = [...getGameState().journal].sort((a, b) => b.ts - a.ts)[0];
-    await userEvent.type(screen.getByRole('searchbox'), note?.text ?? '');
+    await userEvent.click(screen.getByRole('searchbox'));
+    await userEvent.paste(note?.text ?? '');
     const card = screen.getAllByRole('article')[0] as HTMLElement;
     await userEvent.click(within(card).getByRole('button', { name: 'Edit note' }));
     const field = within(card).getByLabelText('Edit your note');
     await userEvent.clear(field);
-    await userEvent.type(field, 'Changed my mind');
+    await userEvent.paste('Changed my mind');
     await userEvent.click(within(card).getByRole('button', { name: 'Save changes' }));
 
     const edited = getGameState().journal.find((entry) => entry.id === note?.id);
