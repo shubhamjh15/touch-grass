@@ -111,7 +111,7 @@ function Row({ row }: { row: FactorRow }) {
         <p className="text-body-sm">{row.comparedWith}</p>
         {hasWorking ? (
           <details className="group/work mt-1.5">
-            <summary className="inline-flex min-h-8 cursor-pointer items-center type-slug text-ink underline decoration-2 underline-offset-4 [&::-webkit-details-marker]:hidden">
+            <summary className="inline-flex min-h-8 cursor-pointer items-center type-slug text-ink underline decoration-2 underline-offset-4 coarse:min-h-11 [&::-webkit-details-marker]:hidden">
               <span className="group-open/work:hidden">Show working</span>
               <span className="hidden group-open/work:inline">Hide working</span>
             </summary>
@@ -134,7 +134,7 @@ function Row({ row }: { row: FactorRow }) {
               <TextLink
                 href={`#${source.anchor}`}
                 title={source.title}
-                className="flex min-h-6 max-w-full items-baseline gap-1.5 text-caption leading-snug max-md:min-h-9 max-md:items-center"
+                className="flex min-h-6 max-w-full items-baseline gap-1.5 text-caption leading-snug max-md:min-h-9 max-md:items-center coarse:min-h-11 coarse:items-center"
               >
                 <span className="shrink-0 font-mono text-[0.75rem]">{source.year}</span>
                 <span className="min-w-0 truncate">{source.publisher}</span>
