@@ -34,7 +34,7 @@ import {
 import { FAQ, FINAL, HONEST, HOW, KIND, PRIVATE } from './copy';
 import { MiniTree } from './illustrations';
 import { DEMO_ACTIONS, DEMO_CONTEXT, demoEstimate } from './model';
-import { Reveal, SectionHead } from './parts';
+import { Reveal, SectionHead, WithUnit } from './parts';
 
 /** The column every section below the story shares. */
 export function Band({
@@ -170,7 +170,9 @@ export function HowItWorks() {
                 </h3>
               </div>
               <p className="mt-4 text-h4">{step.line}</p>
-              <p className="mt-1.5 text-body-sm text-ink-2">{howBody(step.body)}</p>
+              <p className="mt-1.5 text-body-sm text-ink-2">
+                <WithUnit text={howBody(step.body)} />
+              </p>
               {/* One tray per card, all the same height: the samples line up across the row. */}
               <div className="mt-5 grid flex-1 place-items-center rounded-md border-2 border-ink bg-mat-deep p-4 inset-shadow-deboss">
                 {HOW_MINI[step.id]}

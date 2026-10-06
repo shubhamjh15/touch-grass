@@ -20,7 +20,7 @@ import {
   timelapseLabel,
   type TimelapseMoment,
 } from './model';
-import { Reveal } from './parts';
+import { Reveal, WithUnit } from './parts';
 
 // --- Hero ------------------------------------------------------------------------------------
 
@@ -97,7 +97,7 @@ const PROBLEM_FILL = { invisible: 'blue', 'no-feedback': 'yellow', 'all-doom': '
 
 function ProblemLine({ line }: { line: string }) {
   const [before, after] = line.split('{kg}');
-  if (after === undefined) return <>{line}</>;
+  if (after === undefined) return <WithUnit text={line} />;
   return (
     <>
       {before}
@@ -105,7 +105,7 @@ function ProblemLine({ line }: { line: string }) {
         <Approx />
         {invisibleKg()}
       </span>
-      {after}
+      <WithUnit text={after} />
     </>
   );
 }
