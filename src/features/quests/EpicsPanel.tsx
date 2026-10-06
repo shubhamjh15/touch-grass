@@ -2,6 +2,7 @@
 
 import { ArrowRight, Hourglass, Pin, PinOff } from 'lucide-react';
 import { useId, useRef, useState, type ReactNode } from 'react';
+import { PageSection } from '@/app/shell';
 import { gameActions, type EpicStatus } from '@/game';
 import { dayKey } from '@/lib/dates';
 import { formatLongDate, formatNumber } from '@/lib/format';
@@ -94,7 +95,8 @@ function EpicTicket({ status, hidden, featured, onClaim, onAnnounce }: EpicTicke
       ref={item}
       id={epicAnchor(epic.id)}
       data-epic={epic.id}
-      className="relative isolate min-w-0 scroll-mt-28 lg:scroll-mt-40"
+      tabIndex={-1}
+      className="relative isolate min-w-0 scroll-mt-28 outline-hidden lg:scroll-mt-40"
     >
       <TearStub
         className="relative z-1"
@@ -106,7 +108,11 @@ function EpicTicket({ status, hidden, featured, onClaim, onAnnounce }: EpicTicke
         state={state}
         timeLeft={pinned && state === 'active' ? COPY.epics.pinned : undefined}
         featured={featured}
-        onClaim={() => onClaim(status, stubCentre())}
+        onClaim={() => {
+          const from = stubCentre();
+          item.current?.focus({ preventScroll: true });
+          onClaim(status, from);
+        }}
       />
       {tray}
     </li>
@@ -144,7 +150,6 @@ export interface EpicsPanelProps {
  * tracked from the logs (tickets), and the finished ones. Nothing here expires.
  */
 export function EpicsPanel({ epics, hidden, focusId, onFlight, onAnnounce }: EpicsPanelProps) {
-  const headingId = useId();
   // Epics claimed during this visit stay where they were instead of jumping to "Finished".
   const [claimedHere, setClaimedHere] = useState<ReadonlySet<string>>(() => new Set());
   const groups = groupEpics(epics, claimedHere);
@@ -163,17 +168,12 @@ export function EpicsPanel({ epics, hidden, focusId, onFlight, onAnnounce }: Epi
   const firstReady = groups.ready.find((status) => status.claimable)?.epic.id;
 
   return (
-    <section aria-labelledby={headingId} className="grid gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1.5">
-        <div className="min-w-0">
-          <h2 id={headingId} className="text-h3">
-            {COPY.epics.heading}
-          </h2>
-          <p className="mt-1 max-w-[60ch] text-body-sm text-ink-2">{COPY.epics.lead}</p>
-        </div>
-        <p className="type-slug text-ink-3">{COPY.epics.meta}</p>
-      </header>
-
+    <PageSection
+      title={COPY.epics.heading}
+      lead={COPY.epics.lead}
+      aside={<p className="type-slug text-ink-3">{COPY.epics.meta}</p>}
+      className="gap-6"
+    >
       {allDone ? (
         <EmptyState
           slug={COPY.epics.emptySlug}
@@ -282,6 +282,6 @@ export function EpicsPanel({ epics, hidden, focusId, onFlight, onAnnounce }: Epi
           </ul>
         </Group>
       ) : null}
-    </section>
+    </PageSection>
   );
 }

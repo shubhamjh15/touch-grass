@@ -1,7 +1,7 @@
 'use client';
 
 import { Shuffle } from 'lucide-react';
-import { useId } from 'react';
+import { PageSection } from '@/app/shell';
 import { XP_CLEAN_SWEEP, type QuestView } from '@/game';
 import { formatNumber } from '@/lib/format';
 import { Button, EmptyState, Meter, Panel, Stamp, TapeNote } from '@/ui';
@@ -58,7 +58,6 @@ export function QuestBoardPanel({
   onTab,
   onDraw,
 }: QuestBoardPanelProps) {
-  const headingId = useId();
   const copy = COPY[kind];
   // The period ended but the calendar has not been settled yet (it is, within a second).
   const over = useClock((now) => now >= resetsAt);
@@ -83,17 +82,12 @@ export function QuestBoardPanel({
   else if (claimable > 0) status = COPY.ready(claimable);
 
   return (
-    <section aria-labelledby={headingId} className="grid gap-4">
-      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1.5">
-        <div className="min-w-0">
-          <h2 id={headingId} className="text-h3">
-            {copy.heading}
-          </h2>
-          <p className="mt-1 text-body-sm text-ink-2">{status}</p>
-        </div>
-        <p className="type-slug text-ink-3">{meta}</p>
-      </header>
-
+    <PageSection
+      title={copy.heading}
+      lead={status}
+      aside={<p className="type-slug text-ink-3">{meta}</p>}
+      className="gap-4"
+    >
       {deck.length === 0 ? (
         <EmptyState
           slug={COPY.noBoard.slug}
@@ -180,6 +174,6 @@ export function QuestBoardPanel({
           {swept ? COPY.honest : `${swapsUsed > 0 ? copy.swapSpent : copy.swapRule} ${COPY.honest}`}
         </p>
       ) : null}
-    </section>
+    </PageSection>
   );
 }
