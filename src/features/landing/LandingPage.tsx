@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useBreakpoint, useReducedMotion } from '@/lib/hooks';
 import { useHydrated } from '@/lib/useHydrated';
 import { Approx, Co2e, Lettering, Marquee, Panel, Segmented, Tag, toast } from '@/ui';
@@ -24,6 +24,25 @@ const SPECIES_OPTIONS = SPECIES.map((species) => ({
   value: species,
   label: SPECIES_LABEL[species],
 }));
+
+const TICKER_ITEMS = [...TICKER];
+
+// The time-lapse re-renders this page once per step while the visitor scrolls, and every demo
+// tap does too. The reading sections take no props, so they render once and are left alone:
+// a step then costs the stage and one caption, not the whole page.
+const HeroSection = memo(Hero);
+const ProblemSection = memo(Problem);
+const Desk = memo(function Desk() {
+  return (
+    <Panel variant="mat">
+      <HowItWorks />
+      <HonestNumbers />
+      <KindAndPrivate />
+      <Tour />
+      <Faq />
+    </Panel>
+  );
+});
 
 /** The inline receipt is on screen, with room to be read. */
 function readoutInView(): boolean {
@@ -161,7 +180,7 @@ export default function LandingPage() {
 
         <div className="min-w-0 lg:edge-pinked-l">
           <div className="lg:pt-28 lg:pr-10 lg:pl-11">
-            <Hero />
+            <HeroSection />
           </div>
           <StageSlot
             show={mobile}
@@ -187,7 +206,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="lg:pr-10 lg:pl-11">
-            <Problem />
+            <ProblemSection />
           </div>
           <div className="lg:pr-10 lg:pl-11">
             <TimeLapse
@@ -213,19 +232,13 @@ export default function LandingPage() {
       <Marquee
         variant="ticker"
         title="How Touch Grass works, in four paper verbs: peel, stick, stamp, tear"
-        items={[...TICKER]}
+        items={TICKER_ITEMS}
         // The words are a moving repeat of the label above: nothing in the strip is a target.
         className="relative z-(--z-content) *:pointer-events-none"
       />
 
       {/* The desk: opaque, so the grove never shows through the reading sections. */}
-      <Panel variant="mat">
-        <HowItWorks />
-        <HonestNumbers />
-        <KindAndPrivate />
-        <Tour />
-        <Faq />
-      </Panel>
+      <Desk />
 
       <FinalCta
         grown={demo.taps > 0}
