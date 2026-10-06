@@ -28,7 +28,7 @@ const SPECIES_OPTIONS = SPECIES.map((species) => ({
 /** The inline receipt is on screen, with room to be read. */
 function readoutInView(): boolean {
   const box = document.getElementById(DEMO_ANCHOR)?.getBoundingClientRect();
-  return box !== undefined && box.top < window.innerHeight - 120 && box.bottom > 0;
+  return box !== undefined && box.top < window.innerHeight - 48 && box.bottom > 0;
 }
 
 /** A receipt toast, for visitors whose inline receipt is below the fold (phones, mostly). */
@@ -175,7 +175,7 @@ export default function LandingPage() {
             {/* On a phone the tray straddles the foot of the stage: tree and stickers in one glance. */}
             {desktop ? null : (
               <div className="relative -top-11 z-(--z-content) -mb-11 px-gutter lg:hidden">
-                <DemoDock demo={demo} />
+                <DemoDock demo={demo} className="mx-auto max-w-[30rem]" />
               </div>
             )}
             <div className="pt-4 px-gutter lg:pt-0 lg:pr-10 lg:pl-11">
