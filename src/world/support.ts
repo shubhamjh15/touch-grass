@@ -1,4 +1,5 @@
 import type { WorldPreference, WorldQuality } from './contract';
+import { classifyGpu, resolveAutoTier, type GpuClass } from './quality';
 
 /** What this device can do, probed once before the 3D chunk is requested. */
 export interface WorldSupport {
@@ -7,9 +8,11 @@ export interface WorldSupport {
   webgl1: boolean;
   /** A software rasteriser (no GPU): 3D works but must stay on the lowest tier. */
   software: boolean;
+  /** Class of the GPU, from its unmasked renderer string. */
+  gpu: GpuClass;
 }
 
-const NO_SUPPORT: WorldSupport = { webgl2: false, webgl1: false, software: false };
+const NO_SUPPORT: WorldSupport = { webgl2: false, webgl1: false, software: false, gpu: 'unknown' };
 
 export function detectSupport(): WorldSupport {
   if (typeof document === 'undefined') return NO_SUPPORT;
@@ -24,31 +27,27 @@ export function detectSupport(): WorldSupport {
     );
     // The probe context is thrown away at once: browsers cap live contexts per page.
     gl.getExtension('WEBGL_lose_context')?.loseContext();
-    return {
-      webgl2: Boolean(gl2),
-      webgl1: true,
-      software: /swiftshader|llvmpipe|software|basic render/i.test(renderer),
-    };
+    const gpu = classifyGpu(renderer);
+    return { webgl2: Boolean(gl2), webgl1: true, software: gpu === 'software', gpu };
   } catch {
     return NO_SUPPORT;
   }
 }
 
-interface DeviceHints {
+interface NavigatorHints {
   hardwareConcurrency?: number;
   deviceMemory?: number;
 }
 
-/** Quality tier for `auto`: conservative on phones and weak machines, generous on desktops. */
+/** Quality tier for `auto`: by GPU class, conservative on phones and weak machines. */
 export function autoQuality(support: WorldSupport): WorldQuality {
-  if (support.software) return 'low';
-  const hints = navigator as Navigator & DeviceHints;
-  const cores = hints.hardwareConcurrency ?? 4;
-  const memory = hints.deviceMemory ?? 4;
-  if (cores <= 2 || memory <= 2) return 'low';
-  const phone = window.matchMedia('(pointer: coarse)').matches;
-  if (phone || cores <= 4 || memory <= 4) return 'medium';
-  return 'high';
+  const hints = navigator as Navigator & NavigatorHints;
+  return resolveAutoTier({
+    gpu: support.gpu,
+    cores: hints.hardwareConcurrency,
+    memoryGb: hints.deviceMemory,
+    coarsePointer: window.matchMedia('(pointer: coarse)').matches,
+  });
 }
 
 export function resolveQuality(preference: WorldPreference, support: WorldSupport): WorldQuality {

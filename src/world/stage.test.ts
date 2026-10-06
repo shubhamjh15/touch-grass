@@ -9,7 +9,7 @@ import {
 import { CAMERA, GOVERNOR, ORBIT, QUALITY } from './config';
 import { LANDMARKS } from './contract';
 import { OrbitController } from './interaction';
-import { QualityGovernor, frameInterval, resolveAutoTier } from './quality';
+import { QualityGovernor, classifyGpu, resolveAutoTier, resolveDpr } from './quality';
 
 const COUNT = LANDMARKS.length;
 const SIZES: ChipSize[] = LANDMARKS.map((_, index) => ({ width: 90 + index * 9, height: 40 }));
@@ -151,30 +151,91 @@ describe('callout layout', () => {
 });
 
 describe('quality resolver', () => {
+  it('sorts renderer strings into GPU classes', () => {
+    const integrated = [
+      'ANGLE (AMD, AMD Radeon (TM) Graphics (0x000015E7) Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      'ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      'ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x00009A49) Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      'Mesa Intel(R) HD Graphics 520 (SKL GT2)',
+    ];
+    for (const name of integrated) expect(classifyGpu(name)).toBe('integrated');
+    const discrete = [
+      'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      'ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      'ANGLE (Intel, Intel(R) Arc(TM) A750 Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)',
+    ];
+    for (const name of discrete) expect(classifyGpu(name)).toBe('discrete');
+    for (const name of ['Mali-G78', 'Adreno (TM) 650', 'PowerVR Rogue GE8320']) {
+      expect(classifyGpu(name)).toBe('mobile');
+    }
+    expect(classifyGpu('ANGLE (Apple, ANGLE Metal Renderer: Apple M2, Unspecified Version)')).toBe(
+      'apple',
+    );
+    expect(
+      classifyGpu('ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device), SwiftShader driver)'),
+    ).toBe('software');
+    expect(classifyGpu('')).toBe('unknown');
+  });
+
   it('starts a software rasteriser on low whatever else it claims', () => {
-    expect(resolveAutoTier({ software: true, cores: 16, memoryGb: 32, coarsePointer: false })).toBe(
-      'low',
+    expect(
+      resolveAutoTier({ gpu: 'software', cores: 16, memoryGb: 32, coarsePointer: false }),
+    ).toBe('low');
+  });
+
+  it('starts integrated graphics on medium however many cores the laptop has', () => {
+    expect(
+      resolveAutoTier({ gpu: 'integrated', cores: 12, memoryGb: 16, coarsePointer: false }),
+    ).toBe('medium');
+    expect(resolveAutoTier({ gpu: 'mobile', cores: 8, memoryGb: 8, coarsePointer: true })).toBe(
+      'medium',
     );
   });
 
-  it('reads device hints: weak machines low, phones medium, desktops high', () => {
-    expect(resolveAutoTier({ software: false, cores: 2, memoryGb: 8, coarsePointer: false })).toBe(
-      'low',
+  it('gives post-processing only to discrete cards and desktop Apple silicon', () => {
+    expect(resolveAutoTier({ gpu: 'discrete', cores: 8, memoryGb: 8, coarsePointer: false })).toBe(
+      'high',
     );
-    expect(resolveAutoTier({ software: false, cores: 8, memoryGb: 2, coarsePointer: true })).toBe(
-      'low',
+    expect(resolveAutoTier({ gpu: 'apple', cores: 8, memoryGb: 8, coarsePointer: false })).toBe(
+      'high',
     );
-    expect(resolveAutoTier({ software: false, cores: 8, memoryGb: 8, coarsePointer: true })).toBe(
+    // The same chip family in a phone or tablet.
+    expect(resolveAutoTier({ gpu: 'apple', cores: 6, memoryGb: 4, coarsePointer: true })).toBe(
       'medium',
     );
-    expect(resolveAutoTier({ software: false, cores: 4, memoryGb: 8, coarsePointer: false })).toBe(
-      'medium',
+  });
+
+  it('reads device hints: weak machines low, an unknown GPU medium', () => {
+    expect(resolveAutoTier({ gpu: 'discrete', cores: 2, memoryGb: 8, coarsePointer: false })).toBe(
+      'low',
     );
-    expect(
-      resolveAutoTier({ software: false, cores: 12, memoryGb: 16, coarsePointer: false }),
-    ).toBe('high');
+    expect(resolveAutoTier({ gpu: 'mobile', cores: 8, memoryGb: 2, coarsePointer: true })).toBe(
+      'low',
+    );
     // A browser that tells nothing is treated as an average machine.
-    expect(resolveAutoTier({ software: false, coarsePointer: false })).toBe('medium');
+    expect(resolveAutoTier({ gpu: 'unknown', coarsePointer: false })).toBe('medium');
+  });
+});
+
+describe('resolution', () => {
+  it('never exceeds the device ratio or the tier cap', () => {
+    expect(resolveDpr('high', 400 * 300, 1, false, 1)).toBe(1);
+    expect(resolveDpr('high', 400 * 300, 3, false, 1)).toBe(QUALITY.high.dpr);
+    expect(resolveDpr('medium', 390 * 400, 3, true, 1)).toBe(QUALITY.medium.dprTouch);
+  });
+
+  it('keeps a large stage inside the pixel budget of the tier', () => {
+    const css = 1920 * 1000;
+    const dpr = resolveDpr('medium', css, 2, false, 1);
+    expect(dpr).toBeLessThan(QUALITY.medium.dpr);
+    expect((css * dpr * dpr) / 1e6).toBeCloseTo(QUALITY.medium.megapixels, 5);
+  });
+
+  it('follows the governor down', () => {
+    const full = resolveDpr('medium', 1440 * 700, 1.5, false, 1);
+    const reduced = resolveDpr('medium', 1440 * 700, 1.5, false, 0.7);
+    expect(reduced).toBeCloseTo(full * 0.7, 5);
+    expect(resolveDpr('low', 4000 * 3000, 1, false, 0.7)).toBe(0.5);
   });
 });
 
@@ -184,12 +245,52 @@ describe('QualityGovernor', () => {
     for (let i = 0; i < frames; i += 1) if (governor.sample(frameMs)) changes += 1;
     return changes;
   };
+  const reactsWithin = GOVERNOR.settle + GOVERNOR.window * GOVERNOR.strikes;
 
-  it('leaves a fast device alone', () => {
+  it('leaves a device that holds the display rate alone', () => {
     const governor = new QualityGovernor('high');
     expect(feed(governor, 16.7, 5000)).toBe(0);
     expect(governor.tier).toBe('high');
     expect(governor.dprScale).toBe(1);
+  });
+
+  it('acts on 38 fps within about a second: that cadence is what jitter looks like', () => {
+    const governor = new QualityGovernor('medium');
+    expect(feed(governor, 26, reactsWithin - 1)).toBe(0);
+    expect(feed(governor, 26, 1)).toBe(1);
+    expect(reactsWithin * 16.7).toBeLessThan(2000);
+  });
+
+  it('acts on a steady rate that drops every fourth frame', () => {
+    const governor = new QualityGovernor('medium');
+    let changes = 0;
+    for (let i = 0; i < reactsWithin; i += 1) {
+      if (governor.sample(i % 4 === 0 ? 33.4 : 16.7)) changes += 1;
+    }
+    expect(changes).toBe(1);
+  });
+
+  it('forgives a single slow window and stray late frames', () => {
+    const governor = new QualityGovernor('medium');
+    feed(governor, 16.7, GOVERNOR.settle);
+    for (let round = 0; round < 40; round += 1) {
+      expect(feed(governor, 40, GOVERNOR.window)).toBe(0);
+      expect(feed(governor, 16.7, GOVERNOR.window)).toBe(0);
+    }
+    let changes = 0;
+    for (let i = 0; i < 6000; i += 1) if (governor.sample(i % 20 === 0 ? 34 : 16.7)) changes += 1;
+    expect(changes).toBe(0);
+  });
+
+  it('learns the cadence of the display instead of assuming 60 Hz', () => {
+    const fast = new QualityGovernor('high');
+    feed(fast, 8.3, 600);
+    expect(fast.refreshMs).toBeCloseTo(8.3, 1);
+    // 60 fps on a 120 Hz screen is every other frame missed.
+    expect(feed(fast, 16.7, reactsWithin)).toBe(1);
+    // A 50 Hz screen is not a slow device.
+    const slow = new QualityGovernor('high');
+    expect(feed(slow, 20, 5000)).toBe(0);
   });
 
   it('steps the resolution down first, then the tier, and never back up', () => {
@@ -220,16 +321,19 @@ describe('QualityGovernor', () => {
     let changes = 0;
     for (let i = 0; i < 20_000; i += 1) {
       // Slow until the first step down, then comfortably fast: it must settle there.
-      if (governor.sample(changes === 0 ? 30 : 20)) changes += 1;
+      if (governor.sample(changes === 0 ? 30 : 17)) changes += 1;
     }
     expect(changes).toBe(1);
     expect(governor.tier).toBe('medium');
   });
 
-  it('ignores hiccups and the frames right after a change', () => {
+  it('ignores hiccups, the frames right after a change and whatever a drag interrupted', () => {
     const governor = new QualityGovernor('high');
     expect(feed(governor, 900, 2000)).toBe(0);
-    expect(feed(governor, 40, GOVERNOR.settle + GOVERNOR.window - 1)).toBe(0);
+    expect(feed(governor, 40, reactsWithin - 1)).toBe(0);
+    // A drag starts: the half-filled window is dropped and judging resumes afterwards.
+    governor.pause();
+    expect(feed(governor, 40, GOVERNOR.resume + GOVERNOR.window - 1)).toBe(0);
     expect(feed(governor, 40, 1)).toBe(1);
   });
 
@@ -239,13 +343,6 @@ describe('QualityGovernor', () => {
     governor.reset('medium');
     expect(governor.tier).toBe('medium');
     expect(governor.dprScale).toBe(1);
-  });
-
-  it('caps idle frames by tier', () => {
-    expect(frameInterval('high', 100)).toBe(0);
-    expect(frameInterval('medium', 2)).toBe(0);
-    expect(frameInterval('medium', 9)).toBeCloseTo(1 / 30);
-    expect(frameInterval('low', 0)).toBeCloseTo(1 / 30);
   });
 });
 

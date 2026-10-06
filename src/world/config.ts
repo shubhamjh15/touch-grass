@@ -115,8 +115,17 @@ export interface QualityTier {
   dpr: number;
   /** The same cap on touch screens, whose pixels are smaller. */
   dprTouch: number;
+  /**
+   * Most megapixels the drawing buffer may hold: the pixel ratio is lowered on a large
+   * stage until it fits. Integrated GPUs are bound by fill rate, not by the ratio.
+   */
+  megapixels: number;
   /** Side of the sun's shadow map in texels; 0 = no shadow pass, a soft blob under the crown. */
   shadowMap: number;
+  /** The shadow map is redrawn every this many frames while nothing but the wind moves. */
+  shadowEvery: number;
+  /** Multisampled drawing buffer. */
+  antialias: boolean;
   /** Bloom, vignette and tone mapping through the effect composer. */
   post: boolean;
   /** Half-resolution ambient occlusion in the composer. */
@@ -141,7 +150,10 @@ export const QUALITY: Record<WorldQuality, QualityTier> = {
   low: {
     dpr: 1,
     dprTouch: 1.5,
+    megapixels: 1.1,
     shadowMap: 0,
+    shadowEvery: 1,
+    antialias: true,
     post: false,
     ao: false,
     puffDetail: 2,
@@ -157,7 +169,10 @@ export const QUALITY: Record<WorldQuality, QualityTier> = {
   medium: {
     dpr: 1.5,
     dprTouch: 2,
+    megapixels: 1.5,
     shadowMap: 1024,
+    shadowEvery: 3,
+    antialias: true,
     post: false,
     ao: false,
     puffDetail: 3,
@@ -173,7 +188,10 @@ export const QUALITY: Record<WorldQuality, QualityTier> = {
   high: {
     dpr: 1.5,
     dprTouch: 2,
+    megapixels: 4,
     shadowMap: 2048,
+    shadowEvery: 2,
+    antialias: true,
     post: true,
     ao: true,
     puffDetail: 3,
@@ -511,15 +529,25 @@ export const ORBIT = {
   keyStep: deg(30),
 } as const;
 
-/** Runtime adaptation of the `auto` preference (bible 5.11): DPR first, then the tier. */
+/** Runtime adaptation of the `auto` preference: resolution first, then the tier. */
 export const GOVERNOR = {
   /** Shares of the tier's DPR cap that are tried before the tier is dropped. */
-  dprSteps: [1, 0.8, 0.65],
-  /** Average frame time above this is "slow"; samples are averaged over `window` frames. */
-  slowMs: 26,
-  window: 120,
+  dprSteps: [1, 0.85, 0.7],
+  /** Frames judged together: half a second at 60 Hz. */
+  window: 30,
+  /** A frame is late when it takes this many display intervals. */
+  lateFactor: 1.4,
+  /** A window with more than this share of late frames is slow. */
+  lateShare: 0.12,
+  /** Slow windows in a row before anything changes: about a second in all. */
+  strikes: 2,
+  /** Display interval assumed until a faster cadence is observed, and the fastest believed. */
+  refreshMs: 16.7,
+  fastestMs: 4,
   /** Frames ignored after any change, while shaders compile and buffers resize. */
-  settle: 60,
+  settle: 45,
+  /** Frames ignored after a drag, a resize or a return to the tab. */
+  resume: 12,
   /** A single frame longer than this is a hiccup (tab switch, GC), not a slow device. */
   hiccupMs: 250,
 } as const;
