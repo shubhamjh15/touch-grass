@@ -301,20 +301,6 @@ export function leavesFor(strength: number): number {
 
 // ── The day and the week ───────────────────────────────────────────────────────────────
 
-/** "2 more actions close today's ring." without the tree's mood in front of it. */
-export function ringLine(
-  tree: Pick<TreeStatus, 'actsToRing' | 'ringClosedToday' | 'rings' | 'name'>,
-  goal: number,
-): string {
-  if (tree.ringClosedToday) return 'Ring closed. See you tomorrow?';
-  if (tree.rings === 1 && tree.actsToRing === goal) {
-    return `Log one action to give ${tree.name} its first leaf.`;
-  }
-  return tree.actsToRing === 1
-    ? "1 more action closes today's ring."
-    : `${formatNumber(tree.actsToRing)} more actions close today's ring.`;
-}
-
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 
 /** 0 is Monday. */

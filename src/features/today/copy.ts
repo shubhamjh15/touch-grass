@@ -6,7 +6,6 @@ import { BREAK_AWAY_SHARE, BREAK_MIN_GAP_MIN, BREAK_MIN_KEPT_MIN } from '@/game'
 import { formatNumber, formatPercent } from '@/lib/format';
 
 export const COPY = {
-  pageTitle: 'Today',
   dockLabel: 'Today',
   stickHeading: 'Stick one on',
   questsHeading: "Today's quests",
@@ -16,14 +15,12 @@ export const COPY = {
   exploreShort: 'Explore',
   exploreDone: 'Done',
   exploreHint: 'Drag the island to turn it. Every landmark is a way in.',
-  touchGrass: 'Touch grass',
   logAction: 'Log an action',
   maxed: 'Maxed',
   maxedNote: 'Maxed for today. This one adds kilograms, not XP.',
   undo: 'Undo',
   peeled: 'Peeled off. Back to how it was.',
   undoExpired: 'That one has set. You can still remove it from the Log page.',
-  builtIn: 'Built-in notes',
   askMoss: 'Ask Moss',
   factSlug: 'Daily fact',
   factMore: 'Tell me more',
