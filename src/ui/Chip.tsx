@@ -5,13 +5,15 @@ import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 const BASE =
-  'relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-pill border-2 border-ink bg-white px-3 text-caption font-semibold whitespace-nowrap text-ink';
+  'relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-pill border-2 border-ink bg-white px-3.5 text-body-sm font-semibold whitespace-nowrap text-ink';
+
+const SELECTED = 'bg-ink text-white';
 
 export interface ChipProps extends Omit<ComponentProps<'button'>, 'children'> {
   selected?: boolean;
   onSelectedChange?: (selected: boolean) => void;
   icon?: LucideIcon;
-  /** Result count shown after the label in mono. */
+  /** Result count shown after the label. */
   count?: number;
   /** `span` renders a static, non-interactive chip. */
   as?: 'button' | 'span';
@@ -19,8 +21,8 @@ export interface ChipProps extends Omit<ComponentProps<'button'>, 'children'> {
 }
 
 /**
- * The filter pill. Chips filter what a panel contains; they are toggle buttons (`aria-pressed`).
- * Selected is yellow plus a shape change: a hard shadow and a −2° turn.
+ * The filter pill. Chips filter what a list contains; they are toggle buttons (`aria-pressed`).
+ * Selected is the inverse: ink fill, white text.
  */
 export function Chip({
   selected = false,
@@ -35,20 +37,18 @@ export function Chip({
 }: ChipProps) {
   const content = (
     <>
-      {Icon ? <Icon size={14} strokeWidth={2.25} aria-hidden="true" /> : null}
+      {Icon ? <Icon size={16} strokeWidth={2} aria-hidden="true" /> : null}
       {children}
       {count !== undefined ? (
-        <span className="font-mono text-[0.6875rem] font-medium text-ink-3">{count}</span>
+        <span className={cn('font-medium tabular-nums', selected ? 'text-white' : 'text-ink-3')}>
+          {count}
+        </span>
       ) : null}
     </>
   );
 
   if (as === 'span') {
-    return (
-      <span className={cn(BASE, selected && '-rotate-2 bg-yellow font-bold shadow-1', className)}>
-        {content}
-      </span>
-    );
+    return <span className={cn(BASE, selected && SELECTED, className)}>{content}</span>;
   }
 
   return (
@@ -57,8 +57,9 @@ export function Chip({
       aria-pressed={selected}
       className={cn(
         BASE,
-        'transition-[rotate,background-color] duration-(--dur-fast) ease-out after:absolute after:inset-x-0 after:-inset-y-1.5 fine:hover:bg-mat-deep',
-        selected && '-rotate-2 bg-yellow font-bold flat-2 fine:hover:bg-yellow',
+        // The pill is 36 px tall; the pseudo-element stretches its target to 44 px.
+        'transition-colors duration-(--dur-fast) ease-out after:absolute after:inset-x-0 after:-inset-y-1',
+        selected ? SELECTED : 'fine:hover:bg-mat-deep',
         className,
       )}
       onClick={(event) => {

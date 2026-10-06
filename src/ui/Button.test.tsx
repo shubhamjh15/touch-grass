@@ -7,12 +7,13 @@ import { IconButton } from './IconButton';
 
 const VARIANTS: [ButtonVariant, string][] = [
   ['primary', 'bg-green'],
+  ['secondary', 'bg-white'],
   ['reward', 'bg-yellow'],
-  ['neutral', 'bg-white'],
-  ['info', 'bg-blue'],
   ['ink', 'bg-ink'],
   ['danger', 'bg-tomato'],
-  ['ghost', 'underline'],
+  // Earlier names of `secondary`.
+  ['neutral', 'bg-white'],
+  ['info', 'bg-white'],
 ];
 
 describe('Button', () => {
@@ -28,15 +29,25 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toHaveAttribute('type', 'button');
   });
 
-  it('embosses every variant except ghost', () => {
+  it('has three levels: only the primary sits on a shadow, and a link has no box at all', () => {
     render(
       <>
-        <Button variant="primary">Raised</Button>
-        <Button variant="ghost">Flat</Button>
+        <Button variant="primary">Log it</Button>
+        <Button>Not now</Button>
+        <Button variant="link">See all</Button>
+        <Button variant="ghost">Skip for now</Button>
       </>,
     );
-    expect(screen.getByRole('button', { name: 'Raised' })).toHaveClass('hard', 'border-3');
-    expect(screen.getByRole('button', { name: 'Flat' })).not.toHaveClass('hard');
+    expect(screen.getByRole('button', { name: 'Log it' })).toHaveClass('hard', 'border-2');
+    const secondary = screen.getByRole('button', { name: 'Not now' });
+    expect(secondary).toHaveAttribute('data-variant', 'secondary');
+    expect(secondary).toHaveClass('border-2');
+    expect(secondary).not.toHaveClass('hard');
+    for (const name of ['See all', 'Skip for now']) {
+      const link = screen.getByRole('button', { name });
+      expect(link).not.toHaveClass('hard');
+      expect(link).not.toHaveClass('border-2');
+    }
   });
 
   it('runs onClick from the mouse, Enter and Space', async () => {

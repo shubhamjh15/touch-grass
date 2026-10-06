@@ -5,20 +5,24 @@ import type { ComponentProps, MouseEvent } from 'react';
 import { cn } from '@/lib/cn';
 import { Tooltip } from './Tooltip';
 
-export type IconButtonVariant = 'neutral' | 'primary' | 'reward' | 'info' | 'danger';
+export type IconButtonVariant = 'neutral' | 'ghost' | 'primary' | 'reward' | 'info' | 'danger';
+
+const OUTLINED = 'border-2 border-ink off:border-ink-4 off:bg-line';
 
 const VARIANT: Record<IconButtonVariant, string> = {
-  neutral: 'bg-white',
-  primary: 'bg-green',
-  reward: 'bg-yellow',
-  info: 'bg-blue',
-  danger: 'bg-tomato',
+  neutral: cn(OUTLINED, 'bg-white fine:hover:bg-mat-deep'),
+  ghost: 'bg-transparent fine:hover:bg-mat-deep active:bg-mat-deep',
+  primary: cn(OUTLINED, 'bg-green fine:hover:bg-primary-hover'),
+  reward: cn(OUTLINED, 'bg-yellow fine:hover:bg-yellow-tint'),
+  info: cn(OUTLINED, 'bg-white fine:hover:bg-mat-deep'),
+  danger: cn(OUTLINED, 'bg-tomato fine:hover:bg-tomato-tint'),
 };
 
 export type IconButtonProps = Omit<ComponentProps<'button'>, 'children' | 'aria-label'> & {
   /** The accessible name, also shown as the tooltip. Verb first: "Undo", "Close". */
   label: string;
   icon: LucideIcon;
+  /** `neutral` is outlined; `ghost` has no outline (close buttons, row actions). */
   variant?: IconButtonVariant;
   size?: 'sm' | 'md';
   shape?: 'round' | 'square';
@@ -57,17 +61,16 @@ export function IconButton({
       aria-label={label}
       aria-disabled={softDisabled || undefined}
       className={cn(
-        'grid shrink-0 hard place-items-center border-3 border-ink text-ink lift-3',
-        'off:border-2 off:border-dashed off:border-ink-4 off:bg-line off:text-ink-3',
+        'grid shrink-0 place-items-center text-ink transition-[transform,background-color] duration-(--dur-fast) ease-out active:translate-y-px off:translate-y-0 off:cursor-not-allowed off:text-ink-3',
         size === 'md' ? 'size-11' : 'hit-1 size-9',
-        shape === 'round' ? 'rounded-full' : 'rounded-ctl',
+        shape === 'round' ? 'rounded-full' : 'rounded-md',
         VARIANT[variant],
         className,
       )}
       onClick={handleClick}
       {...rest}
     >
-      <Icon size={size === 'md' ? 20 : 16} strokeWidth={2.25} aria-hidden="true" />
+      <Icon size={size === 'md' ? 20 : 18} strokeWidth={2} aria-hidden="true" />
     </button>
   );
 
