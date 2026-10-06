@@ -39,6 +39,8 @@ interface WorldState {
   status: WorldStatus;
   preference: WorldPreference;
   quality: WorldQuality;
+  /** Share of the tier's resolution cap in use; `auto` lowers it when frames are slow. */
+  dprScale: number;
   /** App-level motion setting. `system` follows the OS "reduce motion" preference. */
   motion: WorldMotion;
   snapshot: WorldSnapshot;
@@ -53,6 +55,7 @@ interface WorldState {
   setStatus: (status: WorldStatus) => void;
   setPreference: (preference: WorldPreference) => void;
   setQuality: (quality: WorldQuality) => void;
+  setDprScale: (dprScale: number) => void;
   setMotion: (motion: WorldMotion) => void;
 }
 
@@ -81,6 +84,7 @@ export const useWorldStore = create<WorldState>()((set) => ({
   status: 'idle',
   preference: 'auto',
   quality: 'medium',
+  dprScale: 1,
   motion: 'system',
   snapshot: DEFAULT_SNAPSHOT,
   stages: {},
@@ -122,8 +126,10 @@ export const useWorldStore = create<WorldState>()((set) => ({
 
   setSnapshot: (patch) => set((state) => ({ snapshot: { ...state.snapshot, ...patch } })),
   setStatus: (status) => set({ status }),
-  setPreference: (preference) => set({ preference }),
+  // A new preference starts over at full resolution.
+  setPreference: (preference) => set({ preference, dprScale: 1 }),
   setQuality: (quality) => set({ quality }),
+  setDprScale: (dprScale) => set({ dprScale }),
   setMotion: (motion) => set({ motion }),
 }));
 
@@ -203,9 +209,17 @@ export interface WorldStats {
   programs: number;
   /** Growth currently on screen (the snapshot value, eased). */
   growth: number;
-  /** CSS pixels per world unit of the last placement. */
+  /** CSS pixels per world unit at the tree. */
   scale: number;
   frames: number;
+  /** Slowest and 95th-percentile frame of the last sampling window, in milliseconds. */
+  worstMs: number;
+  p95Ms: number;
+  /** Milliseconds of script time one frame of the scene costs (update and draw calls issued). */
+  cpuMs: number;
+  /** Drawing-buffer size in device pixels. */
+  bufferWidth: number;
+  bufferHeight: number;
 }
 
 /** Mutated in place by the scene every frame; never React state. */
@@ -222,7 +236,26 @@ export const worldStats: WorldStats = {
   growth: 0,
   scale: 0,
   frames: 0,
+  worstMs: 0,
+  p95Ms: 0,
+  cpuMs: 0,
+  bufferWidth: 0,
+  bufferHeight: 0,
 };
+
+let wantStats = false;
+
+/**
+ * Dev flag for the frame-time sampler (percentiles cost a sort every few frames). The
+ * world lab switches it on; the app never does.
+ */
+export function measureWorld(on: boolean): void {
+  wantStats = on;
+}
+
+export function statsWanted(): boolean {
+  return wantStats;
+}
 
 /** A copy of the live render statistics. All zeros while 3D is off. */
 export function getWorldStats(): WorldStats {

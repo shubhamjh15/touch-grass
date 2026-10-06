@@ -6,7 +6,8 @@ import type { StageMode } from './contract';
  * How the island turns: the idle motion of each stage mode plus what the user does to
  * it (drag with inertia, hover parallax, arrow keys). Pure state and maths, stepped once
  * per frame by the tracker; pointer and keyboard handlers on the stage element only
- * feed it numbers. It turns the island, never the camera or the lamp (bible 5.9).
+ * feed it numbers. The scene applies the yaw as a camera orbit about the tree, so the
+ * sun, the shadows and the sky stay where they are while the user looks around.
  */
 
 const TAU = Math.PI * 2;
@@ -80,6 +81,12 @@ export class OrbitController {
   /** Arrow keys: `steps` of 30 degrees, eased. Positive turns the front to the right. */
   nudge(steps: number): void {
     this.pendingKeys += steps * ORBIT.keyStep;
+    this.sinceRelease = 0;
+  }
+
+  /** Up and down arrow keys: tips the camera a step; it eases back like a released drag. */
+  lift(steps: number): void {
+    this.tilt = clamp(this.tilt + steps * ORBIT.maxTilt * 0.6, -ORBIT.maxTilt, ORBIT.maxTilt * 1.3);
     this.sinceRelease = 0;
   }
 
@@ -179,5 +186,68 @@ export function onTap(listener: TapListener): () => void {
   tapListeners.add(listener);
   return () => {
     tapListeners.delete(listener);
+  };
+}
+
+// --- Pointer and hit-testing: what the user points at and taps, by name ---------------------
+
+/**
+ * The pointer over the active stage, in viewport coordinates. The stage writes it on
+ * pointer moves; the scene reads it once per frame and ray-casts only when it moved.
+ */
+export const pointer = { x: 0, y: 0, inside: false, moved: false };
+
+export function setPointer(clientX: number, clientY: number): void {
+  pointer.x = clientX;
+  pointer.y = clientY;
+  pointer.inside = true;
+  pointer.moved = true;
+}
+
+export function clearPointer(): void {
+  pointer.inside = false;
+  pointer.moved = true;
+}
+
+/**
+ * A named part of the world under the pointer. Names are plain strings so new parts need
+ * no change here: `tree`, `ground`, `water`, `prop:<id>`, `landmark:<id>`, `creature:<id>`.
+ */
+export interface WorldHit {
+  part: string;
+  /** Where the ray met the part, in island space. */
+  point: [number, number, number];
+  clientX: number;
+  clientY: number;
+}
+
+type HitListener = (hit: WorldHit) => void;
+type HoverListener = (hit: WorldHit | null) => void;
+const hitListeners = new Set<HitListener>();
+const hoverListeners = new Set<HoverListener>();
+
+/** Scene-side: a tap landed on a named part. */
+export function emitWorldTap(hit: WorldHit): void {
+  hitListeners.forEach((listener) => listener(hit));
+}
+
+/** Scene-side: the part under the pointer changed (`null` = nothing). */
+export function emitWorldHover(hit: WorldHit | null): void {
+  hoverListeners.forEach((listener) => listener(hit));
+}
+
+/** Subscribes to taps on named parts of the world. Returns an unsubscribe function. */
+export function onWorldTap(listener: HitListener): () => void {
+  hitListeners.add(listener);
+  return () => {
+    hitListeners.delete(listener);
+  };
+}
+
+/** Subscribes to the part under the pointer changing. Returns an unsubscribe function. */
+export function onWorldHover(listener: HoverListener): () => void {
+  hoverListeners.add(listener);
+  return () => {
+    hoverListeners.delete(listener);
   };
 }

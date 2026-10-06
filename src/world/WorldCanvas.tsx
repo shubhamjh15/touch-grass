@@ -41,8 +41,9 @@ class SceneBoundary extends Component<
 
 /**
  * Mounted once by the root layout and never unmounted: the fixed backdrop (the printed
- * sky plate; the mat itself is the page background) and, on capable devices, the WebGL
- * canvas that renders the Grove.
+ * sky plate; the mat itself is the page background) and, on capable devices, the one
+ * WebGL canvas that renders the world. The canvas persists across pages, so the tree is
+ * never rebuilt on navigation; the tracker sizes it to whichever stage is active.
  * It decides between 3D and the illustrated fallback; everything heavy is lazy.
  */
 export function WorldCanvas() {
@@ -88,11 +89,15 @@ export function WorldCanvas() {
       className="pointer-events-none fixed inset-x-0 top-0 z-0 h-lvh overflow-hidden"
     >
       <WorldSky ref={sky} />
-      <div ref={scene} className="absolute inset-0 opacity-0">
+      {/* Sized and moved by the tracker: the canvas is never larger than the stage it shows. */}
+      <div
+        ref={scene}
+        className="absolute top-0 left-0 size-px origin-top-left overflow-hidden opacity-0 will-change-transform"
+      >
         {use3d && (
           <SceneBoundary onError={fail}>
             <Suspense fallback={null}>
-              <WorldScene onFail={fail} />
+              <WorldScene onFail={fail} adaptive={!support.software} />
             </Suspense>
           </SceneBoundary>
         )}

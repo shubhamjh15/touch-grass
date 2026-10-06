@@ -11,8 +11,10 @@ import { useWorldStore, type StageRecord } from './store';
  *   1. reads the canvas rectangle and the active stage rectangle,
  *   2. turns them into the box the world should occupy (locked 1:1 to the stage while
  *      it stays the same, flown on a spring when the active stage changes),
- *   3. writes the printed sky layer to that box,
- *   4. hands the frame to the scene, which renders the Grove into the same box.
+ *   3. writes the printed sky layer to that box, and sizes the WebGL canvas to the stage
+ *      (its drawing buffer is never larger than what is shown; a flight between two
+ *      stages only moves and scales the layer),
+ *   4. hands the frame to the scene, which renders the world into that canvas.
  *
  * Reads, sky and WebGL all happen in the same task, so the DOM and the canvas can
  * never be a frame apart. Lives in the main bundle (no three.js): the sky follows
@@ -30,6 +32,8 @@ export interface WorldFrame {
   originY: number;
   /** Box the world occupies, relative to the canvas. Mid-flight it is between two stages. */
   box: Box;
+  /** CSS size of the WebGL canvas: the active stage's size, in whole pixels. */
+  view: { width: number; height: number };
   fit: number;
   /** 0 = centred in the box, 1 = standing on its bottom edge. */
   anchor: number;
@@ -86,7 +90,7 @@ export interface TrackerLayers {
   backdrop: HTMLElement;
   /** The printed sky: sized and moved to the world's box. */
   sky: HTMLElement;
-  /** Wrapper of the WebGL canvas: receives the world's opacity. */
+  /** Wrapper of the WebGL canvas: sized to the stage, moved to the box, given the opacity. */
   scene: HTMLElement;
 }
 
@@ -123,6 +127,9 @@ export function startTracker(layers: TrackerLayers): () => void {
     height: '',
     skyOpacity: '',
     sceneOpacity: '',
+    sceneTransform: '',
+    sceneWidth: '',
+    sceneHeight: '',
     radius: '',
   };
 
@@ -133,6 +140,7 @@ export function startTracker(layers: TrackerLayers): () => void {
     originX: 0,
     originY: 0,
     box: { x: 0, y: 0, width: 1, height: 1 },
+    view: { width: 1, height: 1 },
     fit: 0.86,
     anchor: 1,
     mode: 'companion',
@@ -171,6 +179,22 @@ export function startTracker(layers: TrackerLayers): () => void {
     if (sceneOpacity !== written.sceneOpacity) {
       scene.style.opacity = written.sceneOpacity = sceneOpacity;
     }
+    // The canvas keeps the stage's size in layout (so its buffer is resized only when the
+    // stage is) and reaches the box by a transform: an exact translation while locked,
+    // a uniform scale about the box centre while it flies.
+    const { view } = frame;
+    const zoom = Math.sqrt((box.width / view.width) * (box.height / view.height)) || 1;
+    const scale = Math.abs(zoom - 1) < 0.002 ? 1 : zoom;
+    const left = box.x + (box.width - view.width * scale) / 2;
+    const top = box.y + (box.height - view.height * scale) / 2;
+    const sceneTransform = `translate3d(${left.toFixed(2)}px, ${top.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
+    const sceneWidth = `${view.width}px`;
+    const sceneHeight = `${view.height}px`;
+    if (sceneTransform !== written.sceneTransform) {
+      scene.style.transform = written.sceneTransform = sceneTransform;
+    }
+    if (sceneWidth !== written.sceneWidth) scene.style.width = written.sceneWidth = sceneWidth;
+    if (sceneHeight !== written.sceneHeight) scene.style.height = written.sceneHeight = sceneHeight;
   }
 
   function tick(now: number): void {
@@ -244,7 +268,10 @@ export function startTracker(layers: TrackerLayers): () => void {
       if (fresh || changed) {
         stageId = stage.id;
         const radius = getComputedStyle(stage.el).borderRadius;
-        if (radius !== written.radius) layers.sky.style.borderRadius = written.radius = radius;
+        if (radius !== written.radius) {
+          layers.sky.style.borderRadius = radius;
+          layers.scene.style.borderRadius = written.radius = radius;
+        }
         // A companion stage with a sky is a printed plate; the others bleed to the edges.
         layers.sky.dataset.frame = options.mode === 'companion' ? 'plate' : 'bleed';
         layers.sky.dataset.mode = options.mode;
@@ -270,6 +297,8 @@ export function startTracker(layers: TrackerLayers): () => void {
       shown.anchor = wantsAnchor + (from.anchor - wantsAnchor) * blend.x;
       shown.sky = wantsSky + (from.sky - wantsSky) * blend.x;
       frame.mode = options.mode;
+      frame.view.width = Math.max(1, Math.round(target.width));
+      frame.view.height = Math.max(1, Math.round(target.height));
       frame.velocityX = offset.cx.v;
       frame.velocityY = offset.cy.v;
       frame.flying = offset.cx.x !== 0 || offset.cy.x !== 0 || offset.w.x !== 0 || offset.h.x !== 0;
