@@ -565,7 +565,10 @@ export class TreeRig {
       const sx = ty * fz - tz * fy;
       const sy = tz * fx - tx * fz;
       const sz = tx * fy - ty * fx;
-      const size = base * leaf.size * (0.62 + 0.38 * fill);
+      // Leaves grow with the clump they cover: on the big clumps of an old tree, seen
+      // from further away, leaves of a sapling's size would read as confetti on a ball.
+      const broad = 1 + 0.75 * smoothstep(0.45, 1.5, scaleX);
+      const size = base * leaf.size * (0.62 + 0.38 * fill) * broad;
       const to = written * 16;
       out[to] = sx * size;
       out[to + 1] = sy * size;
