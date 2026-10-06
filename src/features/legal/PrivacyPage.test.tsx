@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PRIVACY_LEAVES, PRIVACY_STORED } from '@/data/content';
 import { STORAGE_KEYS, game, gameActions, getGameState, type GameState } from '@/game';
+import { LEAVES_NAMES, STORED_NAMES } from './copy';
 import PrivacyPage from './PrivacyPage';
 
 vi.mock('@/world', () => ({
@@ -64,7 +65,10 @@ describe('the privacy page', () => {
 
     for (const item of PRIVACY_STORED) {
       expect(document.getElementById(`stored-${item.id}`)).not.toBeNull();
+      // Every item is titled in plain words, never by its internal id.
+      expect(STORED_NAMES[item.id]).toBeTruthy();
     }
+    for (const item of PRIVACY_LEAVES) expect(LEAVES_NAMES[item.id]).toBeTruthy();
     expect(screen.getByText('touchgrass:game')).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { level: 3 }).length).toBeGreaterThan(
       PRIVACY_LEAVES.length,

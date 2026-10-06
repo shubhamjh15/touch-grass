@@ -89,6 +89,7 @@ export const STORED_NAMES: Readonly<Record<string, string>> = {
   ui: 'Small interface settings',
   'legacy-backup': 'Backup from an earlier version',
   'demo-carry': 'Landing-page try-out',
+  'demo-world': 'The demo world',
   'pending-challenge': 'A challenge link waiting for you',
   'offline-files': 'Files for offline use',
 };
