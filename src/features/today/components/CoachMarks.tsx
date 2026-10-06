@@ -90,13 +90,15 @@ function Tour() {
           }}
         />
       ) : null}
+      {/* On a desk the card sits above the corner where receipts land, so a toast for the first
+          logged action never covers Skip and Next. */}
       <Card
         as="section"
         role="region"
         aria-label="Quick tour"
         aria-live="polite"
         featured
-        className="fixed inset-x-3 bottom-[calc(var(--tabbar-h)+var(--safe-b)+52px)] z-(--z-scrim) grid gap-2 lg:inset-x-auto lg:right-10 lg:bottom-8 lg:w-[380px]"
+        className="fixed inset-x-3 bottom-[calc(var(--tabbar-h)+var(--safe-b)+52px)] z-(--z-scrim) grid gap-2 lg:inset-x-auto lg:right-10 lg:bottom-28 lg:w-[380px]"
       >
         <p className="type-slug text-ink-3">
           Quick tour · {step + 1} of {COACH_MARKS.length}
