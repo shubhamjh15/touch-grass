@@ -22,6 +22,7 @@
 @custom-variant off (&:is(:disabled, [aria-disabled='true']));
 /* Hover exists only for fine pointers: nothing may be hover-only on touch. */
 @custom-variant fine (@media (hover: hover) and (pointer: fine));
+@custom-variant coarse (@media (pointer: coarse));
 
 /* `static` keeps every token in the output, so `var(--color-*)` works in arbitrary values and from JS. */
 @theme static {
