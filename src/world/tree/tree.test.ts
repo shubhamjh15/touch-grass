@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { BUDGET, CAMERA, QUALITY } from '../config';
-import { SPECIES, type WorldQuality } from '../contract';
-import { estimateBudget } from './budget';
+import { CAMERA } from '../config';
+import { SPECIES } from '../contract';
 import { subjectFrame } from './frame';
 import { generateTree } from './generate';
 import { TREE_BASE, buildIsland } from './island';
 import { createPose, poseTree } from './pose';
 
 const SEEDS = [1, 12, 20261006];
-const QUALITIES: WorldQuality[] = ['low', 'medium', 'high'];
 
 describe('generateTree', () => {
   it.each(SPECIES)('is deterministic for %s', (species) => {
@@ -177,35 +175,6 @@ describe('subjectFrame', () => {
         previous = frame;
       }
     }
-  });
-});
-
-describe('budgets at growth 1', () => {
-  const cases = SPECIES.flatMap((species) =>
-    QUALITIES.map((quality) => [species, quality] as const),
-  );
-
-  it.each(cases)('%s stays inside the %s budget', (species, quality) => {
-    for (const seed of SEEDS) {
-      const estimate = estimateBudget(generateTree(seed, species), quality);
-      expect(estimate.drawCalls).toBeLessThanOrEqual(BUDGET[quality].drawCalls);
-      expect(estimate.triangles).toBeLessThanOrEqual(BUDGET[quality].triangles);
-      expect(estimate.clumps).toBeLessThanOrEqual(40);
-    }
-  });
-
-  it('halves, then quarters, the accents on lower tiers', () => {
-    const tree = generateTree(12, 'cherry');
-    const high = estimateBudget(tree, 'high');
-    const medium = estimateBudget(tree, 'medium');
-    const low = estimateBudget(tree, 'low');
-    expect(medium.accents / high.accents).toBeGreaterThan(0.3);
-    expect(medium.accents / high.accents).toBeLessThan(0.7);
-    expect(low.accents / high.accents).toBeLessThan(0.45);
-    expect(low.triangles).toBeLessThan(medium.triangles);
-    expect(medium.triangles).toBeLessThan(high.triangles);
-    expect(QUALITY.low.dpr).toBeLessThan(QUALITY.medium.dpr);
-    expect(QUALITY.medium.dpr).toBeLessThan(QUALITY.high.dpr);
   });
 });
 

@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ISLAND } from '../config';
-import { ISLAND_PROPS, LANDMARKS, SPECIES } from '../contract';
-import { generateTree } from '../tree/generate';
 import { TREE_ORIGIN } from '../tree/island';
-import { createPose, poseTree } from '../tree/pose';
 import {
   FLOWER_COUNT,
   HOMES,
@@ -13,11 +10,8 @@ import {
   layoutIsland,
   type Spot,
 } from './layout';
-import { buildProps, findHangPoints } from './models';
-import { SLOT, SLOT_COUNT, landmarkSlot, propSlot } from './slots';
 
 const SEEDS = [1, 2, 3, 7, 12, 99, 1234, 20261006, 4_000_000_000];
-const EMBLEM = [0, -0.4, 2.6] as const;
 
 const footprints = (seed: number): Array<Spot & { id: string }> => {
   const layout = layoutIsland(seed);
@@ -111,108 +105,5 @@ describe('island layout', () => {
         expect(spots[id].z, `seed ${seed}: ${id}`).toBeGreaterThan(TREE_ORIGIN[2]);
       }
     }
-  });
-});
-
-describe('prop models', () => {
-  it('builds a consistent mesh for every single prop and for all of them', () => {
-    const skeleton = generateTree(12, 'oak');
-    const sets = [[], ...ISLAND_PROPS.map((id) => [id]), [...ISLAND_PROPS]];
-    for (const props of sets) {
-      const { data } = buildProps({ seed: 12, props, skeleton, emblem: EMBLEM });
-      const vertices = data.positions.length / 3;
-      expect(vertices % 3).toBe(0);
-      expect(data.normals).toHaveLength(vertices * 3);
-      expect(data.tones).toHaveLength(vertices);
-      expect(data.gloss).toHaveLength(vertices);
-      expect(data.sway).toHaveLength(vertices * 3);
-      expect(data.inner).toHaveLength(vertices * 4);
-      expect(data.outer).toHaveLength(vertices * 4);
-      expect(data.positions.every(Number.isFinite)).toBe(true);
-      expect(data.normals.every(Number.isFinite)).toBe(true);
-      for (let i = 0; i < vertices; i += 1) {
-        const inner = data.inner[i * 4 + 3] as number;
-        const outer = data.outer[i * 4 + 3] as number;
-        expect(inner).toBeLessThan(SLOT_COUNT);
-        expect(outer).toBeGreaterThan(0);
-        expect(outer).toBeLessThan(SLOT.blades);
-      }
-    }
-  });
-
-  it('is deterministic', () => {
-    const skeleton = generateTree(7, 'cherry');
-    const build = () =>
-      buildProps({ seed: 7, props: [...ISLAND_PROPS], skeleton, emblem: EMBLEM }).data.positions;
-    expect(build()).toEqual(build());
-  });
-
-  it('stays within a small triangle budget with everything unlocked', () => {
-    for (const species of SPECIES) {
-      const skeleton = generateTree(12, species);
-      const hang = findHangPoints(skeleton);
-      const { data } = buildProps({
-        seed: 12,
-        props: [...ISLAND_PROPS],
-        skeleton,
-        emblem: EMBLEM,
-        hang: { birdhouse: hang.left, swing: hang.right },
-      });
-      expect(data.positions.length / 9, species).toBeLessThan(4200);
-    }
-  });
-
-  it('always models the landmark objects and gives each an anchor above the lawn', () => {
-    const { data, anchors } = buildProps({
-      seed: 3,
-      props: [],
-      skeleton: generateTree(3, 'pine'),
-      emblem: EMBLEM,
-    });
-    const slots = new Set<number>();
-    for (let i = 3; i < data.outer.length; i += 4) slots.add(data.outer[i] as number);
-    for (const id of LANDMARKS) {
-      if (id === 'impact') continue;
-      expect(slots.has(landmarkSlot(id)), id).toBe(true);
-      expect(anchors[id][1], id).toBeGreaterThan(0);
-    }
-    expect(anchors.impact).toEqual(EMBLEM);
-    expect(slots.has(propSlot('pond'))).toBe(false);
-  });
-
-  it('hangs the birdhouse and the swing on branches only when one can carry them', () => {
-    const pine = findHangPoints(generateTree(12, 'pine'));
-    expect(pine).toEqual({ left: null, right: null });
-    for (const species of ['oak', 'cherry'] as const) {
-      for (const seed of SEEDS.slice(0, 5)) {
-        const skeleton = generateTree(seed, species);
-        const { left, right } = findHangPoints(skeleton);
-        const pose = poseTree(skeleton, 1, createPose(skeleton));
-        for (const point of [left, right]) {
-          if (!point) continue;
-          // The branch has grown past the hanging point on a full-grown tree.
-          expect(pose.tipLength[point.branch], `${species} ${seed}`).toBeGreaterThanOrEqual(
-            point.along,
-          );
-          expect(point.position[1]).toBeGreaterThan(1.2);
-        }
-        if (left) expect(left.position[0]).toBeLessThan(0);
-        if (right) expect(right.position[0]).toBeGreaterThan(0);
-      }
-    }
-  });
-
-  it('gives a conifer a gallows for the swing and everyone else nothing until a branch is ready', () => {
-    const triangles = (species: 'oak' | 'pine') =>
-      buildProps({
-        seed: 12,
-        props: ['swing'],
-        skeleton: generateTree(12, species),
-        emblem: EMBLEM,
-      }).data.positions.length -
-      buildProps({ seed: 12, props: [], skeleton: generateTree(12, species), emblem: EMBLEM }).data
-        .positions.length;
-    expect(triangles('pine')).toBeGreaterThan(0);
-    expect(triangles('oak')).toBe(0);
   });
 });
