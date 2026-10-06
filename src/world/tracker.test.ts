@@ -169,6 +169,49 @@ describe('tracker', () => {
     expect(el.style.getPropertyValue('--sky-orb-x')).toBe('');
   });
 
+  describe('the hand-over between two stages', () => {
+    const box = (el: HTMLElement, top: number) => {
+      el.getBoundingClientRect = () => new DOMRect(0, top, 800, 500);
+    };
+    const flying = () => {
+      let last = false;
+      const unsubscribe = onWorldFrame((frame) => {
+        last = frame.flying;
+      });
+      run(1);
+      unsubscribe();
+      return last;
+    };
+
+    it('flies when both stages are on screen', () => {
+      const first = mountStage('a', 'hub');
+      useWorldStore.getState().setStageVisibility('a', 1);
+      run(20);
+      // The layer is drawn where its stage is.
+      box(layer, 0);
+      const second = mountStage('b', 'companion', 5);
+      box(second.host, 120);
+      useWorldStore.getState().setStageVisibility('b', 1);
+      expect(layer.parentElement).toBe(second.host);
+      expect(first.host.contains(layer)).toBe(false);
+      expect(flying()).toBe(true);
+    });
+
+    it('does not fly across the page when the stage it leaves has scrolled away', () => {
+      mountStage('a', 'hub');
+      useWorldStore.getState().setStageVisibility('a', 1);
+      run(20);
+      // The first stage is far above the window by the time the next one takes over.
+      box(layer, -1500);
+      const second = mountStage('b', 'companion', 5);
+      box(second.host, 700);
+      useWorldStore.getState().setStageVisibility('b', 1);
+      expect(layer.parentElement).toBe(second.host);
+      expect(flying()).toBe(false);
+      expect(layer.style.transform).not.toMatch(/translate/);
+    });
+  });
+
   it('gives the layer back to the backdrop when it stops', () => {
     const { host } = mountStage('a', 'hub');
     expect(layer.parentElement).toBe(host);

@@ -91,6 +91,10 @@ const hostOf = (stage: StageRecord): HTMLElement | null =>
 
 const rest = (): Spring => ({ x: 0, v: 0 });
 
+/** Some part of the box is inside the window. */
+const inViewport = (box: DOMRect): boolean =>
+  box.bottom > 0 && box.right > 0 && box.top < window.innerHeight && box.left < window.innerWidth;
+
 /** Steps per hour in which the page-wide sky tokens follow the clock. */
 const ROOT_SKY_STEPS = 12;
 
@@ -223,6 +227,12 @@ export function startTracker(layers: TrackerLayers): () => void {
       for (const spring of Object.values(offset)) Object.assign(spring, rest());
       Object.assign(blend, rest());
       dip = 0;
+    } else if (!inViewport(before) || !inViewport(after)) {
+      // One end of the trip is off screen: the page scrolled from one stage to the next.
+      // A flight would carry the world across whatever lies between them, over the page's
+      // own content, so it simply stands in the new stage.
+      for (const spring of Object.values(offset)) Object.assign(spring, rest());
+      Object.assign(blend, rest());
     } else {
       // FLIP: the jump becomes an offset that springs back to zero. Velocities are kept,
       // so retargeting mid-flight stays smooth. The scale flies in log space.
