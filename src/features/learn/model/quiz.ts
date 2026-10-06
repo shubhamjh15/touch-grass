@@ -68,14 +68,6 @@ export function runScore(run: Pick<QuizRun, 'answers'>, questions: QuizQuestions
   );
 }
 
-/** Correct answers so far, for the running tally under the question. */
-export function correctSoFar(run: Pick<QuizRun, 'answers'>, questions: QuizQuestions): number {
-  return run.answers.reduce<number>(
-    (count, answer, index) => count + (questions[index]?.correct === answer ? 1 : 0),
-    0,
-  );
-}
-
 /**
  * The order the three options are shown in. Seeded by the user, the question and the attempt:
  * stable across reloads of the same attempt, different on a retry, so the position of the right

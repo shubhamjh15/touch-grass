@@ -20,16 +20,3 @@ export function LibraryFrame({ className, ...rest }: ComponentProps<'div'>) {
     </div>
   );
 }
-
-/** The calm reading column: one measure wide, centred, the world docked. */
-export function ReaderFrame({ className, ...rest }: ComponentProps<'div'>) {
-  return (
-    <div
-      className={cn(
-        'mx-auto w-full max-w-[calc(var(--measure)+2*var(--gutter))] px-gutter pb-tabbar lg:pb-16',
-        className,
-      )}
-      {...rest}
-    />
-  );
-}
