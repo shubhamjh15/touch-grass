@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test';
 import { expect, ready, test, visit, NEXT_MORNING } from './support/test';
 import { holdClock, readHud, savedGame } from './support/app';
 import { GP_CHECK_IN, XP_CHECK_IN } from '../src/game/economy';
+import { levelInfo } from '../src/game/levels';
 import { GAME_KEY, seeded } from './support/seeds';
 
 /**
@@ -315,24 +316,25 @@ test.describe('the same loop from Today', () => {
 test.describe('a level-up', () => {
   test('shows in the HUD and in the save', async ({ page }) => {
     await visit(page, '/log');
-    const hud = await readHud(page);
-    // Move the saved XP to five short of the next level, then look again.
+    // Move the saved XP to five short of the next level (the gap comes from the save, so it
+    // reads the same on a phone, whose bar shows no XP count), then look again.
+    const start = levelInfo((await savedGame(page)).xp);
     await page.evaluate(
       ([key, gap]) => {
         const file = JSON.parse(localStorage.getItem(key) ?? '{}') as { state: { xp: number } };
         file.state.xp += Number(gap);
         localStorage.setItem(key, JSON.stringify(file));
       },
-      [GAME_KEY, hud.xpOf - hud.xpInto - 5] as const,
+      [GAME_KEY, start.xpToNext - 5] as const,
     );
     await page.reload();
     await ready(page);
     const hudBefore = await readHud(page);
-    expect(hudBefore.xpOf - hudBefore.xpInto).toBe(5);
+    expect(hudBefore.level).toBe(start.level);
 
     const dialog = await openSticker(page, /^Walk or bike/, '10 km');
     await stick(dialog);
-    await expect.poll(async () => (await readHud(page)).level).toBe(hudBefore.level + 1);
-    expect((await savedGame(page)).xp).toBeGreaterThan(hudBefore.xpInto);
+    await expect.poll(async () => (await readHud(page)).level).toBe(start.level + 1);
+    expect(levelInfo((await savedGame(page)).xp).level).toBe(start.level + 1);
   });
 });
