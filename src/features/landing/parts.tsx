@@ -7,6 +7,7 @@ import { cn } from '@/lib/cn';
 import { prefersReducedMotion } from '@/lib/hooks';
 import { Sticker } from '@/ui';
 import { WorldStage, type WorldStageProps } from '@/world';
+import { MiniTree } from './illustrations';
 import { FLIGHT_LAND_MS, type DemoFlight } from './useDemo';
 
 /**
@@ -28,7 +29,14 @@ export function StageSlot({
 }) {
   return (
     <div className={cn('relative', className)} onPointerDown={onTouched}>
-      {show ? <WorldStage {...stage} className="absolute inset-0" /> : null}
+      {show ? (
+        <WorldStage {...stage} className="absolute inset-0" />
+      ) : (
+        // Before the page is interactive (and for good without JavaScript) the box holds a tree.
+        <div aria-hidden="true" className="absolute inset-0 grid place-items-center">
+          <MiniTree state="thriving" className="h-auto w-28 lg:w-44" />
+        </div>
+      )}
     </div>
   );
 }
