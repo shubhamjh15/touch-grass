@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type * as Sfx from '@/lib/sfx';
 import * as World from './index';
 import { emitWorldTap } from './interaction';
 import { PULSE_SFX } from './pulses';
@@ -9,7 +10,7 @@ import { WorldStage } from './WorldStage';
 
 const play = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/sfx', async (original) => ({
-  ...(await original<typeof import('@/lib/sfx')>()),
+  ...(await original<typeof Sfx>()),
   play,
 }));
 

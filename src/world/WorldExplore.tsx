@@ -5,8 +5,9 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { BRAND } from '@/lib/brand';
 import { cn } from '@/lib/cn';
 import { play } from '@/lib/sfx';
-import type { LandmarkId } from './contract';
+import { ISLAND_PROPS, type LandmarkId } from './contract';
 import { orbit } from './interaction';
+import { PROP_INFO } from './props/info';
 import { captureWorld, closeExplore, useWorldStore } from './store';
 import { Stage } from './WorldStage';
 
@@ -100,6 +101,8 @@ function ExploreDialog() {
   const dialog = useRef<HTMLDialogElement>(null);
   const leads = useWorldStore((state) => state.exploreLandmark);
   const ready = useWorldStore((state) => state.status === 'ready');
+  const props = useWorldStore((state) => state.snapshot.props);
+  const owned = ISLAND_PROPS.filter((id) => props.includes(id));
   const [photo, setPhoto] = useState<PhotoState>('idle');
   const [flash, setFlash] = useState(0);
 
@@ -162,14 +165,36 @@ function ExploreDialog() {
         className="absolute inset-0"
       >
         <div className="pointer-events-none absolute inset-x-3 top-[calc(env(safe-area-inset-top)+12px)] z-20 flex items-start justify-between gap-3 lg:inset-x-6 lg:top-6">
-          <p className="max-w-[30ch] rounded-md border-3 border-ink bg-white px-3 py-2 text-body-sm font-bold text-ink shadow-2">
-            Your island
-            <span className="mt-0.5 block text-caption font-medium text-ink-2">
-              {ready
-                ? 'Drag to look around, pinch or scroll to zoom, tap anything to see what it is.'
-                : 'The 3D view is off, so this is the illustrated island.'}
-            </span>
-          </p>
+          <div className="grid max-w-[30ch] gap-2">
+            <p className="rounded-md border-3 border-ink bg-white px-3 py-2 text-body-sm font-bold text-ink shadow-2">
+              Your island
+              <span className="mt-0.5 block text-caption font-medium text-ink-2">
+                {ready
+                  ? 'Drag to look around, pinch or scroll to zoom, tap anything to see what it is.'
+                  : 'The 3D view is off, so this is the illustrated island.'}
+              </span>
+            </p>
+            {/* The same facts a tap gives, for people who use a keyboard or a screen reader. */}
+            <details className="pointer-events-auto w-fit max-w-full rounded-md border-3 border-ink bg-white text-ink shadow-2">
+              <summary className="cursor-pointer px-3 py-2 text-body-sm font-bold select-none">
+                What is here ({owned.length} of {ISLAND_PROPS.length})
+              </summary>
+              {owned.length === 0 ? (
+                <p className="px-3 pb-2 text-caption text-ink-2">
+                  Nothing yet. Props arrive as you earn badges.
+                </p>
+              ) : (
+                <ul className="grid max-h-[40vh] gap-1.5 overflow-y-auto px-3 pb-2 text-caption text-ink-2">
+                  {owned.map((id) => (
+                    <li key={id}>
+                      <span className="font-bold text-ink">{PROP_INFO[id].name}.</span>{' '}
+                      {PROP_INFO[id].note}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </details>
+          </div>
           <button
             type="button"
             className={cn(ROUND, 'pointer-events-auto w-auto gap-2 px-4 text-body-sm font-bold')}

@@ -94,27 +94,40 @@ describe('where a flyer is', () => {
 
   it('keeps butterflies and bees near home and above the grass, for ever', () => {
     const out = createFlyer();
+    // One pass over ten minutes of flight; judged once, so the test stays quick.
+    let butterflyReach = 0;
+    let butterflyLow = Number.POSITIVE_INFINITY;
+    let beeReach = 0;
     for (let t = 0; t < 600; t += 0.37) {
       for (let i = 0; i < 7; i += 1) {
         butterflyAt(i, t, home, out);
-        expect(Math.hypot(out.x - home.x, out.z - home.z)).toBeLessThan(0.75);
-        expect(out.y).toBeGreaterThan(home.y + 0.3);
+        butterflyReach = Math.max(butterflyReach, Math.hypot(out.x - home.x, out.z - home.z));
+        butterflyLow = Math.min(butterflyLow, out.y);
         beeAt(i, t, home, out);
-        expect(Math.hypot(out.x - home.x, out.z - home.z)).toBeLessThan(0.6);
+        beeReach = Math.max(beeReach, Math.hypot(out.x - home.x, out.z - home.z));
       }
     }
+    expect(butterflyReach).toBeLessThan(0.75);
+    expect(butterflyLow).toBeGreaterThan(home.y + 0.3);
+    expect(beeReach).toBeLessThan(0.6);
   });
 
   it('flies birds round the crown, clear of it and above the lawn', () => {
     const out = createFlyer();
+    let nearest = Number.POSITIVE_INFINITY;
+    let lowest = Number.POSITIVE_INFINITY;
+    let finite = true;
     for (let t = 0; t < 300; t += 0.41) {
       for (let i = 0; i < 4; i += 1) {
         birdAt(i, t, tree, out);
-        expect(Math.hypot(out.x - tree.x, (out.z - tree.z) / 0.82)).toBeGreaterThan(tree.halfWidth);
-        expect(out.y).toBeGreaterThan(1.2);
-        expect(Number.isFinite(out.heading)).toBe(true);
+        nearest = Math.min(nearest, Math.hypot(out.x - tree.x, (out.z - tree.z) / 0.82));
+        lowest = Math.min(lowest, out.y);
+        finite = finite && Number.isFinite(out.heading) && Number.isFinite(out.bank);
       }
     }
+    expect(nearest).toBeGreaterThan(tree.halfWidth);
+    expect(lowest).toBeGreaterThan(1.2);
+    expect(finite).toBe(true);
   });
 
   it('is a pure function of the clock', () => {

@@ -288,7 +288,9 @@ export function Life() {
 
   useFrame((three) => {
     const local = state.current;
-    const { time, dt, tree } = live;
+    const { dt, tree } = live;
+    // Reduced motion: everyone is still out, at a stroll.
+    const time = live.reduced ? live.time * 0.3 : live.time;
     lifeCounts(live.quality, owned, live.vitality, counts);
     presenceAt(live.hour, wanted);
     const { presence } = local;
