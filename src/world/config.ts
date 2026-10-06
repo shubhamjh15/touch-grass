@@ -536,6 +536,10 @@ export const GOVERNOR = {
   lateShare: 0.12,
   /** Slow windows in a row before anything changes: about a second in all. */
   strikes: 2,
+  /** Windows in a row without one late frame before a step is given back: 20 s at 60 Hz. */
+  calmWindows: 40,
+  /** Steps given back per session at most, so two states can never trade places for ever. */
+  maxClimbs: 2,
   /** Display interval assumed until a faster cadence is observed, and the fastest believed. */
   refreshMs: 16.7,
   fastestMs: 4,

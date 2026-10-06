@@ -310,20 +310,39 @@ describe('QualityGovernor', () => {
     expect(seen.some((state) => state.startsWith('medium'))).toBe(true);
     expect(governor.tier).toBe('low');
     expect(governor.exhausted).toBe(true);
-    // Fast frames afterwards change nothing: it is a ratchet.
-    expect(feed(governor, 8, 5000)).toBe(0);
-    expect(governor.tier).toBe('low');
     expect(governor.dprCap).toBeCloseTo(QUALITY.low.dpr * (GOVERNOR.dprSteps.at(-1) ?? 1));
   });
 
-  it('does not oscillate when frames hover around the threshold', () => {
+  it('gives a step back after a long spotless stretch, a couple of times at most', () => {
+    const governor = new QualityGovernor('medium');
+    // The machine was busy while the page loaded: two steps down.
+    expect(feed(governor, 40, reactsWithin * 2)).toBe(2);
+    expect(governor.dprScale).toBe(GOVERNOR.dprSteps[2]);
+    // One late frame in a window is not spotless: nothing comes back.
+    let changes = 0;
+    for (let i = 0; i < 6000; i += 1) if (governor.sample(i % 25 === 0 ? 34 : 16.7)) changes += 1;
+    expect(changes).toBe(0);
+    // Twenty quiet seconds: one step back, and another twenty for the second.
+    const calm = GOVERNOR.settle + GOVERNOR.window * GOVERNOR.calmWindows;
+    expect(feed(governor, 16.7, calm)).toBe(1);
+    expect(governor.dprScale).toBe(GOVERNOR.dprSteps[1]);
+    expect(feed(governor, 16.7, calm)).toBe(1);
+    expect(governor.dprScale).toBe(1);
+    // Slow again, and this time it stays down: it has no more steps to give back.
+    expect(feed(governor, 40, reactsWithin)).toBe(1);
+    expect(feed(governor, 16.7, 50_000)).toBe(0);
+    expect(governor.dprScale).toBe(GOVERNOR.dprSteps[1]);
+  });
+
+  it('cannot trade two states for ever when one is slow and the other is not', () => {
     const governor = new QualityGovernor('medium');
     let changes = 0;
-    for (let i = 0; i < 20_000; i += 1) {
-      // Slow until the first step down, then comfortably fast: it must settle there.
-      if (governor.sample(changes === 0 ? 30 : 17)) changes += 1;
+    for (let i = 0; i < 200_000; i += 1) {
+      // Slow at full resolution, comfortable one step down: the worst case for a governor.
+      if (governor.sample(governor.dprScale === 1 ? 30 : 16.7)) changes += 1;
     }
-    expect(changes).toBe(1);
+    expect(changes).toBe(1 + GOVERNOR.maxClimbs * 2);
+    expect(governor.dprScale).toBe(GOVERNOR.dprSteps[1]);
     expect(governor.tier).toBe('medium');
   });
 

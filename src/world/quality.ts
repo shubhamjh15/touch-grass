@@ -8,9 +8,10 @@ import type { WorldQuality } from './contract';
  *
  * Adaptation aims at the display's own cadence. A frame that misses its slot is what a
  * person sees as jitter, so the governor counts late frames rather than averaging, and
- * reacts within about a second. It is a ratchet: resolution first, then the tier, never
- * back up during a session, so it cannot oscillate between two states that are each
- * "almost fast enough".
+ * reacts within about a second: resolution first, then the tier. It gives a step back
+ * only after a long spotless stretch, and only a couple of times per session: enough to
+ * forgive a machine that was busy while the page loaded, too few to oscillate between
+ * two states that are each "almost fast enough".
  */
 
 export type GpuClass = 'software' | 'integrated' | 'mobile' | 'discrete' | 'apple' | 'unknown';
@@ -95,6 +96,10 @@ export class QualityGovernor {
   private readonly window = new Float32Array(GOVERNOR.window);
   private filled = 0;
   private strikes = 0;
+  private calm = 0;
+  private climbs = 0;
+  /** States left behind on the way down, most recent last. */
+  private readonly history: Array<{ tier: WorldQuality; step: number }> = [];
   private settling: number = GOVERNOR.settle;
 
   constructor(tier: WorldQuality) {
@@ -122,6 +127,9 @@ export class QualityGovernor {
     this.step = 0;
     this.filled = 0;
     this.strikes = 0;
+    this.calm = 0;
+    this.climbs = 0;
+    this.history.length = 0;
     this.settling = GOVERNOR.settle;
   }
 
@@ -136,7 +144,8 @@ export class QualityGovernor {
    * changed and the caller must apply `tier` and `dprScale`.
    */
   sample(frameMs: number): boolean {
-    if (this.exhausted) return false;
+    const mayClimb = this.history.length > 0 && this.climbs < GOVERNOR.maxClimbs;
+    if (this.exhausted && !mayClimb) return false;
     // A frame this long is a hiccup (a tab switch, a GC pause), not a slow device.
     if (!(frameMs > 0) || frameMs > GOVERNOR.hiccupMs) return false;
     if (this.settling > 0) {
@@ -157,14 +166,32 @@ export class QualityGovernor {
     for (const value of sorted) if (value > lateAfter) late += 1;
     const slow = late / sorted.length > GOVERNOR.lateShare;
     this.strikes = slow ? this.strikes + 1 : 0;
+    this.calm = late === 0 ? this.calm + 1 : 0;
+    const back = mayClimb && this.calm >= GOVERNOR.calmWindows ? this.history.pop() : undefined;
+    if (back) {
+      // Not one late frame for a long while: whatever slowed the machine has passed.
+      this.tier = back.tier;
+      this.step = back.step;
+      this.climbs += 1;
+      this.calm = 0;
+      this.strikes = 0;
+      this.settling = GOVERNOR.settle;
+      return true;
+    }
     if (this.strikes < GOVERNOR.strikes) return false;
     this.strikes = 0;
+    if (this.exhausted) return false;
+    this.calm = 0;
+    this.history.push({ tier: this.tier, step: this.step });
 
     if (this.step < GOVERNOR.dprSteps.length - 1) {
       this.step += 1;
     } else {
       const lower = LOWER[this.tier];
-      if (!lower) return false;
+      if (!lower) {
+        this.history.pop();
+        return false;
+      }
       // Dropping a tier must not raise the resolution again: keep it at or below now.
       const before = this.dprCap;
       let step = GOVERNOR.dprSteps.findIndex(
