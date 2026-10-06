@@ -24,7 +24,7 @@ export interface SliderProps {
   className?: string;
 }
 
-/** A debossed track with a chunky thumb. Arrows ±1 step, PageUp/PageDown ±10 steps, Home/End. */
+/** A thin track with a round thumb. Arrows ±1 step, PageUp/PageDown ±10 steps, Home/End. */
 export function Slider({
   value,
   onValueChange,
@@ -59,7 +59,7 @@ export function Slider({
         <span id={labelId} className="text-label text-ink">
           {label}
         </span>
-        <output className="font-mono text-data-lg text-ink">{format(value)}</output>
+        <output className="text-body font-semibold text-ink tabular-nums">{format(value)}</output>
       </div>
       <RadixSlider.Root
         value={[value]}
@@ -70,14 +70,14 @@ export function Slider({
         disabled={disabled}
         className="relative flex h-11 touch-none items-center select-none data-disabled:opacity-60"
       >
-        <RadixSlider.Track className="relative h-4 grow overflow-hidden rounded-pill border-2 border-ink bg-white inset-shadow-deboss">
-          <RadixSlider.Range className="absolute h-full border-r-2 border-ink bg-green" />
+        <RadixSlider.Track className="relative h-3 grow overflow-hidden rounded-pill border-2 border-ink bg-white">
+          <RadixSlider.Range className="absolute h-full bg-green" />
         </RadixSlider.Track>
         <RadixSlider.Thumb
           aria-labelledby={labelId}
           aria-describedby={control['aria-describedby']}
           aria-valuetext={format(value)}
-          className="block size-7 hard cursor-grab rounded-ctl border-3 border-ink bg-white lift-2 active:cursor-grabbing"
+          className="block size-7 cursor-grab rounded-full border-2 border-ink bg-white active:cursor-grabbing"
         />
       </RadixSlider.Root>
       {marks && marks.length > 0 ? (
@@ -88,7 +88,7 @@ export function Slider({
               className="absolute top-0 flex -translate-x-1/2 flex-col items-center gap-1"
               style={{ left: `${((mark - min) / span) * 100}%` }}
             >
-              <span className="h-1.5 w-0.5 bg-ink" />
+              <span className="h-1.5 w-0.5 rounded-pill bg-ink-4" />
               <span className="type-tick whitespace-nowrap text-ink-3">{format(mark)}</span>
             </span>
           ))}

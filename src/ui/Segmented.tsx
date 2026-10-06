@@ -48,7 +48,7 @@ export function Segmented<T extends string = string>({
       disabled={disabled}
       aria-label={rest['aria-label']}
       className={cn(
-        'inline-flex max-w-full overflow-hidden rounded-ctl border-3 border-ink bg-white text-body-sm font-semibold text-ink',
+        'inline-flex max-w-full gap-0.5 rounded-md border-2 border-ink bg-white p-0.5 text-body-sm font-semibold text-ink',
         fullWidth && 'flex w-full',
         className,
       )}
@@ -59,12 +59,12 @@ export function Segmented<T extends string = string>({
           value={optionValue}
           disabled={optionDisabled}
           className={cn(
-            'inline-flex min-w-0 items-center justify-center gap-1.5 border-l-2 border-ink px-3.5 whitespace-nowrap focus-inset transition-colors duration-(--dur-fast) first:border-l-0 disabled:cursor-not-allowed disabled:bg-line disabled:text-ink-3 data-[state=on]:bg-yellow data-[state=on]:font-bold fine:hover:bg-mat-deep fine:data-[state=on]:hover:bg-yellow',
-            size === 'md' ? 'h-10' : 'h-9 px-3',
+            'inline-flex min-w-0 items-center justify-center gap-1.5 rounded-sm px-3.5 whitespace-nowrap focus-inset transition-colors duration-(--dur-fast) disabled:cursor-not-allowed disabled:text-ink-4 data-[state=on]:bg-ink data-[state=on]:text-white fine:hover:bg-mat-deep fine:data-[state=on]:hover:bg-ink',
+            size === 'md' ? 'h-10' : 'h-8 px-3',
             fullWidth && 'flex-1',
           )}
         >
-          {Icon ? <Icon size={16} strokeWidth={2.25} aria-hidden="true" /> : null}
+          {Icon ? <Icon size={16} strokeWidth={2} aria-hidden="true" /> : null}
           <span className="truncate">{label}</span>
         </ToggleGroup.Item>
       ))}

@@ -41,23 +41,23 @@ export function Field({
 
   return (
     <div className={cn('min-w-0', className)} {...rest}>
-      <label htmlFor={controlId} className="mb-1.5 block text-label text-ink">
+      <label htmlFor={controlId} className="mb-2 block text-label text-ink">
         {label}
-        {required ? <span className="font-medium text-ink-3"> (required)</span> : null}
+        {required ? <span className="font-normal text-ink-3"> (required)</span> : null}
       </label>
       <FieldContext value={context}>{children}</FieldContext>
       {error ? (
         <p
           id={errorId}
           role="alert"
-          className="mt-1.5 flex items-start gap-1.5 text-caption font-semibold text-tomato-deep"
+          className="mt-2 flex items-start gap-1.5 text-body-sm font-semibold text-tomato-deep"
         >
-          <CircleAlert size={16} strokeWidth={2.25} aria-hidden="true" className="mt-px shrink-0" />
+          <CircleAlert size={16} strokeWidth={2} aria-hidden="true" className="mt-0.5 shrink-0" />
           {error}
         </p>
       ) : null}
       {hint ? (
-        <p id={hintId} className="mt-1.5 text-caption text-ink-3">
+        <p id={hintId} className="mt-2 text-body-sm text-ink-3">
           {hint}
         </p>
       ) : null}

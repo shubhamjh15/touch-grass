@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { Select as RadixSelect } from 'radix-ui';
 import { cn } from '@/lib/cn';
 import { useFieldControl } from './fieldContext';
@@ -45,16 +45,16 @@ export function Select({
         {...control}
         aria-label={rest['aria-label']}
         className={cn(
-          'flex h-12 w-full items-center rounded-ctl border-3 border-ink bg-white text-left text-body text-ink deboss focus-visible:[--deboss:var(--color-yellow-tint)] data-disabled:cursor-not-allowed data-placeholder:text-ink-4 off:border-2 off:border-dashed off:border-ink-4 off:bg-line off:text-ink-3',
-          isInvalid && '[--deboss:var(--color-tomato-tint)]',
+          'flex h-12 w-full items-center rounded-md border-2 border-ink bg-white text-left text-body text-ink data-disabled:cursor-not-allowed data-placeholder:text-ink-4 off:border-ink-4 off:bg-line off:text-ink-3',
+          isInvalid && 'border-tomato-deep bg-tomato-tint',
           className,
         )}
       >
         <span className="min-w-0 flex-1 truncate px-3.5">
           <RadixSelect.Value placeholder={placeholder} />
         </span>
-        <RadixSelect.Icon className="grid h-full w-10 shrink-0 place-items-center border-l-2 border-ink text-ink">
-          <ChevronsUpDown size={18} strokeWidth={2.25} aria-hidden="true" />
+        <RadixSelect.Icon className="grid h-full w-11 shrink-0 place-items-center text-ink">
+          <ChevronDown size={20} strokeWidth={1.75} aria-hidden="true" />
         </RadixSelect.Icon>
       </RadixSelect.Trigger>
       <RadixSelect.Portal>
@@ -62,7 +62,7 @@ export function Select({
           position="popper"
           sideOffset={8}
           collisionPadding={12}
-          className="z-(--z-tooltip) max-h-80 min-w-(--radix-select-trigger-width) overflow-hidden rounded-md border-3 border-ink bg-card text-ink shadow-4 data-[state=open]:animate-stick"
+          className="z-(--z-tooltip) max-h-80 min-w-(--radix-select-trigger-width) overflow-hidden rounded-md border-2 border-ink bg-card text-ink shadow-3 data-[state=open]:animate-stick"
         >
           <RadixSelect.Viewport className="max-h-[min(20rem,var(--radix-select-content-available-height))] p-1">
             {options.map((option) => (
@@ -70,11 +70,11 @@ export function Select({
                 key={option.value}
                 value={option.value}
                 disabled={option.disabled}
-                className="flex h-11 cursor-pointer items-center gap-2 rounded-sm px-3 text-body outline-hidden select-none data-disabled:cursor-not-allowed data-disabled:text-ink-4 data-highlighted:bg-yellow-tint data-[state=checked]:bg-yellow data-[state=checked]:font-bold"
+                className="flex h-11 cursor-pointer items-center gap-2 rounded-sm px-3 text-body outline-hidden select-none data-disabled:cursor-not-allowed data-disabled:text-ink-4 data-highlighted:bg-mat-deep data-[state=checked]:font-bold"
               >
                 <RadixSelect.ItemText>{option.label}</RadixSelect.ItemText>
                 <RadixSelect.ItemIndicator className="ml-auto">
-                  <Check size={18} strokeWidth={3} aria-hidden="true" />
+                  <Check size={18} strokeWidth={2.5} aria-hidden="true" />
                 </RadixSelect.ItemIndicator>
               </RadixSelect.Item>
             ))}

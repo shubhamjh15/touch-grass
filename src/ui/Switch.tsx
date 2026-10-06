@@ -19,8 +19,8 @@ export interface SwitchProps {
 }
 
 /**
- * A chunky toggle. State is position plus a check in the thumb, never colour alone. It moves in
- * 140 ms with the mechanical easing: decisive, never bouncy.
+ * A toggle. State is position plus a check in the thumb, never colour alone. It moves in 140 ms
+ * with the mechanical easing: decisive, never bouncy.
  */
 export function Switch({
   checked,
@@ -60,7 +60,7 @@ export function Switch({
           {label}
         </span>
         {description ? (
-          <span id={descriptionId} className="mt-0.5 block text-body-sm text-ink-2">
+          <span id={descriptionId} className="mt-0.5 block text-body-sm text-ink-3">
             {description}
           </span>
         ) : null}
@@ -72,10 +72,10 @@ export function Switch({
         disabled={disabled}
         aria-labelledby={labelId}
         aria-describedby={description ? descriptionId : undefined}
-        className="hit-2 relative h-8 w-14 shrink-0 rounded-ctl border-3 border-ink bg-line transition-colors duration-(--dur-fast) ease-mech disabled:cursor-not-allowed disabled:border-2 disabled:border-dashed disabled:border-ink-4 data-[state=checked]:bg-green disabled:data-[state=checked]:bg-line"
+        className="hit-2 relative h-7 w-12 shrink-0 rounded-pill border-2 border-ink bg-white transition-colors duration-(--dur-fast) ease-mech disabled:cursor-not-allowed disabled:border-ink-4 disabled:bg-line data-[state=checked]:bg-green disabled:data-[state=checked]:bg-line"
       >
-        <RadixSwitch.Thumb className="absolute top-0.5 left-0.5 grid size-[22px] place-items-center rounded-xs border-2 border-ink bg-white text-ink shadow-thumb transition-transform duration-(--dur-fast) ease-mech data-[state=checked]:translate-x-6 data-[state=checked]:shadow-thumb-on">
-          {checked ? <Check size={12} strokeWidth={3.5} aria-hidden="true" /> : null}
+        <RadixSwitch.Thumb className="absolute top-0.5 left-0.5 grid size-5 place-items-center rounded-full bg-ink text-white transition-transform duration-(--dur-fast) ease-mech data-[state=checked]:translate-x-5">
+          {checked ? <Check size={12} strokeWidth={3} aria-hidden="true" /> : null}
         </RadixSwitch.Thumb>
       </RadixSwitch.Root>
     </div>
