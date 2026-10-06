@@ -55,14 +55,14 @@ describe('transactions', () => {
     expect(tick(state, noon(0) + 5000).state).toBe(state);
     expect(transact(state, noon(0) + 5000, (ctx) => water(ctx)).state).toBe(state);
     expect(
-      transact(state, noon(0) + 5000, (ctx) => updateSettings(ctx, { sound: false })).state,
+      transact(state, noon(0) + 5000, (ctx) => updateSettings(ctx, { sound: true })).state,
     ).toBe(state);
   });
 
   it('shares every slice an operation did not touch', () => {
     const session = plantedSession(noon(0));
     const before = session.state;
-    session.at(noon(0) + 1000, (ctx) => updateSettings(ctx, { sound: true }));
+    session.at(noon(0) + 1000, (ctx) => updateSettings(ctx, { sound: false }));
     const after = session.state;
     expect(after).not.toBe(before);
     expect(after.settings).not.toBe(before.settings);

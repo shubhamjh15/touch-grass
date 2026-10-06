@@ -139,7 +139,7 @@ describe('game hooks', () => {
       treeName: 'Fern',
       name: 'Maya',
     });
-    expect(renderHook(() => useSettings()).result.current.sound).toBe(false);
+    expect(renderHook(() => useSettings()).result.current.sound).toBe(true);
     expect(renderHook(() => useGameState((state) => state.xp)).result.current).toBe(35);
     expect(renderHook(() => useStreak()).result.current).toMatchObject({ current: 1, rainBank: 1 });
     expect(renderHook(() => useQuickLog()).result.current).toHaveLength(6);
