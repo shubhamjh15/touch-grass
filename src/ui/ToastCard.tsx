@@ -12,7 +12,7 @@ export type ToastTone = 'neutral' | 'success' | 'info' | 'danger';
 
 export interface ToastCardProps {
   title: string;
-  /** Mono line under the title: "≈1.02 kg CO2e · +30 XP". Estimates start with `<Approx weight="mono" />`. */
+  /** A quiet line under the title: "≈1.02 kg CO2e · +30 XP". Estimates start with `<Approx />`. */
   meta?: ReactNode;
   /** Leads with that category's sticker. */
   category?: CategoryId;
@@ -26,13 +26,13 @@ export interface ToastCardProps {
 }
 
 const DISC: Record<ToastTone, { className: string; icon: LucideIcon | null }> = {
-  neutral: { className: 'bg-white', icon: null },
+  neutral: { className: 'bg-mat-deep', icon: null },
   success: { className: 'bg-green', icon: Check },
-  info: { className: 'bg-blue', icon: Info },
+  info: { className: 'bg-blue-tint', icon: Info },
   danger: { className: 'bg-tomato-tint', icon: CircleAlert },
 };
 
-/** A toast is a mini receipt: sticker, one bold line, one mono line, at most one action. */
+/** A toast: a sticker or an icon, one bold line, one quiet line, at most one action. */
 export function ToastCard({
   title,
   meta,
@@ -51,29 +51,26 @@ export function ToastCard({
   return (
     <div
       role={danger ? 'alert' : 'status'}
-      className="relative flex w-[min(100vw-24px,380px)] animate-stick items-center gap-3 overflow-hidden rounded-md border-3 border-ink bg-card py-2.5 pr-2.5 pl-3 text-ink shadow-3"
+      className="relative flex w-[min(100vw-24px,380px)] animate-stick items-center gap-3 overflow-hidden rounded-md border-2 border-ink bg-card py-3 pr-3 pl-3.5 font-sans text-ink shadow-3"
     >
       {category ? (
-        <Sticker category={category} icon={icon} size={32} rotate={-4} className="mr-0.5" />
+        <Sticker category={category} icon={icon} size={32} className="mr-0.5" />
       ) : DiscIcon ? (
         <span
           aria-hidden="true"
-          className={cn(
-            'grid size-7 shrink-0 place-items-center rounded-full border-2 border-ink',
-            disc.className,
-          )}
+          className={cn('grid size-8 shrink-0 place-items-center rounded-full', disc.className)}
         >
-          <DiscIcon size={16} strokeWidth={2.6} />
+          <DiscIcon size={18} strokeWidth={2.25} />
         </span>
       ) : null}
       <div className="min-w-0 flex-1">
-        <p className="text-body-sm font-bold">{title}</p>
-        {meta ? <p className="font-mono text-data-sm text-ink-2">{meta}</p> : null}
+        <p className="text-body font-semibold">{title}</p>
+        {meta ? <p className="text-body-sm text-ink-2 tabular-nums">{meta}</p> : null}
       </div>
       {action ? (
         <Button
           size="sm"
-          variant="neutral"
+          variant="secondary"
           onClick={() => {
             action.onClick();
             onDismiss?.();
@@ -83,12 +80,19 @@ export function ToastCard({
         </Button>
       ) : null}
       {danger ? (
-        <IconButton label="Dismiss" icon={X} size="sm" tooltipSide={null} onClick={onDismiss} />
+        <IconButton
+          label="Dismiss"
+          icon={X}
+          variant="ghost"
+          size="sm"
+          tooltipSide={null}
+          onClick={onDismiss}
+        />
       ) : null}
       {timed ? (
         <span
           aria-hidden="true"
-          className="absolute inset-x-0 bottom-0 h-[3px] origin-left animate-timer bg-ink"
+          className="absolute inset-x-0 bottom-0 h-0.5 origin-left animate-timer bg-ink"
           style={{ '--timer-dur': `${duration}ms` } as CSSProperties}
         />
       ) : null}

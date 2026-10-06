@@ -37,10 +37,10 @@ export function Tooltip({
           <RadixTooltip.Content
             side={side}
             align={align}
-            sideOffset={10}
+            sideOffset={8}
             collisionPadding={8}
             className={cn(
-              'z-(--z-tooltip) max-w-60 rounded-sm bg-ink px-2.5 py-1.5 text-caption font-semibold text-white shadow-tooltip select-none',
+              'z-(--z-tooltip) max-w-60 rounded-sm bg-ink px-2.5 py-1.5 text-body-sm font-medium text-white select-none',
               className,
             )}
           >

@@ -11,7 +11,7 @@ export interface MenuItem {
   id?: string;
   label: string;
   icon?: LucideIcon;
-  /** Mono hint on the right (a count, a shortcut). */
+  /** A quiet hint on the right (a count, a shortcut). */
   hint?: ReactNode;
   onSelect?: () => void;
   /** Renders the item as a link. */
@@ -35,9 +35,9 @@ export interface DropdownMenuProps {
 }
 
 const ITEM =
-  'flex h-11 cursor-pointer items-center gap-2.5 rounded-sm px-3 text-label text-ink outline-hidden select-none data-disabled:cursor-not-allowed data-disabled:text-ink-4 data-highlighted:bg-yellow-tint';
+  'flex h-11 cursor-pointer items-center gap-3 rounded-sm px-3 text-body font-medium text-ink outline-hidden select-none data-disabled:cursor-not-allowed data-disabled:text-ink-4 data-highlighted:bg-mat-deep';
 
-/** A short menu of actions or overflow links (the top bar's "More"). Arrows, type-ahead and Esc from Radix. */
+/** A short menu of actions or links (stop, retry and clear in the coach). Arrows, type-ahead and Esc from Radix. */
 export function DropdownMenu({
   trigger,
   items,
@@ -57,7 +57,7 @@ export function DropdownMenu({
           sideOffset={8}
           collisionPadding={12}
           className={cn(
-            'z-(--z-tooltip) min-w-48 rounded-md border-3 border-ink bg-card p-1 shadow-4 data-[state=closed]:animate-peel data-[state=open]:animate-stick',
+            'z-(--z-tooltip) min-w-48 rounded-md border-2 border-ink bg-card p-1 shadow-3 data-[state=closed]:animate-peel data-[state=open]:animate-stick',
             className,
           )}
         >
@@ -65,17 +65,17 @@ export function DropdownMenu({
             const Icon = item.icon;
             const content = (
               <>
-                {Icon ? <Icon size={18} strokeWidth={2.25} aria-hidden="true" /> : null}
+                {Icon ? <Icon size={20} strokeWidth={1.75} aria-hidden="true" /> : null}
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
                 {item.hint ? (
-                  <span className="font-mono text-data text-ink-3">{item.hint}</span>
+                  <span className="text-body-sm text-ink-3 tabular-nums">{item.hint}</span>
                 ) : null}
               </>
             );
             const itemClass = cn(
               ITEM,
-              item.current && 'bg-yellow font-bold data-highlighted:bg-yellow',
-              item.danger && 'mt-1 border-t-[1.5px] border-ink pt-1 text-tomato-deep',
+              item.current && 'bg-mat-deep font-bold',
+              item.danger && 'text-tomato-deep',
             );
             return item.href ? (
               <RadixMenu.Item

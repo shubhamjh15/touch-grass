@@ -9,7 +9,7 @@ import { Sheet } from './Sheet';
 export interface PopoverProps {
   /** The element that opens it. Must be focusable (a button). */
   trigger: ReactNode;
-  /** `paper` for printed matter: sources, receipts, chart tooltips. */
+  /** `paper` is the warm surface: sources and chart tooltips. */
   tone?: 'card' | 'paper';
   /** Pixel width. */
   width?: number;
@@ -63,8 +63,8 @@ export function Popover({
           collisionPadding={12}
           aria-label={label}
           className={cn(
-            'z-(--z-tooltip) max-w-[calc(100vw-24px)] border-3 border-ink p-4 text-ink shadow-4 outline-hidden data-[state=closed]:animate-peel data-[state=open]:animate-stick',
-            tone === 'paper' ? 'rounded-paper bg-paper' : 'rounded-md bg-card',
+            'z-(--z-tooltip) max-w-[calc(100vw-24px)] rounded-md border-2 border-ink p-4 text-ink shadow-3 outline-hidden data-[state=closed]:animate-peel data-[state=open]:animate-stick',
+            tone === 'paper' ? 'bg-paper' : 'bg-card',
             className,
           )}
           style={{ width } as CSSProperties}
