@@ -25,8 +25,9 @@ const FOLLOW_UP: Partial<Record<NoticeView['kind'], { label: string; href: strin
 
 /**
  * The one-time messages of a return: it rained, a streak rested, the tree is waking up.
- * Each is shown once. Closing it dismisses it, and so does leaving the page after it has
- * been on screen long enough to read.
+ * They share one taped note, however many there are, so a long absence never buries the
+ * day under paper. Each is shown once: closing it dismisses it, and so does leaving the
+ * page after it has been on screen long enough to read.
  */
 export function ReturnNotices() {
   const notices = useNotices();
@@ -47,16 +48,22 @@ export function ReturnNotices() {
     };
   }, []);
 
-  if (notices.length === 0) return null;
+  const first = notices[0];
+  if (!first) return null;
 
   return (
-    <ul aria-label="While you were away" className="grid gap-5 px-1 pt-3">
-      {notices.map((notice) => {
-        const follow = FOLLOW_UP[notice.kind];
-        return (
-          <li key={notice.id}>
-            <TapeNote tone={TONE[notice.kind]} tape="yellow" rotate={0} role="status">
-              <span className="flex items-start gap-3">
+    <div className="px-1 pt-2">
+      <TapeNote tone={TONE[first.kind]} tape="yellow" rotate={0} role="status">
+        {/* The note is a paragraph, so the list is built from spans with list roles. */}
+        <span role="list" aria-label="While you were away" className="grid">
+          {notices.map((notice) => {
+            const follow = FOLLOW_UP[notice.kind];
+            return (
+              <span
+                role="listitem"
+                key={notice.id}
+                className="flex items-start gap-3 border-line py-2.5 not-first:border-t-2 not-first:border-dashed first:pt-0 last:pb-0"
+              >
                 <span className="min-w-0 flex-1">
                   {notice.text}
                   {follow ? (
@@ -74,10 +81,10 @@ export function ReturnNotices() {
                   onClick={() => gameActions.dismissNotice(notice.id)}
                 />
               </span>
-            </TapeNote>
-          </li>
-        );
-      })}
-    </ul>
+            );
+          })}
+        </span>
+      </TapeNote>
+    </div>
   );
 }
