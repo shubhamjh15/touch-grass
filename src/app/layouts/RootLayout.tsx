@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { SkipLink } from '@/ui';
 import { WorldBridge } from '../bridge/WorldBridge';
+import { Feedback } from '../feedback/Feedback';
 import { Guard } from '../Guard';
 import { Main } from '../Main';
 import { RouteEffects } from '../RouteEffects';
@@ -26,7 +27,8 @@ function RootFrame({ children }: { children: ReactNode }) {
 
 /**
  * The one layout that never unmounts. It owns the providers, the persistent 3D world and its
- * bridge to the game, the route guard and the global overlays; every page renders above the
+ * bridge to the game, the route guard, the feedback for game events (toasts with Undo, sounds,
+ * celebrations) and the global overlays; every page renders above the
  * world and reserves space for it with `<WorldStage>`.
  */
 export function RootLayout({ children }: { children: ReactNode }) {
@@ -36,6 +38,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
       <WorldCanvas />
       <WorldBridge />
       <RouteEffects />
+      <Feedback />
       <div className="relative z-10">
         <Guard>
           <RootFrame>{children}</RootFrame>
