@@ -41,7 +41,8 @@ import { Water } from './Water';
  */
 const NOT_OURS = [/^THREE\.Clock: This module has been deprecated/, /warning X3595/];
 THREE.setConsoleFunction((type: 'log' | 'warn' | 'error', message: string, ...rest: unknown[]) => {
-  if (type === 'warn' && NOT_OURS.some((pattern) => pattern.test(String(message)))) return;
+  const line = [message, ...rest].join(' ');
+  if (type === 'warn' && NOT_OURS.some((pattern) => pattern.test(line))) return;
   if (type === 'error') console.error(message, ...rest);
   else console.warn(message, ...rest);
 });
