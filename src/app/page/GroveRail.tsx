@@ -13,7 +13,11 @@ import { ROUTES } from '../routes';
  */
 export function GroveRail() {
   const tree = useTreeStatus();
-  const meta = [tree.stage, `day ${formatNumber(tree.dayNumber)}`].join(' · ').toUpperCase();
+  // A narrow rail may break the line between the two facts, never inside one ("DAY / 200").
+  const meta = [tree.stage, `day ${formatNumber(tree.dayNumber)}`]
+    .map((part) => part.replaceAll(' ', '\u00a0'))
+    .join(' · ')
+    .toUpperCase();
 
   return (
     <aside aria-label="Your grove" className="sticky top-28 grid gap-3">
