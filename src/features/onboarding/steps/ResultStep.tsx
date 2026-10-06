@@ -109,7 +109,7 @@ export function ResultStep({ flow }: { flow: OnboardingFlow }) {
             <li key={segment} className="inline-flex items-center gap-1.5 text-caption text-ink-2">
               <span
                 className={cn(
-                  'grid size-4 place-items-center rounded-[3px] border-[1.5px] border-ink font-mono text-[0.5625rem] leading-none font-bold text-ink',
+                  'grid size-5 place-items-center rounded-[3px] border-[1.5px] border-ink font-mono text-[0.6875rem] leading-none font-bold text-ink',
                   SEGMENT_FILL[segment],
                 )}
               >
@@ -124,7 +124,7 @@ export function ResultStep({ flow }: { flow: OnboardingFlow }) {
             <li key={reference.label} className="flex gap-2 text-caption text-ink-2">
               <span
                 aria-hidden="true"
-                className="mt-px grid size-[18px] shrink-0 place-items-center rounded-full border-2 border-ink bg-white font-mono text-[0.625rem] leading-none font-bold text-ink"
+                className="mt-px grid size-5 shrink-0 place-items-center rounded-full border-2 border-ink bg-white font-mono text-[0.6875rem] leading-none font-bold text-ink"
               >
                 {index + 1}
               </span>

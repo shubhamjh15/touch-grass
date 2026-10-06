@@ -66,7 +66,7 @@ export function BaselineBar({ tonnes, references, className }: BaselineBarProps)
             className="absolute top-0 bottom-0 z-10 w-0"
             style={{ left: share(tick.tonnes) }}
           >
-            <span className="absolute top-0 left-0 grid size-5 -translate-x-1/2 place-items-center rounded-full border-2 border-ink bg-white font-mono text-[0.625rem] leading-none font-bold text-ink">
+            <span className="absolute top-0 left-0 grid size-5 -translate-x-1/2 place-items-center rounded-full border-2 border-ink bg-white font-mono text-[0.6875rem] leading-none font-bold text-ink">
               {index + 1}
             </span>
             <span className="absolute top-5 bottom-0 left-0 -translate-x-1/2 border-l-2 border-dashed border-ink" />
