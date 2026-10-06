@@ -87,6 +87,16 @@ const NOW_AND_THEN: readonly LogSpec[] = [
   ['climate-conversation', 1],
 ];
 
+/**
+ * What is already stuck on today: two small things, so one more log closes the ring. No
+ * meal and no trip among them, which leaves the day open for whatever a visitor tries first
+ * ("I cycled to work and skipped meat today" must not meet a day that already counted meals).
+ */
+const TODAY_SO_FAR: readonly LogSpec[] = [
+  ['refuse-single-use-bottle', 1],
+  ['standby-off', 1],
+];
+
 function pick<T>(rng: Rng, items: readonly T[]): T {
   return items[Math.floor(rng() * items.length)] as T;
 }
@@ -178,11 +188,11 @@ export function* playDemoWorld(now: number): Generator<DemoProgress, GameState, 
     yield { day: index + 1, days: DEMO_DAYS };
 
     if (isToday) {
-      // Today is still open: watered and two things logged, so one more log closes the ring.
+      // Today is still open: watered and two things logged.
       const dayStart = localTime(day, 0, 0);
       const part = (share: number) => dayStart + Math.floor((now - dayStart) * share);
       at(part(0.4), () => actions.checkIn());
-      script.logs.slice(0, 2).forEach(([actionId, qty, inputs], step) => {
+      TODAY_SO_FAR.forEach(([actionId, qty, inputs], step) => {
         at(part(0.5 + step * 0.2), () => actions.logAction({ actionId, qty, inputs }));
       });
       break;
