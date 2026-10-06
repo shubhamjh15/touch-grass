@@ -2,7 +2,7 @@
 
 import { useLevelInfo, useQuests, useStreak, useToday } from '@/game';
 import { useBreakpoint } from '@/lib/hooks';
-import { formatCo2Parts, formatNumber } from '@/lib/format';
+import { formatCo2Parts, formatNumber, formatPercent } from '@/lib/format';
 import { Co2e, HonestyMark, NumberTicker, Ticket, XPBar } from '@/ui';
 import { todayEstimateSource } from '../model';
 
@@ -21,6 +21,8 @@ export function StatusTicket({ xpJustEarned = 0 }: { xpJustEarned?: number }) {
   const kg = formatCo2Parts(today.kg);
   const source = todayEstimateSource(today);
   const claimed = quests.daily.filter((quest) => quest.claimed).length;
+  const levelSpan = level.nextLevelXp - level.levelStartXp;
+  const levelShare = levelSpan > 0 ? Math.min(1, level.xpIntoLevel / levelSpan) : 1;
   const estimate = (
     <span className="inline-flex items-center gap-1.5">
       <HonestyMark source={source} size="sm" />
@@ -55,7 +57,8 @@ export function StatusTicket({ xpJustEarned = 0 }: { xpJustEarned?: number }) {
     <Ticket label="Level, streak and today">
       <Ticket.Stub
         label="Level"
-        meta={`${formatNumber(level.xpIntoLevel)}/${formatNumber(level.nextLevelXp - level.levelStartXp)}`}
+        // A share, not "623/1,450": four-digit levels do not fit beside the label on a phone.
+        meta={formatPercent(levelShare)}
         value={<NumberTicker value={level.level} />}
         flex={1.6}
       >
