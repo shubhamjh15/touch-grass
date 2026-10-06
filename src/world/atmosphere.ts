@@ -69,14 +69,14 @@ const NIGHT: Omit<Key, 'hour'> = {
   horizon: '#2b3a7c',
   haze: '#1a2352',
   light: '#c3d0ff',
-  intensity: 1.07,
+  intensity: 1.55,
   skyFill: '#6478d6',
   groundFill: '#3a4a86',
-  fill: 1.99,
+  fill: 1.23,
   orb: '#fef9c3',
   glow: '#7f93e8',
   cloud: '#8f9fe0',
-  shadow: 0.55,
+  shadow: 0.71,
 };
 
 const DAY: Omit<Key, 'hour'> = {
@@ -84,14 +84,14 @@ const DAY: Omit<Key, 'hour'> = {
   horizon: '#a9defc',
   haze: '#dff3ff',
   light: '#fff4d6',
-  intensity: 2.02,
+  intensity: 2.93,
   skyFill: '#cfe7ff',
   groundFill: '#d9dcc0',
-  fill: 2.85,
+  fill: 1.77,
   orb: '#fff3b0',
   glow: '#fffbe0',
   cloud: '#ffffff',
-  shadow: 0.62,
+  shadow: 0.78,
 };
 
 /** The day in keyframes; hours between two keys are blended in OKLab. */
@@ -104,14 +104,14 @@ const KEYS: readonly Key[] = [
     horizon: '#ffc9a8',
     haze: '#ffe3d2',
     light: '#ffc79a',
-    intensity: 1.63,
+    intensity: 2.36,
     skyFill: '#d3caf7',
     groundFill: '#d9b9a6',
-    fill: 2.18,
+    fill: 1.35,
     orb: '#ffb36b',
     glow: '#ffd9b0',
     cloud: '#ffe1d6',
-    shadow: 0.55,
+    shadow: 0.71,
   },
   {
     hour: 8,
@@ -119,14 +119,14 @@ const KEYS: readonly Key[] = [
     horizon: '#bfe6fd',
     haze: '#e6f5ff',
     light: '#ffeccb',
-    intensity: 1.89,
+    intensity: 2.74,
     skyFill: '#cfe6ff',
     groundFill: '#d6d6bc',
-    fill: 2.66,
+    fill: 1.65,
     orb: '#ffe9a0',
     glow: '#fff6d8',
     cloud: '#ffffff',
-    shadow: 0.6,
+    shadow: 0.76,
   },
   { hour: 11, ...DAY },
   { hour: 15.5, ...DAY },
@@ -136,14 +136,14 @@ const KEYS: readonly Key[] = [
     horizon: '#ffd08a',
     haze: '#ffe6bd',
     light: '#ffb466',
-    intensity: 1.98,
+    intensity: 2.95,
     skyFill: '#d0c6f2',
     groundFill: '#e0b98c',
-    fill: 2.18,
+    fill: 1.62,
     orb: '#ffb347',
     glow: '#ffd27a',
     cloud: '#ffe2c2',
-    shadow: 0.62,
+    shadow: 0.78,
   },
   {
     hour: 19.4,
@@ -151,14 +151,14 @@ const KEYS: readonly Key[] = [
     horizon: '#ff9a7a',
     haze: '#c98aa0',
     light: '#ff8f6b',
-    intensity: 1.29,
+    intensity: 2.25,
     skyFill: '#a79ee6',
     groundFill: '#a27f95',
-    fill: 1.9,
+    fill: 1.5,
     orb: '#ff7a55',
     glow: '#ff9f80',
     cloud: '#f5b3b8',
-    shadow: 0.6,
+    shadow: 0.76,
   },
   { hour: 20.8, ...NIGHT },
   { hour: 24, ...NIGHT },
@@ -179,12 +179,24 @@ function dayShare(hour: number): number {
   return clamp01((hour - SUNRISE) / (SUNSET - SUNRISE));
 }
 
-/** Direction towards the sun: it rises on the viewer's right, sets on the left, stays in front. */
+/**
+ * Direction of the key light by day. It is art-directed, not astronomical: it swings from
+ * the viewer's right in the morning to the left in the evening so shadows cross the lawn
+ * where they can be seen, never drops below 26 degrees (a truly low sun would leave every
+ * lawn in the dark at golden hour: the painted orb in the sky does the sinking), comes
+ * from a little in front when it is low, so the side facing the viewer glows, and from a
+ * little behind at midday, so the shadow pools towards the viewer and the crown gets a rim.
+ */
 function sunLight(hour: number): Vec3 {
   const share = dayShare(hour);
-  const elevation = deg(10) + deg(50) * Math.sin(share * Math.PI);
+  const height = Math.sin(share * Math.PI);
+  const elevation = deg(26) + deg(36) * height;
   const flat = Math.cos(elevation);
-  return normalize([Math.cos(share * Math.PI) * flat, Math.sin(elevation), 0.62 * flat]);
+  return normalize([
+    Math.cos(share * Math.PI) * flat,
+    Math.sin(elevation),
+    (0.32 - 0.48 * height) * flat,
+  ]);
 }
 
 /** Where the sun is painted: the same arc, mirrored into the sky behind the island. */

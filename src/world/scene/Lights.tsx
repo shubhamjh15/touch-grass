@@ -100,7 +100,9 @@ export function Lights() {
     const hemisphere = fill.current;
     if (hemisphere) {
       setColor(hemisphere.color, atmosphere.skyFill);
-      setColor(hemisphere.groundColor, atmosphere.groundFill);
+      // The bounce from below is much weaker than the sky: undersides fall into shade,
+      // which is what gives the crown and the rocks their volume.
+      setColor(hemisphere.groundColor, atmosphere.groundFill).multiplyScalar(0.5);
       hemisphere.intensity = atmosphere.fillIntensity * (0.9 + 0.1 * mood.light);
       // A resting island sits under a cooler sky.
       hemisphere.color.lerp(COOL, mood.cold * 0.35);

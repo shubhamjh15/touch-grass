@@ -100,7 +100,7 @@ toyWorld = modelMatrix * toyWorld;
   vTip = aTip;
 #endif
 #ifdef TOY_CROWN
-  vCrown = uCrown.w * smoothstep(1.08, 0.5, distance(toyWorld.xz, uCrown.xy) / uCrown.z);
+  vCrown = uCrown.w * (1.0 - smoothstep(0.45, 1.1, distance(toyWorld.xz, uCrown.xy) / uCrown.z));
 #endif
 #if defined(TOY_SWAY_TREE)
   toyWorld.xyz += toyTreeSway(toyWorld.xyz);
@@ -144,7 +144,7 @@ const COLOUR = /* glsl */ `
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 1.0, 0.82), uFlash * 0.55);
 #endif
 #ifdef TOY_CROWN
-  diffuseColor.rgb *= mix(vec3(1.0), vec3(0.52, 0.62, 0.74), vCrown);
+  diffuseColor.rgb *= mix(vec3(1.0), vec3(0.22, 0.4, 0.56), vCrown);
 #endif
 `;
 
