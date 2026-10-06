@@ -30,6 +30,12 @@ export interface ToyOptions {
   /** Multiplier of the colour at its tip. */
   tipShade?: number;
   /**
+   * Darken under the crown from the shared blob (`uCrown`) instead of the shadow map:
+   * for the thousands of small things on the lawn, whose every fragment would otherwise
+   * pay for a filtered shadow lookup. Meshes that use it should not `receiveShadow`.
+   */
+  crownShade?: boolean;
+  /**
    * Shade both faces by the surface they stand on rather than by their own facing: thin
    * double-sided blades would otherwise go dark whenever their back is turned.
    */
@@ -43,6 +49,10 @@ uniform vec4 uTree;
 uniform vec4 uRipple;
 uniform float uDroop;
 uniform float uShake;
+#ifdef TOY_CROWN
+  uniform vec4 uCrown;
+  varying float vCrown;
+#endif
 #ifdef TOY_TIP
   attribute float aTip;
   varying float vTip;
@@ -89,6 +99,9 @@ toyWorld = modelMatrix * toyWorld;
 #ifdef TOY_TIP
   vTip = aTip;
 #endif
+#ifdef TOY_CROWN
+  vCrown = uCrown.w * smoothstep(1.08, 0.5, distance(toyWorld.xz, uCrown.xy) / uCrown.z);
+#endif
 #if defined(TOY_SWAY_TREE)
   toyWorld.xyz += toyTreeSway(toyWorld.xyz);
 #elif defined(TOY_SWAY_LEAF)
@@ -112,6 +125,9 @@ uniform float uToyTipShade;
 #ifdef TOY_TIP
   varying float vTip;
 #endif
+#ifdef TOY_CROWN
+  varying float vCrown;
+#endif
 `;
 
 const COLOUR = /* glsl */ `
@@ -126,6 +142,9 @@ const COLOUR = /* glsl */ `
 #endif
 #ifdef TOY_FLASH
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 1.0, 0.82), uFlash * 0.55);
+#endif
+#ifdef TOY_CROWN
+  diffuseColor.rgb *= mix(vec3(1.0), vec3(0.52, 0.62, 0.74), vCrown);
 #endif
 `;
 
@@ -156,6 +175,7 @@ export function toyMaterial(
     baseShade,
     tipShade = 1,
     uplit = false,
+    crownShade = false,
   } = options;
   const material = new THREE.MeshLambertMaterial(parameters);
   const tip = baseShade !== undefined || sway === 'leaf' || sway === 'grass';
@@ -168,6 +188,7 @@ export function toyMaterial(
   if (flash) defines.TOY_FLASH = '';
   if (rim > 0) defines.TOY_RIM = '';
   if (uplit) defines.TOY_UPLIT = '';
+  if (crownShade) defines.TOY_CROWN = '';
   material.defines = { ...material.defines, ...defines };
   const own = {
     uToyRim: { value: rim },

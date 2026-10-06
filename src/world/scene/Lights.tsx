@@ -1,6 +1,6 @@
 'use client';
 
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { QUALITY } from '../config';
@@ -20,6 +20,8 @@ const LIGHT_DISTANCE = 16;
 export function Lights() {
   const quality = useWorldStore((state) => state.quality);
   const tier = QUALITY[quality];
+  const gl = useThree((state) => state.gl);
+  const beat = useRef({ frame: 0, hour: Number.NaN, growth: Number.NaN });
   const key = useRef<THREE.DirectionalLight>(null);
   const fill = useRef<THREE.HemisphereLight>(null);
   const blob = useRef<THREE.Mesh>(null);
@@ -58,10 +60,33 @@ export function Lights() {
     light.shadow.map?.dispose();
     light.shadow.map = null;
     light.shadow.needsUpdate = true;
+    beat.current.frame = 0;
   }, [tier.shadowMap]);
+
+  // The shadow pass draws the whole tree a second time. Nothing in it moves but the
+  // wind, so it is redrawn on change (growth, the hour, a pulse) and otherwise only
+  // every few frames: a soft shadow that sways at 20 Hz cannot be told from one at 60.
+  useEffect(() => {
+    gl.shadowMap.autoUpdate = false;
+    gl.shadowMap.needsUpdate = true;
+    return () => {
+      gl.shadowMap.autoUpdate = true;
+    };
+  }, [gl]);
 
   useFrame(() => {
     const { atmosphere, mood, tree } = live;
+    const pace = beat.current;
+    const changed =
+      live.growth !== pace.growth ||
+      live.hour !== pace.hour ||
+      live.shake > 0 ||
+      live.channels.hop !== 0 ||
+      live.channels.dip !== 0;
+    if (changed || pace.frame % tier.shadowEvery === 0) gl.shadowMap.needsUpdate = true;
+    pace.frame += 1;
+    pace.growth = live.growth;
+    pace.hour = live.hour;
     const light = key.current;
     if (light) {
       const [x, y, z] = atmosphere.lightDir;

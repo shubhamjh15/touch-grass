@@ -13,9 +13,10 @@ import { useDispose, useScene } from './sceneStore';
 
 /**
  * What grows on the island: grass tufts, the turf that hangs over its rim, flowers and
- * rim bushes. Five instanced meshes, five draw calls; all of it sways in the vertex shader and none of it costs CPU per
- * frame. The grass does not cast shadows (thousands of blades in the shadow pass would
- * cost more than the whole rest of the scene) but receives the tree's.
+ * rim bushes. Five instanced meshes, five draw calls; all of it sways in the vertex
+ * shader and none of it costs CPU per frame. Grass and flowers neither cast shadows nor
+ * sample the shadow map (thousands of blades doing either would cost more than the rest
+ * of the scene): they darken under the crown from the shared shadow blob instead.
  */
 export function Meadow() {
   const seed = useScene((state) => state.seed);
@@ -36,7 +37,14 @@ export function Meadow() {
     () =>
       toyMaterial(
         { color: '#ffffff', side: THREE.DoubleSide },
-        { sway: 'grass', mood: true, baseShade: 0.78, tipShade: 1.16, uplit: true },
+        {
+          sway: 'grass',
+          mood: true,
+          baseShade: 0.78,
+          tipShade: 1.16,
+          uplit: true,
+          crownShade: true,
+        },
       ),
     [],
   );
@@ -44,13 +52,16 @@ export function Meadow() {
     () =>
       toyMaterial(
         { color: MEADOW.stem, side: THREE.DoubleSide },
-        { sway: 'grass', mood: true, uplit: true },
+        { sway: 'grass', mood: true, uplit: true, crownShade: true },
       ),
     [],
   );
   const headMaterial = useMemo(
     () =>
-      toyMaterial({ vertexColors: true, side: THREE.DoubleSide }, { sway: 'grass', uplit: true }),
+      toyMaterial(
+        { vertexColors: true, side: THREE.DoubleSide },
+        { sway: 'grass', uplit: true, crownShade: true },
+      ),
     [],
   );
   const bushMaterial = useMemo(
@@ -92,11 +103,7 @@ export function Meadow() {
 
   return (
     <group>
-      <instancedMesh
-        ref={grass}
-        args={[tuft, grassMaterial, Math.max(1, scatter.tufts.count)]}
-        receiveShadow
-      />
+      <instancedMesh ref={grass} args={[tuft, grassMaterial, Math.max(1, scatter.tufts.count)]} />
       <instancedMesh ref={turf} args={[hang, grassMaterial, Math.max(1, scatter.hanging.count)]} />
       <instancedMesh ref={stems} args={[stem, stemMaterial, Math.max(1, scatter.flowers.count)]} />
       <instancedMesh ref={heads} args={[head, headMaterial, Math.max(1, scatter.flowers.count)]} />
