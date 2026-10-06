@@ -3,7 +3,7 @@ import path from 'node:path';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DAILY_QUEST_BY_ID, EPICS, WEEKLY_QUEST_BY_ID } from '@/data/quests';
+import { DAILY_QUEST_BY_ID, EPICS } from '@/data/quests';
 import { STORAGE_KEYS, drawDaily, drawWeekly, game, gameActions, getGameState } from '@/game';
 import { resetSfx } from '@/lib/sfx';
 import { installPointerCapture } from '@/ui/testUtils';
@@ -103,7 +103,7 @@ afterEach(() => {
 });
 
 describe('daily and weekly boards', () => {
-  it('shows each daily with its copy, progress, reward and time left', () => {
+  it('shows each daily with its copy, progress and reward', () => {
     seed('day12');
     render(<QuestsPage />);
 
@@ -117,7 +117,6 @@ describe('daily and weekly boards', () => {
       expect(item.getByRole('meter', { name: `${quest.title} progress` })).toBeInTheDocument();
       expect(item.getByText(/^\d+ \/ \d+$/)).toBeInTheDocument();
       expect(item.getAllByText(new RegExp(`\\+${quest.xp}`)).length).toBeGreaterThan(0);
-      expect(item.getByText('13 h left')).toBeInTheDocument();
     }
     expect(screen.getByText('Resets in 13 h 29 min')).toBeInTheDocument();
   });
@@ -275,7 +274,7 @@ describe('daily and weekly boards', () => {
     );
   });
 
-  it('keeps the open board in the URL and shows the weeklies with their days left', async () => {
+  it('keeps the open board in the URL and shows the weeklies with the days left in the week', async () => {
     const user = userEvent.setup();
     seed('day12');
     render(<QuestsPage />);
@@ -283,10 +282,7 @@ describe('daily and weekly boards', () => {
 
     expect(nav.replace).toHaveBeenLastCalledWith('/quests?tab=weekly');
     expect(screen.getByRole('tab', { name: /Weekly/ })).toHaveAttribute('aria-selected', 'true');
-    for (const id of getGameState().quests.weekly?.slots ?? []) {
-      const quest = WEEKLY_QUEST_BY_ID.get(id);
-      expect(within(ticket(quest?.title ?? '')).getByText('6 days left')).toBeInTheDocument();
-    }
+    expect(screen.getByText('6 days left')).toBeInTheDocument();
   });
 
   it('opens on the tab a deep link names', () => {

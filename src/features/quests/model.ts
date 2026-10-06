@@ -86,7 +86,6 @@ export function ticketProgress(quest: Pick<QuestView, 'progress'>): { value: num
 
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
-const HOUR = 60 * MINUTE;
 
 /** "9 h 28 min", "28 min", "42 sec": the live countdown. Seconds only in the last minute. */
 export function countdownText(ms: number): string {
@@ -99,13 +98,6 @@ export function countdownText(ms: number): string {
   return rest === 0
     ? `${formatNumber(hours)} h`
     : `${formatNumber(hours)} h ${formatNumber(rest)} min`;
-}
-
-/** "9 h left" on a daily ticket: coarse on purpose, the heading carries the exact countdown. */
-export function dailyLeft(ms: number): string {
-  if (ms <= 0) return 'Time is up';
-  if (ms < HOUR) return `${formatNumber(Math.max(1, Math.floor(ms / MINUTE)))} min left`;
-  return `${formatNumber(Math.floor(ms / HOUR))} h left`;
 }
 
 /** "4 days left" (today included), and "Ends tonight" on Sunday. */

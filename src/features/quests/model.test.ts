@@ -5,7 +5,6 @@ import {
   autoClaimSentence,
   autoClaimsToday,
   countdownText,
-  dailyLeft,
   deckOrder,
   epicGap,
   epicStarted,
@@ -141,13 +140,6 @@ describe('time left', () => {
     expect(countdownText(41_200)).toBe('42 sec');
     expect(countdownText(0)).toBe('now');
     expect(countdownText(-5)).toBe('now');
-  });
-
-  it('prints a coarse label on a daily ticket', () => {
-    expect(dailyLeft(9 * HOUR + 28 * MINUTE)).toBe('9 h left');
-    expect(dailyLeft(59 * MINUTE)).toBe('59 min left');
-    expect(dailyLeft(20_000)).toBe('1 min left');
-    expect(dailyLeft(0)).toBe('Time is up');
   });
 
   it('counts the days of the week, today included', () => {

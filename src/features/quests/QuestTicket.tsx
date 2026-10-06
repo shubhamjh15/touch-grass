@@ -112,8 +112,6 @@ export interface QuestTicketProps {
   quest: QuestView;
   state: TicketState;
   hint: QuestHint;
-  /** "9 h left" / "4 days left". */
-  timeLeft: string;
   /** The first claimable ticket of the deck takes the colour plate. */
   featured: boolean;
   /** Just swapped in: it is stuck on rather than simply there. */
@@ -128,7 +126,6 @@ export function QuestTicket({
   quest,
   state,
   hint,
-  timeLeft,
   featured,
   fresh,
   onClaim,
@@ -184,7 +181,6 @@ export function QuestTicket({
         progress={ticketProgress(quest)}
         reward={xpReward(quest.xp)}
         state={state}
-        timeLeft={timeLeft}
         featured={featured}
         onClaim={() => {
           const from = stubCentre();

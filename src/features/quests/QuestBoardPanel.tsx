@@ -9,7 +9,6 @@ import { COPY } from './copy';
 import {
   autoClaimSentence,
   countdownText,
-  dailyLeft,
   deckOrder,
   questHint,
   ticketState,
@@ -62,9 +61,6 @@ export function QuestBoardPanel({
   // The period ended but the calendar has not been settled yet (it is, within a second).
   const over = useClock((now) => now >= resetsAt);
   const countdown = useClock((now) => countdownText(resetsAt - now));
-  const ticketLeft = useClock((now) =>
-    kind === 'daily' ? dailyLeft(resetsAt - now) : weeklyLeft(daysLeft),
-  );
 
   const deck = deckOrder(quests);
   const claimed = quests.filter((quest) => quest.claimed).length;
@@ -109,7 +105,6 @@ export function QuestBoardPanel({
                 quest={quest}
                 state={ticketState(quest, over)}
                 hint={questHint(quest, hintContext)}
-                timeLeft={ticketLeft}
                 featured={quest.id === firstClaimable}
                 fresh={quest.id === freshId}
                 onClaim={onClaim}
