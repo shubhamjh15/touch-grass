@@ -44,8 +44,12 @@ export function ActionChip({ action }: { action: ActionLink }) {
 const CHIPS_SHOWN = 2;
 
 /** The actions that count, two at a time so a long list never swamps its ticket. */
-export function ChipList({ actions }: { actions: readonly ActionLink[] }) {
+export function ChipList({ actions: counted }: { actions: readonly ActionLink[] }) {
   const [all, setAll] = useState(false);
+  // Two catalogue actions can share a caption (a flight by the km or by the trip): one chip each.
+  const actions = counted.filter(
+    (action, index) => counted.findIndex((other) => other.label === action.label) === index,
+  );
   const extra = actions.length - CHIPS_SHOWN;
   const shown = all || extra <= 0 ? actions : actions.slice(0, CHIPS_SHOWN);
   return (
