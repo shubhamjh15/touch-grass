@@ -112,15 +112,6 @@ export function fitSubject({ box, canvas, frame, fit, anchor, chrome = 0 }: FitI
   };
 }
 
-export function boxesIntersect(a: Box, canvas: { width: number; height: number }, margin = 0) {
-  return (
-    a.x < canvas.width + margin &&
-    a.x + a.width > -margin &&
-    a.y < canvas.height + margin &&
-    a.y + a.height > -margin
-  );
-}
-
 /** One axis of a damped spring that rests at 0. */
 export interface Spring {
   x: number;
@@ -153,8 +144,4 @@ export function stepSpring(spring: Spring, dt: number, omega: number, zeta: numb
     spring.x = 0;
     spring.v = 0;
   }
-}
-
-export function springAtRest(spring: Spring): boolean {
-  return spring.x === 0 && spring.v === 0;
 }

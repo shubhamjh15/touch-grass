@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
-import { clamp01, smoothstep } from '@/lib/math';
+import { clamp01 } from '@/lib/math';
 import { multiplyRgb, rgbToHex, type Rgb } from './color';
 import { CAMERA, INK, ISLAND, PAPER, SHADING, SUNDIAL, TONE } from './config';
 import {
@@ -12,7 +12,7 @@ import {
   type WorldSnapshot,
 } from './contract';
 import { lightAt, wrapHour } from './daylight';
-import { fitSubject, type Placement } from './framing';
+import { fitSubject } from './framing';
 import { layoutIsland, type Spot } from './props/layout';
 import { createToneTable, resolveTones } from './tones';
 import { subjectFrame } from './tree/frame';
@@ -844,14 +844,6 @@ function drawProps(
   return items.map((item) => item.node);
 }
 
-/** Everything `FallbackTree` computes before it draws: exported for tests and overlays. */
-export interface FallbackScene {
-  placement: Placement;
-  /** Where a logged action sticks, in pixels of the box. */
-  stick: { x: number; y: number };
-  clumps: number;
-}
-
 export function FallbackTree({
   snapshot,
   width,
@@ -1043,9 +1035,4 @@ export function FallbackTree({
       </g>
     </svg>
   );
-}
-
-/** Whether the hour is in the night slot (the page may want a darker caption). */
-export function isNight(hour: number): boolean {
-  return smoothstep(19.67, 20.33, hour) > 0.5 || hour < 5.5;
 }

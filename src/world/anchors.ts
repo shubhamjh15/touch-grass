@@ -6,7 +6,7 @@ import { createTerrain } from './terrain';
  * Named places on the island, in island space: one per ground prop and landmark (from
  * the seeded layout, which never moves when something is unlocked), plus the fixed
  * features of the terrain. This is the slot API for whoever puts things in the world:
- * mount a model at `anchorsFor(seed).bench` (or use `<Slot id="bench">` in the scene)
+ * mount a model at `anchorsFor(seed).bench`
  * and it stands on the lawn, clear of every other footprint, the pond and the path.
  */
 

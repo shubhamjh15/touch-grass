@@ -13,7 +13,6 @@ import type { Species, StageMode, WorldQuality } from './contract';
 export const INK = '#18181b';
 /** The die-cut margin: always white, never graded by the time of day. */
 export const PAPER = '#ffffff';
-export const MINT = '#f0fdf4';
 
 // --- The die-cut sticker (bible 5.2) -------------------------------------------------------
 
@@ -255,8 +254,6 @@ export const TONE = {
   spark: 33,
 } as const;
 export const TONE_COUNT = 34;
-/** First emissive tone: this one and every later tone ignore the time-of-day grade. */
-export const EMISSIVE_FROM = 31;
 
 /** base, shade, highlight */
 export type ToneTriple = readonly [string, string, string];

@@ -9,7 +9,6 @@ import {
   LEAF,
   TONE,
   TONE_COUNT,
-  VITALITY,
   type ToneTriple,
   type VitalityRamp,
 } from './config';
@@ -135,27 +134,4 @@ export function resolveTones(
   fixed(TONE.glass, FIXED_TONES.glass);
   fixed(TONE.spark, FIXED_TONES.spark);
   return table;
-}
-
-/** Piecewise-linear read of a [thriving, thirsty, dormant] triple at a vitality. */
-function byState(values: readonly [number, number, number], vitality: number): number {
-  const v = clamp01(vitality);
-  return v >= 0.5
-    ? values[1] + (values[0] - values[1]) * (v - 0.5) * 2
-    : values[2] + (values[1] - values[2]) * v * 2;
-}
-
-/** How glossy the clumps are: a resting tree loses its shine. */
-export function glossFor(vitality: number): number {
-  return smoothstep(0.12, 0.6, vitality);
-}
-
-/** How far the tips hang: most when thirsty; a dormant tree is stiller and droops less. */
-export function droopFor(vitality: number): number {
-  return byState(VITALITY.droop, vitality);
-}
-
-/** Share of the full sway: a thirsty tree moves less, a dormant one is very still. */
-export function swayFor(vitality: number): number {
-  return byState(VITALITY.sway, vitality);
 }
