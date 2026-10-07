@@ -170,7 +170,7 @@ export const COPY = {
     },
     graphics: {
       label: '3D quality',
-      hint: 'Auto picks what your device can hold. Still shows the illustrated tree.',
+      hint: 'Auto picks what your device can hold. High needs a dedicated graphics card; without one it draws at a lower resolution to stay smooth. Still shows the illustrated tree.',
       options: {
         auto: 'Auto',
         high: 'High',
