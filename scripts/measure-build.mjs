@@ -1,5 +1,8 @@
 // Prints, per route, what the browser downloads for the first paint of a production build:
 // the HTML, the scripts and stylesheets the HTML references, raw and gzipped.
+// The last column is the part of 'js gz' that is Next's legacy polyfill script: its tag carries
+// `nomodule`, so a browser that understands modules never downloads it. Subtract it for what a
+// current browser really fetches.
 // Usage: node scripts/measure-build.mjs [distDir]   (default .next-check)
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
@@ -46,6 +49,13 @@ for (const { route, file } of htmlFiles(appDir)) {
   const text = html.toString('utf8');
   const urls = new Set();
   for (const m of text.matchAll(/(?:src|href)="(\/_next\/static\/[^"]+)"/g)) urls.add(m[1]);
+  const legacy = new Set();
+  for (const m of text.matchAll(/<script\b[^>]*>/g)) {
+    const src = /\bnomodule\b/i.test(m[0]) ? /src="(\/_next\/static\/[^"]+)"/.exec(m[0]) : null;
+    if (src) legacy.add(src[1]);
+  }
+  let legacyGz = 0;
+  for (const u of legacy) legacyGz += sizeOf(u.split('?')[0]).gz;
   let js = { raw: 0, gz: 0 };
   let css = { raw: 0, gz: 0 };
   for (const u of urls) {
@@ -57,10 +67,13 @@ for (const { route, file } of htmlFiles(appDir)) {
       target.gz += s.gz;
     }
   }
-  rows.push({ route, html: html.length, htmlGz: gzipSync(html).length, js, css });
+  rows.push({ route, html: html.length, htmlGz: gzipSync(html).length, js, css, legacyGz });
 }
 rows.sort((a, b) => a.route.localeCompare(b.route));
-console.log('route'.padEnd(18), '  html KB  html gz   js KB   js gz  css KB  css gz');
+console.log(
+  'route'.padEnd(18),
+  '  html KB  html gz   js KB   js gz  css KB  css gz  of js gz: nomodule',
+);
 for (const r of rows) {
   console.log(
     r.route.padEnd(18),
@@ -70,6 +83,7 @@ for (const r of rows) {
     kb(r.js.gz),
     kb(r.css.raw),
     kb(r.css.gz),
+    kb(r.legacyGz),
   );
 }
 let totalRaw = 0;
