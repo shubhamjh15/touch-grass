@@ -203,7 +203,7 @@ function SheetFrame({
       <form
         id={formId}
         noValidate
-        className="grid gap-4"
+        className="grid grid-cols-[minmax(0,1fr)] gap-4"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
@@ -633,7 +633,12 @@ function ActionDialog({ request, open, onOpenChange, onStick, onNotForMe }: Dial
 
           {low && preview.kg ? (
             <p>
-              <Tag hue="white">{COPY.quick.rough}</Tag>
+              <Tag
+                hue="white"
+                className="h-auto min-h-5.5 max-w-full py-0.5 leading-snug whitespace-normal"
+              >
+                {COPY.quick.rough}
+              </Tag>
             </p>
           ) : null}
         </>
