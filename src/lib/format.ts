@@ -133,3 +133,15 @@ export function formatDuration(seconds: number): string {
 export function lastDays(today: DayKey, count: number): DayKey[] {
   return Array.from({ length: count }, (_, index) => addDays(today, index - count + 1));
 }
+
+const stampMonth = new Intl.DateTimeFormat(LOCALE, { month: 'short' });
+
+/**
+ * The label-maker date on a slug or stamp: "25 SEP 2026". The one print format for a date,
+ * from a day key or a moment (local time).
+ */
+export function formatStampDate(when: DayKey | number | Date): string {
+  const date = typeof when === 'string' ? parseDayKey(when) : new Date(when);
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${day} ${stampMonth.format(date).replace('.', '').toUpperCase()} ${date.getFullYear()}`;
+}

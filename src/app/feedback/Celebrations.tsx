@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useGameNow } from '@/game';
 import { cn } from '@/lib/cn';
-import { formatNumber } from '@/lib/format';
+import { formatNumber, formatStampDate } from '@/lib/format';
 import { useBreakpoint } from '@/lib/hooks';
 import { buzz, play } from '@/lib/sfx';
 import { Lettering, Stamp, StickerPill, toast } from '@/ui';
@@ -102,10 +102,7 @@ function LevelUp({
   );
 }
 
-const labelDate = (now: number): string =>
-  new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    .format(now)
-    .toUpperCase();
+const labelDate = (now: number): string => formatStampDate(now);
 
 /** A passport page sticks in at the centre and the stamp comes down on it (bible 7.6). */
 function BadgeStamp({
