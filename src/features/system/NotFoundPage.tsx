@@ -1,11 +1,20 @@
 'use client';
 
 import { ArrowRight, Github } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useBootHydrated, useBootOnboarded, useBootSceneLabel } from '@/app/boot/bootStore';
 import { ROUTES } from '@/app/routes';
 import { BRAND } from '@/lib/brand';
 import { Button, LeafMark, Lettering, TextLink, UiLink } from '@/ui';
-import { WorldStage } from '@/world';
+
+const STAGE_BOX = 'mx-auto h-64 w-full max-w-[22rem] lg:h-[26rem] lg:max-w-none';
+
+// This page is part of the root bundle (see RootLayout), so a static import here put the stage,
+// the still tree and the tree generator on every route, the reading pages included. Loaded this
+// way the server still prints the still tree, and only the 404 fetches the code for it.
+const WorldStage = dynamic(() => import('@/world').then((world) => world.WorldStage), {
+  loading: () => <div aria-hidden="true" className={STAGE_BOX} />,
+});
 
 /** Where "Back to the grove" goes: the app for someone with a tree, the front door for everyone else. */
 function useWayHome(): { href: string; label: string } {
@@ -65,7 +74,7 @@ export default function NotFoundPage() {
             mode="companion"
             preview={planted ? undefined : VISITOR_WORLD}
             label={planted ? sceneLabel : 'A small floating island with a young oak tree.'}
-            className="mx-auto h-64 w-full max-w-[22rem] lg:h-[26rem] lg:max-w-none"
+            className={STAGE_BOX}
           />
           <div className="grid justify-items-center gap-4 text-center lg:justify-items-start lg:text-left">
             <p className="type-slug text-ink-3">ERROR 404</p>
