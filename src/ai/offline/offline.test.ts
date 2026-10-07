@@ -400,7 +400,7 @@ describe('offlineTip: the rest of the spec priority', () => {
       actions: context.actions,
       tree: { name: 'Juniper', vitality: 'thriving' },
     };
-    expect(offlineTip({ ...base, ringLeft: 2 }).text).toMatch(/2 more actions closes today's ring/);
+    expect(offlineTip({ ...base, ringLeft: 2 }).text).toMatch(/2 more actions close today's ring/);
     expect(offlineTip({ ...base, ringLeft: 1 }).text).toMatch(/1 more action closes/);
     const lesson = offlineTip({
       nextLesson: { slug: 'the-blanket', title: 'The [blanket] <around> us' },

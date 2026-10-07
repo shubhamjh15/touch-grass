@@ -459,7 +459,7 @@ export function offlineTip(raw: CoachContext = {}, seed = 0): OfflineReply {
   }
   if (easy && (context.ringLeft ?? 0) > 0) {
     const left = context.ringLeft ?? 0;
-    const text = `${pluralize(left, 'more action')} closes today's ring. ${easy.action.title} is a quick one.`;
+    const text = `${pluralize(left, 'more action')} ${left === 1 ? 'closes' : 'close'} today's ring. ${easy.action.title} is a quick one.`;
     return { text: withChips(text, chip(easy.action)), intent: 'easy_win', label: OFFLINE_LABEL };
   }
   if (easy?.inFocus) {
