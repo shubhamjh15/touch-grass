@@ -109,18 +109,21 @@ export const COACH_MARKS = [
   {
     target: 'tree',
     title: 'This is your tree',
+    short: 'A ring grows each day you show up.',
     body: (tree: string) =>
       `${tree} grows a ring every day you show up, and new leaves each time you log. Its tag always says how it is doing.`,
   },
   {
     target: 'ring',
     title: 'One ring a day',
+    short: 'Three actions close the day.',
     body: () =>
       'Three actions close the day’s ring. Quests are optional extras: finish one, then tear off its stub.',
   },
   {
     target: 'log',
     title: 'Stick one on',
+    short: 'One tap logs what you really did.',
     body: () =>
       'One tap logs an action you actually did. The Log page holds every action, with the sums behind each estimate.',
   },

@@ -38,7 +38,19 @@ function useTargetBox(target: string, reduced: boolean): Box | null {
     const schedule = () => {
       if (frame === 0) frame = window.requestAnimationFrame(measure);
     };
-    el.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+    // On a phone the card docks at the bottom, so the target goes to the top of the screen: it can
+    // never sit under the card. On a desk it is centred, as the card lives in a corner.
+    const behavior = reduced ? 'auto' : 'smooth';
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+      el.scrollIntoView({ block: 'center', behavior });
+    } else if (target === 'tree') {
+      // The tree stands at the top of the stage: show the top of the page.
+      window.scrollTo({ top: 0, behavior });
+    } else {
+      // Bring the target 84 px under the top edge, below the bars.
+      el.style.scrollMarginTop = '84px';
+      el.scrollIntoView({ block: 'start', behavior });
+    }
     schedule();
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
@@ -98,18 +110,31 @@ function Tour() {
         aria-label="Quick tour"
         aria-live="polite"
         featured
-        className="fixed inset-x-3 bottom-[calc(var(--tabbar-h)+var(--safe-b)+52px)] z-(--z-scrim) grid gap-2 lg:inset-x-auto lg:right-10 lg:bottom-28 lg:w-[380px]"
+        className="fixed inset-x-3 bottom-[calc(var(--tabbar-h)+var(--safe-b)+52px)] z-(--z-scrim) grid max-lg:grid-cols-[minmax(0,1fr)_auto] max-lg:items-center max-lg:gap-x-3 max-lg:gap-y-0.5 max-lg:p-3 lg:gap-2 lg:inset-x-auto lg:right-10 lg:bottom-28 lg:w-[380px]"
       >
-        <p className="type-slug text-ink-3">
+        <p className="type-slug text-ink-3 max-lg:col-start-1 max-lg:row-start-1">
           Quick tour · {step + 1} of {COACH_MARKS.length}
         </p>
-        <h2 className="text-h4 text-ink">{mark.title}</h2>
-        <p className="text-body-sm text-ink-2">{mark.body(tree.name)}</p>
-        <div className="mt-1 flex items-center justify-between gap-3">
-          <Button variant="ghost" size="sm" onClick={() => gameActions.markCoachMarksSeen()}>
+        <h2 className="text-body font-bold text-ink max-lg:col-start-1 max-lg:row-start-2 lg:text-h4">{mark.title}</h2>
+        <p className="text-caption text-ink-2 max-lg:col-start-1 max-lg:row-start-3 lg:text-body-sm">
+          <span className="lg:hidden">{mark.short}</span>
+          <span className="max-lg:hidden">{mark.body(tree.name)}</span>
+        </p>
+        <div className="flex items-center justify-between gap-3 max-lg:contents lg:mt-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="max-lg:col-start-2 max-lg:row-start-1 max-lg:h-8 max-lg:justify-self-end"
+            onClick={() => gameActions.markCoachMarksSeen()}
+          >
             Skip the tour
           </Button>
-          <Button variant="primary" size="sm" onClick={next}>
+          <Button
+            variant="primary"
+            size="sm"
+            className="max-lg:col-start-2 max-lg:row-span-2 max-lg:row-start-2"
+            onClick={next}
+          >
             {last ? 'Got it' : 'Next'}
           </Button>
         </div>
