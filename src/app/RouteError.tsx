@@ -4,7 +4,7 @@ import { exportFileName, gameActions } from '@/game';
 import { useOnlineStatus } from '@/lib/hooks';
 import { ErrorState, TextLink, toast } from '@/ui';
 import { Main } from './Main';
-import { Logo } from './nav/TopBar';
+import { Logo } from './nav/Logo';
 import { ROUTES } from './routes';
 
 interface RouteErrorProps {

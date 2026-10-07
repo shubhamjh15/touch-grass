@@ -8,7 +8,7 @@ import { BRAND } from '@/lib/brand';
 import { cn } from '@/lib/cn';
 import { Button, ColorBar, LeafMark, OfflineBanner, TextLink, UiLink } from '@/ui';
 import { Main } from '../Main';
-import { Logo } from '../nav/TopBar';
+import { Logo } from '../nav/Logo';
 import { ROUTES, routeInfo, type RouteId } from '../routes';
 
 const HEADER_LINKS: readonly { id: RouteId; label: string; href: string }[] = [

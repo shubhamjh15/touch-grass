@@ -4,12 +4,12 @@ import { motion } from 'framer-motion';
 import { ChevronDown, Search } from 'lucide-react';
 import { useSyncExternalStore } from 'react';
 import { useProfile } from '@/game';
-import { BRAND } from '@/lib/brand';
 import { cn } from '@/lib/cn';
-import { Avatar, DropdownMenu, LeafMark, OfflineBanner, SPRINGS, UiLink } from '@/ui';
+import { Avatar, DropdownMenu, OfflineBanner, SPRINGS, UiLink } from '@/ui';
 import { ROUTES, type RouteId } from '../routes';
 import { openCoach, openPalette } from '../shellStore';
 import { Hud } from './Hud';
+import { Logo } from './Logo';
 import { TOP_LINKS, TOP_LINKS_COMPACT } from './navItems';
 
 const noSubscription = () => () => undefined;
@@ -19,34 +19,6 @@ const isApple = () => /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 export function useModifierLabel(): string {
   const apple = useSyncExternalStore(noSubscription, isApple, () => false);
   return apple ? '⌘' : 'Ctrl';
-}
-
-/** The logo tile and the product name. */
-export function Logo({
-  href,
-  className,
-  nameClassName,
-}: {
-  href: string;
-  className?: string;
-  /** Lets a tight bar fold the wordmark away; the link keeps its accessible name. */
-  nameClassName?: string;
-}) {
-  return (
-    <UiLink
-      href={href}
-      aria-label={`${BRAND.name}, home`}
-      className={cn('flex shrink-0 items-center gap-2.5 rounded-ctl', className)}
-    >
-      <span
-        data-dock-target=""
-        className="grid size-[38px] -rotate-4 place-items-center rounded-ctl border-3 border-ink bg-green shadow-1"
-      >
-        <LeafMark size={22} />
-      </span>
-      <span className={cn('text-h3 whitespace-nowrap', nameClassName)}>{BRAND.name}</span>
-    </UiLink>
-  );
 }
 
 const LINK =
