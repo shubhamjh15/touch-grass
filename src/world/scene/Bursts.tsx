@@ -1,7 +1,7 @@
 'use client';
 
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { BurstKind } from '../pulses';
 import { registerSpawner, type Spawner } from './burstBus';
@@ -170,6 +170,14 @@ export function Bursts() {
     }),
     [],
   );
+
+  // The per-instance colour buffer exists from the start. three.js creates it on the first
+  // `setColorAt`, and a mesh with one needs another shader program than a mesh without:
+  // the first leaf to let go, some seconds after load, would compile it in the middle of
+  // a frame (measured: one 40 to 80 ms frame). Now it is linked with the rest at load.
+  useLayoutEffect(() => {
+    mesh.current?.setColorAt(0, tint.set('#ffffff'));
+  }, []);
 
   useEffect(() => {
     const random = () => {
