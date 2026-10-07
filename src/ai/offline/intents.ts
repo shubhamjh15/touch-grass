@@ -142,7 +142,8 @@ const INTENTS: readonly { id: Exclude<IntentId, 'unknown'>; patterns: Pattern[] 
       p(/\b(easy|quick|simple) (win|one|thing|start|idea)\b/, 7),
       p(
         /\b(what should i do|what can i do|where (do|should) i start|something (small )?to do|give me (an )?idea|any ideas|one idea|next step)\b/,
-        6,
+        // Below a topic's weight: "what should I do about my commute?" is a transport question.
+        3.5,
       ),
       p(/\b(idea|ideas|suggest\w*|recommend\w*)\b/, 2),
     ],

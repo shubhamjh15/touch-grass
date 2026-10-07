@@ -342,7 +342,7 @@ const quests: Reply = (context) => {
     percent > 0
       ? ` You're about ${percent}% of the way there, so one good push finishes it.`
       : ' It is a fair place to start.';
-  return withChips(`Closest to done: ${quest.line}.${progress}`, `[[quest:${quest.id}]]`);
+  return withChips(`Closest to done is ${quest.line}.${progress}`, `[[quest:${quest.id}]]`);
 };
 
 const anxiety: Reply = () =>
@@ -449,7 +449,8 @@ export function offlineTip(raw: CoachContext = {}, seed = 0): OfflineReply {
   }
   const quest = closestQuest(context);
   if (quest && (quest.progress ?? 0) >= 0.66) {
-    const text = `Nearly there: ${quest.line}.`;
+    // The line already reads "Title: what to do (2 / 3)": a second colon in front stutters.
+    const text = `Nearly there on ${quest.line}.`;
     return {
       text: withChips(text, `[[quest:${quest.id}]]`),
       intent: 'quests',

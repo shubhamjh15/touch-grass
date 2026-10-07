@@ -374,13 +374,19 @@ describe('climate facts stay conservative', () => {
     expect(respondOffline('flying', {}).text).toMatch(/can add up to/);
     expect(respondOffline('dinner', {}).text).toMatch(/Beef and lamb/);
   });
+
+  it('answers about the topic when a plain question names one', () => {
+    expect(matchIntent('what should i do about my commute?').intent).toBe('transport');
+    expect(matchIntent('What can I do about my heating bill?').intent).toBe('home_energy');
+    expect(matchIntent('what should i do today?').intent).toBe('easy_win');
+  });
 });
 
 describe('offlineTip', () => {
   it('follows the priority: thirsty tree, near-done quest, focus action, fact', () => {
     const thirsty = { ...context, tree: { ...context.tree, vitality: 'thirsty' } };
     expect(offlineTip(thirsty).text).toMatch(/Juniper is thirsty/);
-    expect(offlineTip(context).text).toMatch(/Nearly there: Ride or walk 3 trips/);
+    expect(offlineTip(context).text).toMatch(/Nearly there on Ride or walk 3 trips/);
     const noQuests = { ...context, quests: [] };
     expect(offlineTip(noQuests).text).toMatch(/Easy one in your focus area/);
     expect(offlineTip({}, 3).text).toMatch(/\.$/);
