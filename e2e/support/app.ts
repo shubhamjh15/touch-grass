@@ -31,7 +31,9 @@ export async function savedWhere<T>(
 /** Reads the HUD from the labels a screen reader would hear, on desktop and on phones. */
 export async function readHud(page: Page): Promise<Hud> {
   const group = page.getByRole('group', { name: 'Your progress' });
-  const phone = !(await group.isVisible());
+  // Decided by the width, not by what has painted: the app's navigation loads after first paint.
+  const phone = (page.viewportSize()?.width ?? 1280) < 1024;
+  if (!phone) await group.waitFor();
   if (phone) {
     const level = await page
       .getByRole('button', { name: /^.*: level \d+\./ })
