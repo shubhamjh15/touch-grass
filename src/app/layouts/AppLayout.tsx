@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { useIsSandbox } from '@/game';
 import { cn } from '@/lib/cn';
 import { prefersReducedMotion, useBreakpoint } from '@/lib/hooks';
 import { play } from '@/lib/sfx';
@@ -62,6 +63,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const desktop = useBreakpoint('lg');
   const chromeHidden = useShellStore((state) => state.chromeHidden > 0);
   const frame = FRAME[info.frame];
+  // On a wide screen the demo banner hangs from the top bar down to 111 px, one pixel above
+  // where a framed page begins: give the page the same breathing room it has without it.
+  const underBanner = useIsSandbox() && info.frame !== 'bleed';
   const carry = useCarryThud(info.frame);
 
   return (
@@ -77,7 +81,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         )}
 
         <Main className={cn(!chromeHidden && 'max-lg:pb-tabbar')}>
-          <div className={frame.outer}>
+          <div className={cn(frame.outer, underBanner && 'lg:pt-36')}>
             {info.frame === 'rail' && desktop ? (
               <div className="lg:col-span-3">
                 <GroveRail />
