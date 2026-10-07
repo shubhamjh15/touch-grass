@@ -22,7 +22,6 @@ const PAGES = [
   '/methodology',
   '/privacy',
   '/demo',
-  '/_not-found',
 ];
 
 const PUBLIC_FILES = [
