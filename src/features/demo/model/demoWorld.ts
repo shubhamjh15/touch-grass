@@ -188,6 +188,10 @@ export function* playDemoWorld(now: number): Generator<DemoProgress, GameState, 
     yield { day: index + 1, days: DEMO_DAYS };
 
     if (isToday) {
+      // Every earlier message was read on its own day. Without this, the unread summaries
+      // of 200 days add up into one ("77 finished quests claimed for you") that today's
+      // opening never raised. The clock stays where it is, so no new day begins first.
+      for (const notice of read().notices) at(0, () => actions.dismissNotice(notice.id));
       // Today is still open: watered and two things logged.
       const dayStart = localTime(day, 0, 0);
       const part = (share: number) => dayStart + Math.floor((now - dayStart) * share);
