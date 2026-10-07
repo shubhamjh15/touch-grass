@@ -24,6 +24,8 @@ async function workerReady(page: Page): Promise<void> {
 test.beforeEach(({ health }) => {
   // Cutting the network is the point of the test: what the browser could not fetch is expected.
   health.allow(/request failed/);
+  // The worker stores the app's own not-found page, which answers 404 by design.
+  health.allow(/404 for .*/_not-found$/);
   health.allow(/Failed to fetch|Failed to load resource|net::ERR_INTERNET_DISCONNECTED/);
 });
 

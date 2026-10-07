@@ -22,6 +22,8 @@ const PAGES = [
   '/methodology',
   '/privacy',
   '/demo',
+  // Answers 404 by design; the worker stores it as the offline page for unknown paths.
+  '/_not-found',
 ];
 
 const PUBLIC_FILES = [
