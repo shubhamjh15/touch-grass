@@ -19,6 +19,10 @@ import type { DayImpact } from '@/game';
 import { ChartCard } from './ChartCard';
 
 const CELL = 14;
+/** A young album has few columns, so its squares grow to fill the card, up to this size. */
+const CELL_MAX = 30;
+/** The weekday labels and their gap, which the squares share the width with. */
+const LABEL_COLUMN = 34;
 const GAP = 3;
 const DAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''] as const;
 
@@ -71,11 +75,28 @@ export function Heatmap({ heatmap }: { heatmap: readonly DayImpact[] }) {
   const [selected, setSelected] = useState<number | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const byKeyboard = useRef(false);
+  const [room, setRoom] = useState(0);
+
+  // Few weeks: let the squares grow into the card. Many weeks: the 14 px grid scrolls sideways.
+  useLayoutEffect(() => {
+    const node = scroller.current;
+    if (!node) return undefined;
+    const measure = () => setRoom(node.clientWidth);
+    measure();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  const cell =
+    grid.columns > 0 && room > 0
+      ? Math.min(CELL_MAX, Math.max(CELL, Math.floor((room - LABEL_COLUMN) / grid.columns) - GAP))
+      : CELL;
 
   useLayoutEffect(() => {
     const node = scroller.current;
     if (node) node.scrollLeft = node.scrollWidth;
-  }, [grid.columns]);
+  }, [grid.columns, cell]);
 
   useLayoutEffect(() => {
     if (selected === null || !byKeyboard.current) return;
@@ -139,7 +160,7 @@ export function Heatmap({ heatmap }: { heatmap: readonly DayImpact[] }) {
           }}
           onFocus={() => setSelected((value) => value ?? last)}
           className="grid w-max gap-x-1.5 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
-          style={{ gridTemplateColumns: `auto ${grid.columns * (CELL + GAP)}px` }}
+          style={{ gridTemplateColumns: `auto ${grid.columns * (cell + GAP)}px` }}
         >
           <span aria-hidden="true" />
           <div className="relative h-4" aria-hidden="true">
@@ -147,7 +168,7 @@ export function Heatmap({ heatmap }: { heatmap: readonly DayImpact[] }) {
               <span
                 key={`${month.column}-${month.label}`}
                 className="absolute top-0 type-tick text-ink-3"
-                style={{ left: month.column * (CELL + GAP) }}
+                style={{ left: month.column * (cell + GAP) }}
               >
                 {month.label}
               </span>
@@ -156,10 +177,10 @@ export function Heatmap({ heatmap }: { heatmap: readonly DayImpact[] }) {
           <div
             aria-hidden="true"
             className="grid type-tick text-ink-3"
-            style={{ gridTemplateRows: `repeat(7, ${CELL}px)`, rowGap: GAP }}
+            style={{ gridTemplateRows: `repeat(7, ${cell}px)`, rowGap: GAP }}
           >
             {DAY_LABELS.map((label, index) => (
-              <span key={`${label}-${index}`} className="leading-[14px]">
+              <span key={`${label}-${index}`} style={{ lineHeight: `${cell}px` }}>
                 {label}
               </span>
             ))}
@@ -167,8 +188,8 @@ export function Heatmap({ heatmap }: { heatmap: readonly DayImpact[] }) {
           <div
             className="grid grid-flow-col"
             style={{
-              gridTemplateRows: `repeat(7, ${CELL}px)`,
-              gridAutoColumns: CELL,
+              gridTemplateRows: `repeat(7, ${cell}px)`,
+              gridAutoColumns: cell,
               gap: GAP,
             }}
           >
