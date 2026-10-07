@@ -17,6 +17,17 @@ function useWayHome(): { href: string; label: string } {
 }
 
 /**
+ * What a visitor without a tree sees on the island: a grown, lived-in grove rather than
+ * the bare seed mound of an unplanted one.
+ */
+const VISITOR_WORLD = {
+  growth: 0.56,
+  vitality: 1,
+  ageDays: 30,
+  props: ['flowers', 'mushrooms', 'pond', 'bench', 'lantern', 'birdhouse', 'butterflies'],
+} as const;
+
+/**
  * The 404. It never redirects: a mistyped address says so plainly and offers one way back. It
  * brings its own small frame (a logo bar and the two credibility links) because an unknown path
  * belongs to neither the app shell nor the public one.
@@ -24,6 +35,9 @@ function useWayHome(): { href: string; label: string } {
 export default function NotFoundPage() {
   const home = useWayHome();
   const tree = useTreeStatus();
+  const hydrated = useGameHydrated();
+  const onboarded = useIsOnboarded();
+  const planted = hydrated && onboarded;
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -48,8 +62,9 @@ export default function NotFoundPage() {
         <div className="mx-auto grid w-full max-w-[1100px] items-center gap-6 lg:grid-cols-2 lg:gap-12">
           <WorldStage
             mode="companion"
-            label={tree.sceneLabel}
-            className="mx-auto h-60 w-full max-w-[22rem] lg:h-[26rem] lg:max-w-none"
+            preview={planted ? undefined : VISITOR_WORLD}
+            label={planted ? tree.sceneLabel : 'A small floating island with a young oak tree.'}
+            className="mx-auto h-64 w-full max-w-[22rem] lg:h-[26rem] lg:max-w-none"
           />
           <div className="grid justify-items-center gap-4 text-center lg:justify-items-start lg:text-left">
             <p className="type-slug text-ink-3">ERROR 404</p>
