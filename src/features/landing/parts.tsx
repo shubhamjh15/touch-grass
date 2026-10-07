@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { Fragment, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/cn';
@@ -166,6 +165,9 @@ const HALF = 33;
  * The log moment's flying sticker (bible 7.4): it peels off its slot, is carried to the
  * tree on an arc and pressed on. Purely decorative; the page does the same thing without it
  * under reduced motion.
+ *
+ * One keyframe animation run by the browser itself: this is the only moving thing the landing
+ * page would otherwise need an animation library for.
  */
 export function StickerFlight({
   flight,
@@ -177,6 +179,7 @@ export function StickerFlight({
   onEnd: (key: number) => void;
 }) {
   const { key, from, to, action } = flight;
+  const node = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => onLand(key), FLIGHT_LAND_MS);
@@ -194,21 +197,46 @@ export function StickerFlight({
   const rotate = [0, ...path.xs.map((_, index) => -8 + (14 * index) / SAMPLES), 6];
   const opacity = [1, ...path.xs.map(() => 1), 0];
 
+  const frames = times.map((offset, index) => ({
+    offset,
+    transform: `translate(${x[index]}px, ${y[index]}px) scale(${scale[index]}) rotate(${rotate[index]}deg)`,
+    opacity: opacity[index],
+  }));
+  // The flight is fixed when it starts: a re-render must not restart it.
+  const plan = useRef(frames);
+
+  useEffect(() => {
+    const element = node.current;
+    const finish = () => {
+      // The timer normally lands it first; this covers an animation that was cut short.
+      onLand(key);
+      onEnd(key);
+    };
+    if (!element || typeof element.animate !== 'function') {
+      finish();
+      return undefined;
+    }
+    const animation = element.animate(plan.current, {
+      duration: TOTAL_MS,
+      easing: 'linear',
+      fill: 'forwards',
+    });
+    animation.addEventListener('finish', finish);
+    return () => {
+      animation.removeEventListener('finish', finish);
+      animation.cancel();
+    };
+  }, [key, onLand, onEnd]);
+
   return createPortal(
-    <motion.div
+    <div
+      ref={node}
       aria-hidden="true"
       className="pointer-events-none fixed top-0 left-0 z-(--z-fx)"
-      initial={{ x: x[0], y: y[0], scale: 1, rotate: 0, opacity: 1 }}
-      animate={{ x, y, scale, rotate, opacity }}
-      transition={{ duration: TOTAL_MS / 1000, times, ease: 'linear' }}
-      onAnimationComplete={() => {
-        // The timer normally lands it first; this covers an animation that was cut short.
-        onLand(key);
-        onEnd(key);
-      }}
+      style={{ transform: frames[0]?.transform }}
     >
       <Sticker category={action.category} size={66} rotate={0} />
-    </motion.div>,
+    </div>,
     document.body,
   );
 }
