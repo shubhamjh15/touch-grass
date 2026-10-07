@@ -93,6 +93,33 @@ describe('Modal', () => {
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
+  it('hands focus back to the opener even when a field in the dialog took focus first', async () => {
+    mockDesktop();
+    const user = userEvent.setup();
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>
+            Say it
+          </button>
+          <Modal open={open} onOpenChange={setOpen} title="Say it">
+            <textarea aria-label="Words" ref={(node) => node?.focus()} />
+          </Modal>
+        </>
+      );
+    }
+    render(<Harness />);
+    const trigger = screen.getByRole('button', { name: 'Say it' });
+    await user.click(trigger);
+    expect(await screen.findByRole('textbox', { name: 'Words' })).toHaveFocus();
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
   it('closes from its close button', async () => {
     mockDesktop();
     const user = userEvent.setup();
