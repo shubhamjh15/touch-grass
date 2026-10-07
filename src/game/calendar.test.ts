@@ -4,6 +4,7 @@ import {
   activeDaysIn,
   effectiveDay,
   isClockSkewed,
+  isClockSuspect,
   normalizeRestDays,
   restDaysEffectiveFrom,
   restDaysOn,
@@ -127,7 +128,8 @@ describe('settling days', () => {
 
   it('settles a long absence in one go and is idempotent within a day', () => {
     const session = plantedSession(noon(0));
-    session.tick(noon(400));
+    // Coming back and doing something: the whole absence is closed at once.
+    session.settle(noon(400));
     const snapshot = session.state;
     expect(Object.values(snapshot.marks).filter((mark) => mark === 'missed')).toHaveLength(399);
     expect(snapshot.tree.missed).toBe(399);
@@ -324,6 +326,148 @@ describe('clock guards', () => {
     expect(effectiveDay(session.state, back)).toBe(day(10));
     session.tick(noon(11));
     expect(session.state.clock.today).toBe(day(11));
+  });
+
+  it('does not believe a clock that jumped far ahead until someone acts', () => {
+    const session = plantedSession(noon(0));
+    for (let offset = 1; offset <= 7; offset += 1) session.at(noon(offset), water);
+    const before = session.state;
+    const bogus = localTime('2026-12-01', 9);
+
+    expect(isClockSuspect(before, bogus)).toBe(true);
+    session.tick(bogus);
+    // Nothing closed, nothing rested, nothing dormant, and no event recorded at that time.
+    expect(session.state).toBe(before);
+    expect(session.last).toEqual([]);
+    expect(before.streak.current).toBe(8);
+    expect(before.tree).toMatchObject({ vitality: 'thriving', missed: 0 });
+
+    // The clock is put right: the next day is an ordinary day.
+    expect(isClockSkewed(session.state, noon(8))).toBe(false);
+    expect(session.at(noon(8), water)).toBe(true);
+    const result = session.at(noon(8) + 60_000, (ctx) =>
+      logAction(ctx, { actionId: 'plant-based-meal', qty: 1 }),
+    );
+    expect(result.ok && result.log.day).toBe(day(8));
+    expect(session.state.streak.current).toBe(9);
+    expect(session.state.clock.today).toBe(day(8));
+    expect(Object.values(session.state.marks)).not.toContain('missed');
+    expect(checkInvariants(session.state)).toEqual([]);
+  });
+
+  it('closes a long absence once a real action confirms the day', () => {
+    const session = plantedSession(noon(0));
+    session.at(noon(1), water);
+    session.tick(noon(60));
+    expect(session.state.streak.current).toBe(2);
+    expect(session.state.tree.missed).toBe(0);
+
+    expect(session.at(noon(60), water)).toBe(true);
+    expect(session.state.clock.today).toBe(day(60));
+    expect(session.state.streak.current).toBe(1);
+    expect(session.state.days[day(60)]?.returnedFrom).toBe('dormant');
+    expect(session.state.tree).toMatchObject({ vitality: 'waking', missed: 0, rings: 3 });
+    expect(session.eventsOf('day-rolled')[0]).toMatchObject({ from: day(1), to: day(60) });
+    expect(checkInvariants(session.state)).toEqual([]);
+  });
+
+  it('still settles an ordinary absence on a passive tick, without counting it as an event', () => {
+    const session = plantedSession(noon(0));
+    session.tick(noon(12));
+    expect(session.state.clock.today).toBe(day(12));
+    expect(session.state.tree.vitality).toBe('dormant');
+    expect(session.state.clock.lastEventTs).toBe(noon(0));
+  });
+
+  it('goes back to the real day when a clock that only ticked ahead is corrected', () => {
+    const session = plantedSession(noon(0));
+    for (let offset = 1; offset <= 4; offset += 1) session.at(noon(offset), water);
+    // The clock reads twelve days ahead while the app is merely open.
+    session.tick(noon(16));
+    expect(session.state.clock.today).toBe(day(16));
+    expect(session.state.rain.bank).toBe(1);
+    expect(session.state.tree).toMatchObject({ vitality: 'dormant', missed: 11 });
+
+    // Corrected. A passive tick changes nothing; the first action lands on the real day.
+    const ahead = session.state;
+    expect(isClockSkewed(ahead, noon(5))).toBe(false);
+    session.tick(noon(5));
+    expect(session.state).toBe(ahead);
+
+    expect(session.at(noon(5), water)).toBe(true);
+    const result = session.at(noon(5) + 60_000, (ctx) =>
+      logAction(ctx, { actionId: 'plant-based-meal', qty: 1 }),
+    );
+    expect(result.ok && result.log.day).toBe(day(5));
+    const { state } = session;
+    expect(state.clock.today).toBe(day(5));
+    expect(state.clock.lastEventTs).toBe(noon(5) + 60_000);
+    expect(state.days[day(5)]).toBeDefined();
+    expect(Object.keys(state.marks).filter((key) => key > day(5))).toEqual([]);
+    expect(state.tree).toMatchObject({ vitality: 'thriving', missed: 0, rings: 6 });
+    expect(state.quests.daily?.key).toBe(day(5));
+    expect(checkInvariants(state)).toEqual([]);
+
+    // No day is earned twice, and the days in between settle honestly as they pass.
+    expect(session.at(noon(5) + 120_000, water)).toBe(false);
+    session.at(noon(6), water);
+    expect(session.state.streak.current).toBe(state.streak.current + 1);
+    session.tick(noon(9));
+    expect(session.state.marks[day(7)]).toBeDefined();
+    expect(checkInvariants(session.state)).toEqual([]);
+  });
+
+  it('gives back the rain a bogus clock spent', () => {
+    const session = plantedSession(noon(0));
+    session.at(noon(1), water);
+    // One day ahead uses the cloud; three more are missed with the bank empty.
+    session.tick(localTime(day(3), 0, 1));
+    session.tick(localTime(day(6), 0, 1));
+    const spent = session.state;
+    expect(spent.marks[day(2)]).toBe('rain');
+    expect(spent.rain.bank).toBe(0);
+    expect(spent.tree.missed).toBe(3);
+    session.at(noon(2), water);
+    expect(session.state.clock.today).toBe(day(2));
+    expect(session.state.rain.bank).toBe(1);
+    expect(session.state.streak.current).toBe(1);
+    expect(Object.values(session.state.marks)).not.toContain('rain');
+    expect(Object.values(session.state.marks)).not.toContain('missed');
+    expect(checkInvariants(session.state)).toEqual([]);
+  });
+
+  it('keeps the settled day when something was really done on the later day', () => {
+    const session = plantedSession(noon(0));
+    // A real check-in under a clock ten days ahead, then the clock is corrected.
+    session.at(noon(10), water);
+    const back = noon(1);
+    expect(isClockSkewed(session.state, back)).toBe(true);
+    expect(session.at(back, water)).toBe(false);
+    const result = session.at(back + 60_000, (ctx) =>
+      logAction(ctx, { actionId: 'plant-based-meal', qty: 1 }),
+    );
+    // Logging is never refused; the ring that was earned is not earned again.
+    expect(result.ok && result.log.day).toBe(day(10));
+    expect(session.state.clock.today).toBe(day(10));
+    expect(session.state.tree.rings).toBe(2);
+    expect(checkInvariants(session.state)).toEqual([]);
+  });
+
+  it('plants on the real day when the clock was corrected during onboarding', () => {
+    const session = new GameSession(createInitialState(noon(40)));
+    session.tick(noon(40));
+    const planted = plantedSession(noon(40));
+    expect(planted.state.profile.plantedDay).toBe(day(40));
+
+    const fresh = new GameSession(createInitialState(noon(40)));
+    fresh.at(noon(40), (ctx) => {
+      ctx.s.onboarding.step = 1;
+    });
+    fresh.at(noon(2), (ctx) => {
+      ctx.s.onboarding.step = 2;
+    });
+    expect(fresh.state.clock.today).toBe(day(2));
+    expect(isClockSkewed(fresh.state, noon(2))).toBe(false);
   });
 });
 

@@ -37,6 +37,7 @@ import {
   activeDaysIn,
   effectiveDay,
   isClockSkewed,
+  isClockSuspect,
   restDaysOn,
   weekStrip,
   type WeekStripDay,
@@ -1221,15 +1222,18 @@ export interface ClockStatus {
   today: DayKey;
   /** The device clock was set back: "Your clock looks off. Today will catch up." */
   skewed: boolean;
+  /** The clock jumped weeks ahead: nothing is closed until the next action confirms the day. */
+  unconfirmed: boolean;
   /** The next local midnight, as epoch milliseconds. */
   nextMidnight: number;
 }
 
 export const selectClock: GameSelector<ClockStatus> = createGameSelector(
-  (game, now) => [effectiveDay(game, now), isClockSkewed(game, now)],
+  (game, now) => [effectiveDay(game, now), isClockSkewed(game, now), isClockSuspect(game, now)],
   (game, now) => ({
     today: effectiveDay(game, now),
     skewed: isClockSkewed(game, now),
+    unconfirmed: isClockSuspect(game, now),
     nextMidnight: now + msUntilTomorrow(now),
   }),
 );

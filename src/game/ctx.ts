@@ -18,6 +18,11 @@ export interface EngineOptions {
   quests?: boolean;
   /** `false` queues no one-time notices (legacy replay: one summary instead of many messages). */
   notices?: boolean;
+  /**
+   * `true` when nobody did anything: app open, resume, the midnight timer. A passive
+   * transaction never believes a clock that jumped far ahead and never counts as an event.
+   */
+  passive?: boolean;
 }
 
 export interface Ctx {

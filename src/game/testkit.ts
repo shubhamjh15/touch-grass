@@ -41,8 +41,16 @@ export class GameSession {
     return outcome.result;
   }
 
-  /** Settles the calendar at `now` without doing anything else. */
+  /** What the app does on open, on resume and at midnight: a passive tick at `now`. */
   tick(now: number): void {
+    const outcome = transact(this.state, now, () => undefined, { ...this.options, passive: true });
+    this.state = outcome.state;
+    this.last = outcome.events;
+    this.all.push(...outcome.events);
+  }
+
+  /** Settles the calendar at `now` as an action would, however far the clock moved. */
+  settle(now: number): void {
     this.at(now, () => undefined);
   }
 

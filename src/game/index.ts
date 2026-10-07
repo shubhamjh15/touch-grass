@@ -238,6 +238,7 @@ export {
 export {
   effectiveDay,
   isClockSkewed,
+  isClockSuspect,
   weekStrip,
   markLabel,
   activeDaysIn,

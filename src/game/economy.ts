@@ -96,6 +96,13 @@ export const PACE_MIN_ACTIVE_DAYS = 7;
 export const BREAK_AWAY_SHARE = 0.7;
 export const BREAK_MIN_GAP_MIN = 30;
 export const FUTURE_GUARD_MS = 5 * 60 * 1000;
+/**
+ * A clock that reads more than this many days past the last settled day is not believed
+ * on its own: the calendar waits for a real action before it closes that many days.
+ */
+export const SUSPECT_JUMP_DAYS = 21;
+/** No trip moves the local date back further than this; anything more is a corrected clock. */
+export const BACKWARD_TOLERANCE_DAYS = 2;
 
 // ── Limits the spec states in prose ─────────────────────────────────────────
 /** An identical log inside this window is a double tap and is ignored. */

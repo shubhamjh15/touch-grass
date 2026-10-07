@@ -321,14 +321,14 @@ function createActions(
     markRecapSeen: (week: string) => run((ctx) => markRecapSeen(ctx, week)),
 
     // ── Clock ────────────────────────────────────────────────────────────────
-    /** Settles the calendar: call on app open, on resume and at midnight. */
-    tick(now?: number): void {
-      if (now === undefined) {
-        run(() => undefined);
-        return;
-      }
+    /**
+     * Settles the calendar: call on app open, on resume and at midnight. Nobody acted, so
+     * a clock that jumped weeks ahead closes nothing until a real action confirms the day.
+     * `trusted` settles however far the clock moved (QA time travel, a stand-in world).
+     */
+    tick(now: number = clock.now(), trusted = false): void {
       const before = store.getState();
-      const outcome = transact(before.game, now, () => undefined);
+      const outcome = transact(before.game, now, () => undefined, { passive: !trusted });
       if (outcome.state !== before.game || before.runtime.now !== now) {
         store.setState({ game: outcome.state, runtime: { ...before.runtime, now } });
       }
@@ -595,7 +595,8 @@ export function createGame(options: CreateGameOptions = {}): Game {
       game: state,
       runtime: { ...current.runtime, saveFailed, recovery, legacy: null, sandbox: true },
     });
-    actions.tick();
+    // A stand-in world is brought to today whatever day it was grown on.
+    actions.tick(undefined, true);
   }
 
   function leaveSandbox(): void {

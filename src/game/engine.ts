@@ -220,6 +220,8 @@ export function transact<T>(
 
   const sealed = sealState(ctx);
   if (sealed === state) return { state, events: ctx.events, result };
+  // Nobody did anything in a passive tick, so it is not the newest event.
+  if (options.passive) return { state: sealed, events: ctx.events, result };
   const lastEventTs = Math.max(sealed.clock.lastEventTs, now);
   const next =
     lastEventTs === sealed.clock.lastEventTs
@@ -228,9 +230,28 @@ export function transact<T>(
   return { state: next, events: ctx.events, result };
 }
 
-/** Settles the calendar and nothing else: app open, resume and the midnight timer. */
-export function tick(state: GameState, now: number): TransactResult<void> {
-  return transact(state, now, () => undefined);
+/**
+ * Settles the calendar and nothing else: app open, resume and the midnight timer. Passive:
+ * a clock that jumped far ahead changes nothing until a real action confirms the day.
+ */
+export function tick(
+  state: GameState,
+  now: number,
+  options: EngineOptions = {},
+): TransactResult<void> {
+  return transact(state, now, () => undefined, { ...options, passive: true });
+}
+
+/**
+ * Settles the calendar as an action would, however far the clock moved: an import, QA
+ * time travel, the fixture generator. Never called on a timer.
+ */
+export function settle(
+  state: GameState,
+  now: number,
+  options: EngineOptions = {},
+): TransactResult<void> {
+  return transact(state, now, () => undefined, { ...options, passive: false });
 }
 
 // ── Operations ──────────────────────────────────────────────────────────────

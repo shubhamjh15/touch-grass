@@ -8,6 +8,7 @@ import {
   addDays,
   dayKey,
   dayRange,
+  diffDays,
   parseDayKey,
   startOfWeek,
   weekKey,
@@ -15,6 +16,7 @@ import {
 } from '@/lib/dates';
 import { grantGp, grantXp, queueNotice, writeActivity, type Ctx } from './ctx';
 import {
+  BACKWARD_TOLERANCE_DAYS,
   DORMANT_AFTER_MISSED,
   FUTURE_GUARD_MS,
   GP_CHECK_IN,
@@ -27,6 +29,7 @@ import {
   REST_DAYS_MAX,
   STREAK_MILESTONES,
   STREAK_REST_MESSAGE_MIN,
+  SUSPECT_JUMP_DAYS,
   XP_CEREMONY,
   XP_CHECK_IN,
   XP_RING_CLOSED,
@@ -44,6 +47,65 @@ export function weekdayOf(day: DayKey): number {
 /** True when the newest stored event lies in the future: the device clock was set back. */
 export function isClockSkewed(state: Pick<GameState, 'clock'>, now: number): boolean {
   return state.clock.lastEventTs > now + FUTURE_GUARD_MS;
+}
+
+/**
+ * True when the clock reads so far past the last settled day that it is not believed on
+ * its own. Nothing is closed, rested or made dormant until a real action confirms the day;
+ * if the clock is corrected first, nothing ever happened.
+ */
+export function isClockSuspect(
+  state: Pick<GameState, 'clock' | 'onboarding'>,
+  now: number,
+): boolean {
+  if (!isOnboarded(state)) return false;
+  return diffDays(state.clock.today, dayKey(now)) > SUSPECT_JUMP_DAYS;
+}
+
+/**
+ * A clock that was put right. When it reads well before the stored day, further than any
+ * trip can move a date, and nothing was done on or after the days in between, the stored
+ * future came from the clock alone: the calendar goes back to the device's day, so the
+ * next log lands on the real day and nobody waits weeks for "today" to catch up. Days
+ * closed on the strength of that clock are re-opened; rings and logs are never touched.
+ * Returns true when the calendar moved back.
+ */
+function rewindToCorrectedClock(ctx: Ctx, today: DayKey): boolean {
+  const s = ctx.s;
+  if (ctx.options.passive || today >= s.clock.today) return false;
+  if (!isOnboarded(s)) {
+    s.clock.today = today;
+    s.clock.lastEventTs = Math.min(s.clock.lastEventTs, ctx.now);
+    return true;
+  }
+  if (diffDays(today, s.clock.today) <= BACKWARD_TOLERANCE_DAYS) return false;
+  if (today < s.profile.plantedDay) return false;
+  // Anything recorded after the device's day means the two clocks cannot be told apart.
+  for (const day of Object.keys(s.days)) if (day > today) return false;
+  if (s.logs.some((log) => log.day > today)) return false;
+
+  const marks: Record<DayKey, DayMark> = {};
+  let missed = 0;
+  let rain = 0;
+  for (const [day, mark] of Object.entries(s.marks)) {
+    if (day >= today && !s.days[day]) {
+      if (mark === 'missed') missed += 1;
+      if (mark === 'rain') rain += 1;
+    } else {
+      marks[day] = mark;
+    }
+  }
+  s.marks = marks;
+  if (rain > 0) s.rain.bank = Math.min(RAIN_CAP, s.rain.bank + rain);
+  if (missed > 0) {
+    s.tree.missed = Math.max(0, s.tree.missed - missed);
+    s.tree.vitality = vitalityAfterMissed(s.tree.missed);
+  }
+  const from = s.clock.today;
+  s.clock.today = today;
+  s.clock.lastEventTs = Math.min(s.clock.lastEventTs, ctx.now);
+  ctx.events.push({ type: 'day-rolled', from, to: today, rain: 0, rest: 0, missed: 0 });
+  return true;
 }
 
 /**
@@ -92,12 +154,21 @@ function previousActiveMark(state: GameState, day: DayKey): DayMark | undefined 
  */
 export function settleDays(ctx: Ctx): void {
   const s = ctx.s;
+  const today = dayKey(ctx.now);
+  if (rewindToCorrectedClock(ctx, today)) {
+    ctx.today = today;
+    return;
+  }
   if (isClockSkewed(s, ctx.now)) {
     ctx.today = s.clock.today;
     return;
   }
-  const today = dayKey(ctx.now);
   if (today <= s.clock.today) {
+    ctx.today = s.clock.today;
+    return;
+  }
+  // A passive tick does not believe a clock that jumped far ahead: see isClockSuspect.
+  if (ctx.options.passive && isClockSuspect(s, ctx.now)) {
     ctx.today = s.clock.today;
     return;
   }

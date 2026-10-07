@@ -99,7 +99,7 @@ export function createGameDevTools(target: Game = defaultGame): GameDevTools {
     travel(days, hours = 0) {
       offset += Math.max(0, days) * DAY + Math.max(0, hours) * HOUR;
       applyOffset();
-      actions.tick();
+      actions.tick(undefined, true);
       return stamp();
     },
     travelTo(localIso) {
@@ -107,7 +107,7 @@ export function createGameDevTools(target: Game = defaultGame): GameDevTools {
       if (!Number.isFinite(goal) || goal < target.now()) return `${stamp()} (forward only)`;
       offset = goal - Date.now();
       applyOffset();
-      actions.tick();
+      actions.tick(undefined, true);
       return stamp();
     },
     realTime() {
