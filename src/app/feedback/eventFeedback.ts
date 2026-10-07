@@ -64,9 +64,12 @@ export interface FeedbackContext {
 /** The log moment's hard ceiling: follow-up rewards start after it (bible 7.4). */
 export const LOG_MOMENT_MS = 1200;
 
-/** XP that has no toast of its own: it is reported in one line. */
+/**
+ * XP that has no toast of its own: it is reported in one line. The planting's own XP is not
+ * here: the ceremony card prints "+25 XP · Ring 1", and a toast adding the watering to it read
+ * "+35 XP" beside that card.
+ */
 const PLAIN_XP_LABEL: Partial<Record<XpReason, string>> = {
-  ceremony: 'Ring 1 is yours',
   'check-in': 'Watered',
   ring: 'Day ring closed',
   epic: 'Epic finished',
