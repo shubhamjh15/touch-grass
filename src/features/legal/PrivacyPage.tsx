@@ -17,7 +17,7 @@ import { Card, Prose, Tag, TextLink, Ticket } from '@/ui';
 import { Blocks } from './components/Blocks';
 import { Fold } from './components/Fold';
 import { ListCard } from './components/ListCard';
-import { YourData } from './components/YourData';
+import { YourDataSlot } from './components/YourDataSlot';
 import { LEAVES_NAMES, PRIVACY_COPY, STORED_NAMES } from './copy';
 
 /** Running text stops at a comfortable width instead of stretching across the page. */
@@ -92,7 +92,7 @@ export default function PrivacyPage() {
           lead={shortVersion.summary}
           className="scroll-mt-24"
         >
-          <YourData />
+          <YourDataSlot />
           <Card tone="paper" className={PROSE_CARD}>
             <Blocks blocks={shortVersion.blocks} />
           </Card>
