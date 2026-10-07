@@ -1,11 +1,11 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useTreeStatus } from '@/game';
 import { cn } from '@/lib/cn';
 import { useBreakpoint } from '@/lib/hooks';
 import { Marquee, type MarqueeProps } from '@/ui';
 import { WorldStage } from '@/world';
+import { useBootSceneLabel } from '../boot/bootStore';
 
 export interface PageHeaderProps {
   /** Mono line above the title: "TUESDAY 06 OCTOBER", "42 ACTIONS". */
@@ -36,14 +36,16 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   const desktop = useBreakpoint('lg');
-  const tree = useTreeStatus();
+  // From the boot store, not the game: the public reading pages use this header too, and must not
+  // load the rules engine for one label. Without a tree of their own they describe the island.
+  const sceneLabel = useBootSceneLabel() ?? 'A small floating island with a young tree.';
 
   return (
     <header className={cn('grid gap-3 pb-5 lg:pb-7', className)}>
       <div className="flex items-start justify-between gap-3">
         <Marquee slug={slug} title={title} lead={lead} fill={fill} className="min-w-0 flex-1" />
         {grove && !desktop ? (
-          <WorldStage mode="companion" label={tree.sceneLabel} className="size-28 shrink-0" />
+          <WorldStage mode="companion" label={sceneLabel} className="size-28 shrink-0" />
         ) : null}
       </div>
       {children}
