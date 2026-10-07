@@ -15,8 +15,7 @@ import {
   type LogEntry,
 } from '@/game';
 import { BRAND } from '@/lib/brand';
-import { parseDayKey } from '@/lib/dates';
-import { formatCo2Estimate, formatNumber, formatTime } from '@/lib/format';
+import { formatCo2Estimate, formatNumber, formatStampDate, formatTime } from '@/lib/format';
 import { play } from '@/lib/sfx';
 import {
   Approx,
@@ -38,13 +37,6 @@ import { logEstimateSource, totalEstimateSource } from '../model/estimate';
 import { tileFor } from '../model/tiles';
 import { formatQty, type UnitSystem } from '../model/units';
 
-const stampFormat = new Intl.DateTimeFormat('en-US', {
-  weekday: 'short',
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-});
-
 /** What a row is called: the sticker's caption for a catalogue action, the person's words otherwise. */
 function rowTitle(log: LogEntry): string {
   if (!ACTION_BY_ID.has(log.actionId)) return log.title;
@@ -53,12 +45,12 @@ function rowTitle(log: LogEntry): string {
   return tile && tile.kind === 'single' ? tile.label : log.title;
 }
 
-function rowMeta(log: LogEntry, system: UnitSystem): string {
+function rowMeta(log: LogEntry, system: UnitSystem): string[] {
   const parts = [formatTime(log.ts), formatQty(log.qty, log.unit, system)];
   const kind = COPY.quick.kind[log.kind];
   if (kind) parts.push(kind);
   parts.push(log.xp > 0 ? `+${formatNumber(log.xp)} XP` : COPY.ledger.kgOnly);
-  return parts.join(' · ');
+  return parts;
 }
 
 /**
@@ -143,7 +135,18 @@ function LogRow({
             </span>
           )}
         </p>
-        <p className="mt-1 type-slug leading-[1.35] text-ink-3">{rowMeta(log, system)}</p>
+        <p className="mt-1 type-slug leading-[1.35] text-ink-3">
+          {/* Each piece stays whole and the dot stays with the piece after it: no dot is left hanging at a line end. */}
+          {rowMeta(log, system).map((part, index) => (
+            <span key={part}>
+              {index > 0 ? ' ' : null}
+              <span className="whitespace-nowrap">
+                {index > 0 ? '· ' : null}
+                {part}
+              </span>
+            </span>
+          ))}
+        </p>
       </div>
       {action}
     </li>
@@ -213,7 +216,7 @@ export function TodayLedger() {
           <div>
             <Receipt
               title={`${BRAND.name} · today`}
-              meta={stampFormat.format(parseDayKey(today.day))}
+              meta={formatStampDate(today.day)}
               rows={rows}
               total={{
                 label: COPY.ledger.receiptTotal,

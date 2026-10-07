@@ -78,7 +78,7 @@ function Cell({ state, index, onOpen, onNotForMe }: CellProps) {
 
   return (
     <li
-      className="flex animate-stick justify-center border-r-2 border-b-2 border-dashed border-ink-4 px-0.5 pt-3.5 pb-3 select-none [-webkit-touch-callout:none]"
+      className="flex animate-scrim-in justify-center border-r-2 border-b-2 border-dashed border-ink-4 px-0.5 pt-3.5 pb-3 select-none [-webkit-touch-callout:none]"
       style={{ animationDelay: `${enterDelay(index) * 1000}ms` } as CSSProperties}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
