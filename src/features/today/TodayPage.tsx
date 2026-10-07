@@ -15,6 +15,7 @@ import {
   useRecap,
 } from '@/game';
 import { cn } from '@/lib/cn';
+import { formatLongDate } from '@/lib/format';
 import { ErrorState, Panel, Skeleton, TapeNote } from '@/ui';
 import { CoachMarks } from './components/CoachMarks';
 import { DayDock } from './components/DayDock';
@@ -100,13 +101,14 @@ function Notices() {
   const recap = useRecap();
 
   const storageTrouble = runtime.saveFailed || runtime.storage === 'memory';
-  if (!clock.skewed && !storageTrouble && notices.length === 0 && !recap.pending) return null;
+  const clockOff = clock.skewed || clock.heldDay !== null;
+  if (!clockOff && !storageTrouble && notices.length === 0 && !recap.pending) return null;
 
   return (
     <div className="grid gap-4">
-      {clock.skewed ? (
+      {clockOff ? (
         <TapeNote tone="blue" tape="yellow" rotate={0} role="status" className="mx-1 mt-2">
-          {COPY.clockSkew}
+          {clock.heldDay ? COPY.clockHeld(formatLongDate(clock.heldDay)) : COPY.clockSkew}
         </TapeNote>
       ) : null}
       {runtime.saveFailed ? (

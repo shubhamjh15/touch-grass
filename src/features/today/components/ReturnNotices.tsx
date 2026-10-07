@@ -16,6 +16,7 @@ const TONE: Record<NoticeView['kind'], 'paper' | 'blue' | 'pink'> = {
   'challenge-ended': 'pink',
   'legacy-imported': 'paper',
   'woke-up': 'paper',
+  'clock-corrected': 'blue',
 };
 
 const FOLLOW_UP: Partial<Record<NoticeView['kind'], { label: string; href: string }>> = {

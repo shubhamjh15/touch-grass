@@ -25,6 +25,8 @@ export const COPY = {
   factSlug: 'Daily fact',
   factMore: 'Tell me more',
   clockSkew: 'Your clock looks off. Today will catch up.',
+  clockHeld: (day: string) =>
+    `Your device's date went back, so the calendar is staying on ${day} until your clock reaches it. New logs join that day and nothing is lost.`,
   memoryOnly: "Private window: progress won't be saved.",
   saveFailedTitle: 'This device is out of room',
   saveFailedBody:
