@@ -25,8 +25,10 @@ test.describe('a reload', () => {
 
   test('keeps the tree, the numbers and the day exactly as they were', async ({ page }) => {
     await visit(page, '/log');
+    // The saved state already holds logs: wait for this one, or the snapshot is taken too early.
+    const logged = (await savedGame(page)).logs.length;
     await stickShower(page);
-    await expect.poll(async () => (await savedGame(page)).logs.length).toBeGreaterThan(0);
+    await expect.poll(async () => (await savedGame(page)).logs.length).toBe(logged + 1);
     const before = await savedGame(page);
     const hud = await readHud(page);
 
