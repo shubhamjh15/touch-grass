@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+// In the product the game's runtime chunk makes this connection; the page itself never imports the game.
+import '@/app/boot/connectGame';
 import { STORAGE_KEYS, game, gameActions, type GameState } from '@/game';
 import NotFoundPage from './NotFoundPage';
 

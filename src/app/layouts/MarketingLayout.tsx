@@ -3,10 +3,10 @@
 import { ArrowRight, Github } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useGameHydrated, useIsOnboarded } from '@/game';
 import { BRAND } from '@/lib/brand';
 import { cn } from '@/lib/cn';
 import { Button, ColorBar, LeafMark, OfflineBanner, TextLink, UiLink } from '@/ui';
+import { useBootHydrated, useBootOnboarded } from '../boot/bootStore';
 import { Main } from '../Main';
 import { Logo } from '../nav/Logo';
 import { ROUTES, routeInfo, type RouteId } from '../routes';
@@ -25,8 +25,8 @@ const FOOTER_LINKS: readonly { label: string; href: string }[] = [
 /** "Plant your tree" for a visitor, "Open the app" for someone who already has one. */
 function useCallToAction(): { label: string; href: string } {
   // The server and the first paint cannot know: they show the visitor's button.
-  const hydrated = useGameHydrated();
-  const onboarded = useIsOnboarded();
+  const hydrated = useBootHydrated();
+  const onboarded = useBootOnboarded();
   return hydrated && onboarded
     ? { label: 'Open the app', href: ROUTES.today }
     : { label: 'Plant your tree', href: ROUTES.start };

@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { useGameEvent, useGameHydrated, useIsOnboarded } from '@/game';
+import { onBootReset, useBootHydrated, useBootOnboarded } from './boot/bootStore';
 import { Splash } from './boot/Splash';
 import { useFontsReady } from './boot/useFontsReady';
 import { decideGuard, readPendingDestination, writePendingDestination } from './guardDecision';
@@ -35,8 +35,9 @@ function BootSplash({ show }: { show: boolean }) {
 export function Guard({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '/';
   const router = useRouter();
-  const hydrated = useGameHydrated();
-  const onboarded = useIsOnboarded();
+  // Both stay false until the game has loaded and read the save (see `boot/bootStore`).
+  const hydrated = useBootHydrated();
+  const onboarded = useBootOnboarded();
   const fontsReady = useFontsReady();
   const info = routeInfo(pathname);
 
@@ -46,7 +47,7 @@ export function Guard({ children }: { children: ReactNode }) {
   if (hydrated && arrival?.path !== pathname) setArrival({ path: pathname, onboarded });
 
   const [justReset, setJustReset] = useState(false);
-  useGameEvent('state-reset', () => setJustReset(true));
+  useEffect(() => onBootReset(() => setJustReset(true)), []);
   if (justReset && info.shell !== 'app') setJustReset(false);
 
   const arrivedOnboarded = arrival?.path === pathname ? arrival.onboarded : onboarded;

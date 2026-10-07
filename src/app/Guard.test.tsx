@@ -1,6 +1,8 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { gameActions, gameEvents, getGameState } from '@/game';
+// In the product the game's runtime chunk makes this connection; the guard itself never imports the game.
+import './boot/connectGame';
 import { Guard } from './Guard';
 import { PENDING_DESTINATION_KEY } from './guardDecision';
 

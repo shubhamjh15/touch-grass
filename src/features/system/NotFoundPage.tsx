@@ -1,16 +1,16 @@
 'use client';
 
 import { ArrowRight, Github } from 'lucide-react';
+import { useBootHydrated, useBootOnboarded, useBootSceneLabel } from '@/app/boot/bootStore';
 import { ROUTES } from '@/app/routes';
-import { useGameHydrated, useIsOnboarded, useTreeStatus } from '@/game';
 import { BRAND } from '@/lib/brand';
 import { Button, LeafMark, Lettering, TextLink, UiLink } from '@/ui';
 import { WorldStage } from '@/world';
 
 /** Where "Back to the grove" goes: the app for someone with a tree, the front door for everyone else. */
 function useWayHome(): { href: string; label: string } {
-  const hydrated = useGameHydrated();
-  const onboarded = useIsOnboarded();
+  const hydrated = useBootHydrated();
+  const onboarded = useBootOnboarded();
   return hydrated && onboarded
     ? { href: ROUTES.today, label: 'Back to the grove' }
     : { href: ROUTES.landing, label: 'Back to the start' };
@@ -34,10 +34,11 @@ const VISITOR_WORLD = {
  */
 export default function NotFoundPage() {
   const home = useWayHome();
-  const tree = useTreeStatus();
-  const hydrated = useGameHydrated();
-  const onboarded = useIsOnboarded();
-  const planted = hydrated && onboarded;
+  // The game arrives after this page has painted; until then it shows the visitor's island.
+  const sceneLabel = useBootSceneLabel();
+  const hydrated = useBootHydrated();
+  const onboarded = useBootOnboarded();
+  const planted = hydrated && onboarded && sceneLabel !== null;
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -63,7 +64,7 @@ export default function NotFoundPage() {
           <WorldStage
             mode="companion"
             preview={planted ? undefined : VISITOR_WORLD}
-            label={planted ? tree.sceneLabel : 'A small floating island with a young oak tree.'}
+            label={planted ? sceneLabel : 'A small floating island with a young oak tree.'}
             className="mx-auto h-64 w-full max-w-[22rem] lg:h-[26rem] lg:max-w-none"
           />
           <div className="grid justify-items-center gap-4 text-center lg:justify-items-start lg:text-left">

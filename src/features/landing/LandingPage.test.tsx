@@ -38,10 +38,11 @@ vi.mock('@/world', async (original) => ({
 }));
 
 // The receipt toast needs the shell's outlet; the page prints the same receipt inline.
-vi.mock('@/ui', async (original) => ({
-  ...(await original<typeof UiModule>()),
-  toast: vi.fn(),
-}));
+// The page prints it through `toastLater`, which fetches the toast library on first use.
+vi.mock('@/ui', async (original) => {
+  const toast = vi.fn();
+  return { ...(await original<typeof UiModule>()), toast, toastLater: toast };
+});
 
 const sticker = (index: number) => {
   const action = DEMO_ACTIONS[index];

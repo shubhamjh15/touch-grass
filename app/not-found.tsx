@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import NotFoundPage from '@/features/system/NotFoundPage';
+import { NotFoundPage } from '@/app/layouts/RootLayout';
 
 export const metadata: Metadata = { title: 'Page not found' };
 

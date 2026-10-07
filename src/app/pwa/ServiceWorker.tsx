@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { toast } from '@/ui';
+import { toastLater } from '@/ui';
 
 const UPDATE_TOAST_ID = 'service-worker-update';
 const UPDATE_CHECK_MS = 60 * 60 * 1000;
@@ -33,7 +33,7 @@ export function ServiceWorker() {
     };
 
     const offerUpdate = (waiting: ServiceWorker) => {
-      toast({
+      toastLater({
         id: UPDATE_TOAST_ID,
         title: 'A new version is ready',
         meta: 'Reload to get it. Your tree and logs stay on this device.',

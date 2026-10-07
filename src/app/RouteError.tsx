@@ -1,8 +1,7 @@
 'use client';
 
-import { exportFileName, gameActions } from '@/game';
 import { useOnlineStatus } from '@/lib/hooks';
-import { ErrorState, TextLink, toast } from '@/ui';
+import { ErrorState, TextLink, toastLater } from '@/ui';
 import { Main } from './Main';
 import { Logo } from './nav/Logo';
 import { ROUTES } from './routes';
@@ -22,26 +21,24 @@ export function isChunkLoadError(error: Error): boolean {
   );
 }
 
-/** Hands the user their data as a file, so an error can never trap it. */
+/**
+ * Hands the user their data as a file, so an error can never trap it. The code that does it
+ * (and with it the game) is fetched on the tap: this boundary is part of every route, and must
+ * not bring the engine to all of them.
+ */
 function exportData(): void {
-  try {
-    const blob = new Blob([gameActions.exportState()], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = exportFileName(Date.now());
-    document.body.append(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast({ title: 'Exported. The file is in your downloads.', tone: 'success' });
-  } catch {
-    toast({
+  const failed = () =>
+    toastLater({
       title: 'The export did not start.',
       meta: 'Try again from Me, under Data.',
       tone: 'danger',
     });
-  }
+  import('./exportSave')
+    .then(({ downloadSave }) => {
+      downloadSave();
+      toastLater({ title: 'Exported. The file is in your downloads.', tone: 'success' });
+    })
+    .catch(failed);
 }
 
 /**

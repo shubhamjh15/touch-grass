@@ -3,7 +3,7 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useBreakpoint, useReducedMotion } from '@/lib/hooks';
 import { useHydrated } from '@/lib/useHydrated';
-import { Approx, Co2e, Lettering, Marquee, Panel, Segmented, Tag, toast } from '@/ui';
+import { Approx, Co2e, Lettering, Marquee, Panel, Segmented, Tag, toastLater } from '@/ui';
 import { SPECIES, type Species, type WorldSnapshot } from '@/world';
 import { DEMO, SPECIES_LABEL, TICKER, stageLabel } from './copy';
 import { DemoDock, DemoReadout, DragHint } from './demo';
@@ -54,7 +54,7 @@ function readoutInView(): boolean {
 function printReceipt(action: DemoAction) {
   if (readoutInView()) return;
   const estimate = estimateFor(action);
-  toast({
+  toastLater({
     id: RECEIPT_TOAST_ID,
     title: DEMO.stuck,
     category: action.category,

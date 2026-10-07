@@ -1,5 +1,9 @@
 'use client';
 
+// The root layout mounts the game's runtime from a lazy chunk. Inside the app it is needed for the
+// first frame, so the app's pages ship it with their own code instead of fetching it afterwards.
+import '../runtime/GameShell';
+
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useIsSandbox } from '@/game';
