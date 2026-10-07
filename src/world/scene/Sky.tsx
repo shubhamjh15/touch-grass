@@ -7,7 +7,7 @@ import { mulberry32 } from '@/lib/rng';
 import { QUALITY } from '../config';
 import { useWorldStore } from '../store';
 import { puffGeometry } from './geometry';
-import { live, setColor } from './live';
+import { live, setColor, shared } from './live';
 import { toyMaterial } from './materials';
 import { useDispose } from './sceneStore';
 
@@ -34,6 +34,7 @@ function skyMaterial(): THREE.ShaderMaterial {
       uHaze: { value: new THREE.Color() },
       uGlow: { value: new THREE.Color() },
       uOrb: { value: new THREE.Vector3(0, 1, 0) },
+      uNight: { value: 0 },
     },
     vertexShader: /* glsl */ `
       varying vec3 vDir;
@@ -48,14 +49,27 @@ function skyMaterial(): THREE.ShaderMaterial {
       uniform vec3 uHaze;
       uniform vec3 uGlow;
       uniform vec3 uOrb;
+      uniform float uNight;
       varying vec3 vDir;
       void main() {
         vec3 dir = normalize(vDir);
         float up = dir.y;
         // The camera looks a little down, so most of the frame is near the horizon: the
         // gradient is spent there, and the zenith colour is reached well below straight up.
-        vec3 colour = mix(uHorizon, uZenith, smoothstep(-0.04, 0.42, up));
-        colour = mix(colour, uHaze, smoothstep(0.02, -0.3, up));
+        // At night the whole of it is brought inside the frame: deep indigo at the top
+        // edge, a luminous band behind the island, deeper again in the haze under it.
+        vec3 colour = mix(
+          uHorizon,
+          uZenith,
+          smoothstep(mix(-0.04, -0.2, uNight), mix(0.42, 0.05, uNight), up)
+        );
+        colour = mix(
+          colour,
+          uHaze,
+          smoothstep(mix(0.02, -0.2, uNight), mix(-0.3, -0.52, uNight), up)
+        );
+        float band = up + 0.2;
+        colour += uGlow * exp(-band * band * 70.0) * 0.2 * uNight;
         float near = max(dot(dir, uOrb), 0.0);
         colour += uGlow * (pow(near, 5.0) * 0.28 + pow(near, 48.0) * 0.5);
         gl_FragColor = vec4(colour, 1.0);
@@ -112,24 +126,69 @@ function starGeometry(count: number): THREE.BufferGeometry {
   const random = mulberry32(20261006);
   const positions = new Float32Array(count * 3);
   const colours = new Float32Array(count * 3);
+  const seeds = new Float32Array(count * 2);
   for (let i = 0; i < count; i += 1) {
-    // Even over the upper dome, thinning towards the horizon.
-    const y = 0.06 + random() * 0.94;
+    // The island floats, so there is sky under its horizon too: the band the camera sees
+    // (it looks a little down) is where most of the stars are.
+    const y = -0.34 + random() ** 1.5 * 1.3;
     const angle = random() * Math.PI * 2;
-    const flat = Math.sqrt(1 - y * y);
+    const flat = Math.sqrt(Math.max(0, 1 - y * y));
     positions[i * 3] = Math.cos(angle) * flat * (SKY_RADIUS - 8);
     positions[i * 3 + 1] = y * (SKY_RADIUS - 8);
     positions[i * 3 + 2] = Math.sin(angle) * flat * (SKY_RADIUS - 8);
-    const bright = 0.45 + random() * 0.55;
+    const bright = 0.5 + random() * 0.5;
     const warm = random() < 0.25;
     colours[i * 3] = bright;
     colours[i * 3 + 1] = bright * (warm ? 0.9 : 0.96);
     colours[i * 3 + 2] = bright * (warm ? 0.62 : 1);
+    // A few stars are large; all of them twinkle at their own pace.
+    seeds[i * 2] = 0.55 + random() ** 4 * 1.6;
+    seeds[i * 2 + 1] = random() * 6.283;
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3));
+  geometry.setAttribute('aTint', new THREE.BufferAttribute(colours, 3));
+  geometry.setAttribute('aStar', new THREE.BufferAttribute(seeds, 2));
   return geometry;
+}
+
+/** Stars that glow: a bright core in a soft halo, added to the sky, twinkling slowly. */
+function starsMaterial(): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    depthTest: false,
+    fog: false,
+    uniforms: { uTime: shared.uTime, uShow: { value: 0 }, uSize: { value: 7 } },
+    vertexShader: /* glsl */ `
+      attribute vec3 aTint;
+      attribute vec2 aStar;
+      uniform float uTime;
+      uniform float uShow;
+      uniform float uSize;
+      varying vec3 vColour;
+      void main() {
+        float twinkle = 0.72 + 0.28 * sin(uTime * (0.7 + aStar.x) + aStar.y);
+        // Fainter down in the luminous band, where the sky itself is bright.
+        float low = smoothstep(-0.32, -0.08, normalize(position).y);
+        vColour = aTint * uShow * twinkle * mix(0.35, 1.0, low);
+        gl_PointSize = uSize * aStar.x;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      varying vec3 vColour;
+      void main() {
+        float d = length(gl_PointCoord - 0.5) * 2.0;
+        float core = smoothstep(0.34, 0.0, d);
+        float halo = smoothstep(1.0, 0.0, d);
+        gl_FragColor = vec4(vColour * (core * 1.5 + halo * halo * 0.4), 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }
+    `,
+  });
 }
 
 interface CloudSpec {
@@ -166,20 +225,8 @@ export function Sky({ painted }: { painted: boolean }) {
   const sky = useMemo(() => skyMaterial(), []);
   const plane = useMemo(() => new THREE.PlaneGeometry(1, 1), []);
   const orb = useMemo(() => orbMaterial(), []);
-  const stars = useMemo(() => starGeometry(420), []);
-  const starMaterial = useMemo(
-    () =>
-      new THREE.PointsMaterial({
-        size: 2.2,
-        sizeAttenuation: false,
-        vertexColors: true,
-        transparent: true,
-        depthWrite: false,
-        fog: false,
-        opacity: 0,
-      }),
-    [],
-  );
+  const stars = useMemo(() => starGeometry(900), []);
+  const starMaterial = useMemo(() => starsMaterial(), []);
   const puff = useMemo(() => puffGeometry(2, 9, 0.3), []);
   const cloudMaterial = useMemo(
     () =>
@@ -239,9 +286,10 @@ export function Sky({ painted }: { painted: boolean }) {
       setColor(uniforms.uHaze?.value as THREE.Color, atmosphere.haze);
       setColor(uniforms.uGlow?.value as THREE.Color, atmosphere.glow);
       (uniforms.uOrb?.value as THREE.Vector3).set(...atmosphere.orbDir);
+      (uniforms.uNight as THREE.IUniform<number>).value = atmosphere.night;
       const disc = orbMesh.current;
       if (disc) {
-        const size = atmosphere.moon > 0.5 ? 26 : 30;
+        const size = atmosphere.moon > 0.5 ? 34 : 30;
         disc.position.set(...atmosphere.orbDir).multiplyScalar(SKY_RADIUS - 12);
         disc.quaternion.copy(state.camera.quaternion);
         disc.scale.setScalar(size);
@@ -250,13 +298,16 @@ export function Sky({ painted }: { painted: boolean }) {
         setColor(orbUniforms.uGlow?.value as THREE.Color, atmosphere.glow);
         (orbUniforms.uMoon as THREE.IUniform<number>).value = atmosphere.moon;
       }
-      starMaterial.opacity = atmosphere.night * 0.95;
+      const starUniforms = starMaterial.uniforms as Record<string, THREE.IUniform<number>>;
+      if (starUniforms.uShow) starUniforms.uShow.value = atmosphere.night;
+      // Sized in device pixels, so a star is as large on a dense screen as on a plain one.
+      if (starUniforms.uSize) starUniforms.uSize.value = 5.5 * state.gl.getPixelRatio();
       if (starPoints.current) starPoints.current.visible = atmosphere.night > 0.02;
     }
     // Clouds take the colour of the hour and drift round the island, very slowly.
     setColor(cloudMaterial.color, atmosphere.cloud).multiplyScalar(0.62);
     setColor(cloudMaterial.emissive, atmosphere.cloud);
-    cloudMaterial.emissiveIntensity = 0.58 - 0.3 * atmosphere.night;
+    cloudMaterial.emissiveIntensity = 0.58 - 0.22 * atmosphere.night;
     if (cloudRing.current && !live.reduced) cloudRing.current.rotation.y = live.time * 0.006;
   });
 

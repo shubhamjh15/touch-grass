@@ -1,7 +1,7 @@
 'use client';
 
 import { Sparkles } from '@react-three/drei';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useStore, useThree } from '@react-three/fiber';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { IS_DEV } from '@/lib/env';
 import * as THREE from 'three';
@@ -76,6 +76,7 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
   const camera = useThree((state) => state.camera);
   const scene = useThree((state) => state.scene);
   const advance = useThree((state) => state.advance);
+  const store = useStore();
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -144,6 +145,19 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
     };
     canvas.addEventListener('webglcontextlost', onLost);
     canvas.addEventListener('webglcontextrestored', onRestored);
+
+    // A new size or pixel ratio (the governor stepping the resolution or the tier, a
+    // stage that resizes) reallocates the drawing buffer, which clears it: the browser
+    // would composite that empty canvas until the next frame, a flash of the page behind
+    // it. R3F resizes inside this same store update, before this listener runs, so the
+    // scene is drawn into the new buffer here, in the same task: what reaches the screen
+    // next is a finished frame at the new size, never a blank one.
+    const stopResize = store.subscribe((state, previous) => {
+      if (state.size === previous.size && state.viewport.dpr === previous.viewport.dpr) return;
+      if (lost || !compiled || rendered === 0 || !frame.current?.render) return;
+      gl.info.reset();
+      gl.render(scene, camera);
+    });
 
     registerCapturer((options) =>
       lost || cancelled ? Promise.resolve(null) : captureScene(gl, scene, options),
@@ -292,6 +306,7 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
     return () => {
       cancelled = true;
       stop();
+      stopResize();
       registerCapturer(null);
       delete probe.__touchgrassWorld;
       stickingPoint.valid = false;
@@ -301,7 +316,7 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
       canvas.removeEventListener('webglcontextlost', onLost);
       canvas.removeEventListener('webglcontextrestored', onRestored);
     };
-  }, [adaptive, advance, camera, frame, gl, onFail, scene]);
+  }, [adaptive, advance, camera, frame, gl, onFail, scene, store]);
 
   return null;
 }

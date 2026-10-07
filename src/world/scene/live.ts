@@ -117,6 +117,11 @@ export const shared = {
    * Grass and flowers shade themselves from it instead of sampling the shadow map.
    */
   uCrown: { value: new THREE.Vector4(0, 0, 1, 0) },
+  /**
+   * The lit lantern's pool of warm light: its foot (x, z), reach and strength. Everything
+   * near it on the lawn is warmed in its own shader, which costs no extra light.
+   */
+  uLamp: { value: new THREE.Vector4(0, 0, 1, 0) },
 };
 
 /** Sets a three colour from an sRGB triple in 0..1 (converted to the linear working space). */

@@ -3,6 +3,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { MOON_RIM } from '../atmosphere';
 import { QUALITY } from '../config';
 import { useWorldStore } from '../store';
 import { live, setColor } from './live';
@@ -24,6 +25,7 @@ export function Lights() {
   const beat = useRef({ frame: 0, hour: Number.NaN, growth: Number.NaN });
   const key = useRef<THREE.DirectionalLight>(null);
   const fill = useRef<THREE.HemisphereLight>(null);
+  const rim = useRef<THREE.DirectionalLight>(null);
   const blob = useRef<THREE.Mesh>(null);
   const disc = useMemo(() => new THREE.CircleGeometry(1, 28), []);
   const blobMaterial = useMemo(
@@ -107,6 +109,11 @@ export function Lights() {
       // A resting island sits under a cooler sky.
       hemisphere.color.lerp(COOL, mood.cold * 0.35);
     }
+    // At night a second, shadowless light from behind picks out the edge of the crown and
+    // of everything standing on the lawn: the moon's silver lining. Always mounted (its
+    // strength is zero by day), so the light count, and with it every program, stays put.
+    const back = rim.current;
+    if (back) back.intensity = atmosphere.night * 1.9 * mood.light;
     const shade = blob.current;
     if (shade) {
       const reach = Math.max(0.35, tree.halfWidth * 0.95);
@@ -134,6 +141,7 @@ export function Lights() {
         shadow-normalBias={0.035}
         shadow-radius={2.6}
       />
+      <directionalLight ref={rim} color={RIM_COLOUR} intensity={0} position={RIM_POSITION} />
       {!shadows && (
         <mesh
           ref={blob}
@@ -148,3 +156,9 @@ export function Lights() {
 }
 
 const COOL = new THREE.Color('#b8c6e8');
+const RIM_COLOUR = new THREE.Color('#b9ccff');
+const RIM_POSITION: [number, number, number] = [
+  MOON_RIM[0] * LIGHT_DISTANCE,
+  MOON_RIM[1] * LIGHT_DISTANCE + 1.5,
+  MOON_RIM[2] * LIGHT_DISTANCE,
+];

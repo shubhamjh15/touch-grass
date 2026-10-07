@@ -256,7 +256,11 @@ export function CameraRig({ frame }: { frame: RefObject<WorldFrame | null> }) {
     const swoop = fly.left * fly.left;
     // The stage's orbit turns the camera about the tree; pulses push in a little.
     const push = live.reduced ? 0 : live.channels.push * 1.4;
-    const zoom = live.explore ? orbit.zoom : 1;
+    // A tall, narrow Explore (a phone held upright) would fit the island to the width
+    // and leave most of the screen empty: there the camera stands closer, so the island
+    // fills the screen and the user looks around it.
+    const close = live.explore ? clamp(live.aspect / 0.84, 0.66, 1) : 1;
+    const zoom = (live.explore ? orbit.zoom : 1) * close;
     const distance =
       (view.distance / Math.max(0.5, live.appear)) * (1 - push) * zoom * (1 + swoop * 0.9);
     const pitch = clamp(view.pitch + live.tilt + swoop * 0.5, 0.03, 1.05);

@@ -99,6 +99,8 @@ function Toy({ part, anchor, model, material, shadows }: ToyProps) {
       glass?.dispose();
       halo?.disc.dispose();
       halo?.material.dispose();
+      // The lantern takes its pool of light with it.
+      if (halo) shared.uLamp.value.w = 0;
     },
     [glass, halo],
   );
@@ -226,6 +228,14 @@ function Toy({ part, anchor, model, material, shadows }: ToyProps) {
       local.lit = damp(local.lit, lit, 3, dt);
       glass.color.copy(DAY_GLASS).lerp(LIT_GLASS, local.lit);
       halo.material.opacity = local.lit * (0.2 + 0.5 * live.atmosphere.night);
+      // The pool it throws on the lawn, the flowers and the toys around it, breathing a little.
+      const flicker = live.reduced ? 1 : 0.94 + 0.06 * Math.sin(time * 5.1) * Math.sin(time * 1.7);
+      shared.uLamp.value.set(
+        anchor.x,
+        anchor.z,
+        1.75,
+        local.lit * (0.25 + 1.45 * live.atmosphere.night) * flicker,
+      );
     }
   });
 

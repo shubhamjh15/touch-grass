@@ -30,7 +30,7 @@ import { LANDMARK_INFO, describeIsland, describePart, type PartRef } from './pro
 import { openExplore, stickingPoint, useWorldStore, type StageOptions } from './store';
 
 /** Label, icon and disc colour of each landmark's callout (bible 5.7). */
-const CALLOUTS: Record<LandmarkId, { label: string; disc: string; icon: ReactNode }> = {
+export const CALLOUTS: Record<LandmarkId, { label: string; disc: string; icon: ReactNode }> = {
   log: { label: 'Log', disc: 'bg-green', icon: <Plus size={16} strokeWidth={2.6} /> },
   quests: { label: 'Quests', disc: 'bg-yellow', icon: <Target size={16} strokeWidth={2.6} /> },
   learn: { label: 'Learn', disc: 'bg-blue', icon: <BookOpen size={16} strokeWidth={2.6} /> },
@@ -54,7 +54,7 @@ function MossFace() {
   );
 }
 
-const CHIP =
+export const CHIP =
   'relative inline-flex h-9 hard items-center gap-2 rounded-pill border-3 border-ink bg-white pr-3.5 pl-1 text-body-sm font-bold whitespace-nowrap text-ink lift-3 after:absolute after:inset-x-0 after:-inset-y-1 md:h-10';
 
 /** A stage that would only take focus from its own background, not from a control on it. */

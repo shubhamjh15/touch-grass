@@ -49,6 +49,10 @@ uniform vec4 uTree;
 uniform vec4 uRipple;
 uniform float uDroop;
 uniform float uShake;
+#ifdef TOY_LIT
+  uniform vec4 uLamp;
+  varying float vLamp;
+#endif
 #ifdef TOY_CROWN
   uniform vec4 uCrown;
   varying float vCrown;
@@ -99,6 +103,10 @@ toyWorld = modelMatrix * toyWorld;
 #ifdef TOY_TIP
   vTip = aTip;
 #endif
+#ifdef TOY_LIT
+  float toyLamp = 1.0 - smoothstep(0.0, 1.0, distance(toyWorld.xz, uLamp.xy) / uLamp.z);
+  vLamp = uLamp.w * toyLamp * toyLamp * (1.0 - smoothstep(0.9, 2.4, toyWorld.y));
+#endif
 #ifdef TOY_CROWN
   vCrown = uCrown.w * (1.0 - smoothstep(0.45, 1.1, distance(toyWorld.xz, uCrown.xy) / uCrown.z));
 #endif
@@ -122,6 +130,9 @@ uniform float uFlash;
 uniform float uToyRim;
 uniform float uToyBase;
 uniform float uToyTipShade;
+#ifdef TOY_LIT
+  varying float vLamp;
+#endif
 #ifdef TOY_TIP
   varying float vTip;
 #endif
@@ -160,6 +171,10 @@ const RIM = /* glsl */ `
   float toyRim = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 2.6);
   outgoingLight += diffuseColor.rgb * toyRim * uToyRim * (reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + 0.25);
 #endif
+#ifdef TOY_LIT
+  // The lantern's pool: warm light on whatever stands near it, in the thing's own colour.
+  outgoingLight += (diffuseColor.rgb * 0.85 + 0.06) * vec3(1.0, 0.66, 0.3) * vLamp;
+#endif
 #include <opaque_fragment>
 `;
 
@@ -179,7 +194,8 @@ export function toyMaterial(
   } = options;
   const material = new THREE.MeshLambertMaterial(parameters);
   const tip = baseShade !== undefined || sway === 'leaf' || sway === 'grass';
-  const defines: Record<string, string> = {};
+  // The depth variant shares the vertex patch but has no use for the lantern's light.
+  const defines: Record<string, string> = { TOY_LIT: '' };
   if (sway === 'tree') defines.TOY_SWAY_TREE = '';
   if (sway === 'leaf') defines.TOY_SWAY_LEAF = '';
   if (sway === 'grass') defines.TOY_SWAY_GRASS = '';

@@ -64,19 +64,24 @@ interface Key {
 export const SUNRISE = 5.5;
 export const SUNSET = 20;
 
+/**
+ * Night is moonlit, not dark (direction 3.7): a clear, cool key from the moon, a fill
+ * strong enough that grass, leaves and props keep their own hue, and a sky that runs from
+ * deep indigo down to a luminous band, so the island reads against it.
+ */
 const NIGHT: Omit<Key, 'hour'> = {
-  zenith: '#0a1033',
-  horizon: '#2b3a7c',
-  haze: '#1a2352',
-  light: '#c3d0ff',
-  intensity: 1.55,
-  skyFill: '#6478d6',
-  groundFill: '#3a4a86',
-  fill: 1.23,
-  orb: '#fef9c3',
-  glow: '#7f93e8',
-  cloud: '#8f9fe0',
-  shadow: 0.71,
+  zenith: '#0d1450',
+  horizon: '#5468d8',
+  haze: '#27358c',
+  light: '#e2e9ff',
+  intensity: 2.15,
+  skyFill: '#93a4f4',
+  groundFill: '#6474b8',
+  fill: 1.72,
+  orb: '#fffbe0',
+  glow: '#8ea2ff',
+  cloud: '#aab7f5',
+  shadow: 0.6,
 };
 
 const DAY: Omit<Key, 'hour'> = {
@@ -174,7 +179,14 @@ const normalize = (v: Vec3): Vec3 => {
 };
 
 const MOON_LIGHT: Vec3 = normalize([-0.5, 0.74, 0.45]);
-const MOON_ORB: Vec3 = normalize([0.42, 0.52, -0.74]);
+/**
+ * The camera looks a little down at the island, so the sky it sees ends just above the
+ * horizon: the moon hangs there, to the right of the crown, where a stage of any shape
+ * shows it at rest.
+ */
+const MOON_ORB: Vec3 = normalize([0.15, -0.07, -0.985]);
+/** Towards the rim light of the night: from behind the island, on the moon's side. */
+export const MOON_RIM: Vec3 = normalize([0.42, 0.5, -0.76]);
 
 const deg = (value: number) => (value * Math.PI) / 180;
 

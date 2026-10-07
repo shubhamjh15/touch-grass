@@ -4,12 +4,13 @@ import { Camera, Home, RotateCcw, RotateCw, X, ZoomIn, ZoomOut } from 'lucide-re
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { BRAND } from '@/lib/brand';
 import { cn } from '@/lib/cn';
+import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import { play } from '@/lib/sfx';
-import { ISLAND_PROPS, type LandmarkId } from './contract';
+import { ISLAND_PROPS, LANDMARKS, type LandmarkId } from './contract';
 import { orbit } from './interaction';
 import { PROP_INFO } from './props/info';
 import { captureWorld, closeExplore, useWorldStore } from './store';
-import { Stage } from './WorldStage';
+import { CALLOUTS, CHIP, Stage } from './WorldStage';
 
 /**
  * Explore mode: the world full screen. The one 3D world moves into this stage (it has
@@ -106,6 +107,9 @@ function ExploreDialog() {
   const owned = ISLAND_PROPS.filter((id) => props.includes(id));
   const [photo, setPhoto] = useState<PhotoState>('idle');
   const [flash, setFlash] = useState(0);
+  // On a phone seven labels with leader lines would cover the island they point at: the
+  // places go in a tray under it instead, and the island gets the whole screen.
+  const compact = !useMediaQuery('(min-width: 48rem)');
 
   // A layout effect: its cleanup runs while the dialog is still in the page, so closing it
   // can hand the focus back to whatever opened Explore.
@@ -159,7 +163,7 @@ function ExploreDialog() {
         mode="hub"
         exploring
         interactive
-        landmarks={leads !== null}
+        landmarks={leads !== null && !compact}
         onLandmark={leads ? onLandmark : undefined}
         priority={1000}
         fit={0.82}
@@ -211,6 +215,35 @@ function ExploreDialog() {
             Close
           </button>
         </div>
+        {leads && compact && (
+          <nav
+            aria-label="Places on the island"
+            data-world-ignore=""
+            data-world-callouts="tray"
+            className="absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+68px)] z-20 flex touch-pan-x snap-x [scrollbar-width:none] gap-2 overflow-x-auto mask-x-from-95% px-4 py-2"
+          >
+            {LANDMARKS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                data-landmark={id}
+                className={cn(CHIP, 'shrink-0 snap-start')}
+                onClick={() => onLandmark(id)}
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-ink',
+                    CALLOUTS[id].disc,
+                  )}
+                >
+                  {CALLOUTS[id].icon}
+                </span>
+                {CALLOUTS[id].label}
+              </button>
+            ))}
+          </nav>
+        )}
         {ready && (
           <div
             role="toolbar"
@@ -249,7 +282,11 @@ function ExploreDialog() {
         <p
           role="status"
           className={cn(
-            'pointer-events-none absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+76px)] z-20 mx-auto w-fit max-w-[90%] rounded-pill border-2 border-ink bg-white px-3 py-1 text-caption font-bold text-ink lg:bottom-22',
+            'pointer-events-none absolute inset-x-0 z-20 mx-auto w-fit max-w-[90%] rounded-pill border-2 border-ink bg-white px-3 py-1 text-caption font-bold text-ink lg:bottom-22',
+            // Above the tray of places where there is one.
+            leads && compact
+              ? 'bottom-[calc(env(safe-area-inset-bottom)+132px)]'
+              : 'bottom-[calc(env(safe-area-inset-bottom)+76px)]',
             photo === 'idle' && 'opacity-0',
           )}
         >
