@@ -253,7 +253,8 @@ export type NoticeKind =
   | 'woke-up'
   | 'auto-claimed'
   | 'challenge-ended'
-  | 'legacy-imported';
+  | 'legacy-imported'
+  | 'clock-corrected';
 
 /** A one-time message waiting to be shown, e.g. "It rained while you were away". */
 export interface Notice {

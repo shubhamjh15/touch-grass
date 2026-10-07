@@ -14,6 +14,7 @@ import {
 import { updateSettings, water } from './engine';
 import { logAction, removeLog } from './logging';
 import { checkInvariants, createInitialState } from './state';
+import { selectClock } from './selectors';
 import { GameSession, localTime, plantedSession } from './testkit';
 import { vitalityValue } from './vitality';
 
@@ -436,21 +437,120 @@ describe('clock guards', () => {
     expect(checkInvariants(session.state)).toEqual([]);
   });
 
-  it('keeps the settled day when something was really done on the later day', () => {
+  it('brings one day lived under a clock that ran ahead home to the real day', () => {
     const session = plantedSession(noon(0));
-    // A real check-in under a clock ten days ahead, then the clock is corrected.
+    session.at(noon(1), water);
+    // The device says four weeks ahead; one meal is logged, then the date is put right.
+    session.at(noon(30), (ctx) => logAction(ctx, { actionId: 'plant-based-meal', qty: 1 }));
+    const ahead = session.state;
+    expect(ahead.days[day(30)]).toBeDefined();
+    expect(ahead.streak.current).toBe(1);
+
+    // Opening the app changes nothing; the first real act brings the day home.
+    session.tick(noon(2));
+    expect(session.state).toBe(ahead);
+    expect(selectClock(ahead, noon(2))).toMatchObject({ skewed: true, heldDay: day(30) });
+    expect(session.at(noon(2), water)).toBe(false);
+
+    const home = session.state;
+    expect(home.clock.today).toBe(day(2));
+    expect(Object.keys(home.days)).toEqual([day(0), day(1), day(2)]);
+    expect(Object.keys(home.marks).filter((key) => key > day(2))).toEqual([]);
+    expect(home.logs.map((log) => log.day)).toEqual([day(2)]);
+    expect(home.quests.daily?.key).toBe(day(2));
+    expect(home.quests.weekly?.key).toBe(weekKey(day(2)));
+    // Nothing is paid twice and nothing is taken away; the streak the jump rested is back.
+    expect(home.xp).toBe(ahead.xp);
+    expect(home.tree).toMatchObject({ gp: ahead.tree.gp, rings: 3, missed: 0 });
+    expect(home.tree.vitality).toBe('thriving');
+    expect(home.streak.current).toBe(3);
+    expect(home.notices.map((notice) => notice.kind)).toContain('clock-corrected');
+    expect(home.notices.map((notice) => notice.kind)).not.toContain('woke-up');
+    expect(selectClock(home, noon(2))).toMatchObject({ skewed: false, heldDay: null });
+    expect(checkInvariants(home)).toEqual([]);
+
+    // The same meal can be logged again at once, and tomorrow is an ordinary day.
+    const again = session.at(noon(2), (ctx) =>
+      logAction(ctx, { actionId: 'plant-based-meal', qty: 1 }),
+    );
+    expect(again.ok && again.log.day).toBe(day(2));
+    expect(session.at(noon(3), water)).toBe(true);
+    expect(session.state.streak.current).toBe(4);
+    expect(checkInvariants(session.state)).toEqual([]);
+  });
+
+  it('cannot be farmed: a real day is never given a second ring from ahead', () => {
+    const session = plantedSession(noon(0));
+    // Today already has its ring; a trip ahead and back leaves that ring where it is.
+    session.at(noon(20), water);
+    expect(session.at(noon(0) + 60_000, water)).toBe(false);
+    expect(session.state.clock.today).toBe(day(20));
+    expect(Object.keys(session.state.days)).toEqual([day(0), day(20)]);
+    const result = session.at(noon(0) + 120_000, (ctx) =>
+      logAction(ctx, { actionId: 'plant-based-meal', qty: 1 }),
+    );
+    // Logging is never refused; it joins the day the calendar is holding.
+    expect(result.ok && result.log.day).toBe(day(20));
+    expect(selectClock(session.state, noon(0) + 180_000).heldDay).toBe(day(20));
+
+    // On the next real day that one ring comes home, and the day cannot be earned again.
+    expect(session.at(noon(1), water)).toBe(false);
+    expect(Object.keys(session.state.days)).toEqual([day(0), day(1)]);
+    expect(session.state.tree.rings).toBe(2);
+    expect(checkInvariants(session.state)).toEqual([]);
+  });
+
+  it('keeps waiting when more than one day was lived ahead', () => {
+    const session = plantedSession(noon(0));
     session.at(noon(10), water);
+    session.at(noon(11), water);
     const back = noon(1);
     expect(isClockSkewed(session.state, back)).toBe(true);
     expect(session.at(back, water)).toBe(false);
     const result = session.at(back + 60_000, (ctx) =>
       logAction(ctx, { actionId: 'plant-based-meal', qty: 1 }),
     );
-    // Logging is never refused; the ring that was earned is not earned again.
-    expect(result.ok && result.log.day).toBe(day(10));
-    expect(session.state.clock.today).toBe(day(10));
-    expect(session.state.tree.rings).toBe(2);
+    expect(result.ok && result.log.day).toBe(day(11));
+    expect(session.state.clock.today).toBe(day(11));
+    expect(session.state.tree.rings).toBe(3);
+    expect(selectClock(session.state, back + 120_000)).toMatchObject({
+      today: day(11),
+      heldDay: day(11),
+    });
     expect(checkInvariants(session.state)).toEqual([]);
+  });
+
+  it('does not believe a device date from before the app existed', () => {
+    const session = plantedSession(noon(0));
+    const before = session.state;
+    const reset = localTime('2020-01-01', 12);
+    expect(session.at(reset, water)).toBe(false);
+    session.at(reset + 60_000, (ctx) => logAction(ctx, { actionId: 'plant-based-meal', qty: 1 }));
+    expect(session.state.clock.today).toBe(day(0));
+    expect(session.state.profile.plantedDay).toBe(day(0));
+    expect(session.state.days).toBe(before.days);
+    expect(session.state.logs.map((log) => log.day)).toEqual([day(0)]);
+    expect(checkInvariants(session.state)).toEqual([]);
+  });
+
+  it('re-plants on the real day a tree that was planted under a clock that ran ahead', () => {
+    const session = plantedSession(noon(40));
+    session.at(noon(40) + 60_000, (ctx) =>
+      logAction(ctx, { actionId: 'plant-based-meal', qty: 1 }),
+    );
+    const ahead = session.state;
+    session.at(noon(3), (ctx) => logAction(ctx, { actionId: 'plant-based-meal', qty: 1 }));
+    const { state } = session;
+    expect(state.profile.plantedDay).toBe(day(3));
+    expect(state.clock.today).toBe(day(3));
+    expect(Object.keys(state.days)).toEqual([day(3)]);
+    expect(state.marks).toEqual({ [day(3)]: 'ring' });
+    expect(state.logs.map((log) => log.day)).toEqual([day(3), day(3)]);
+    expect(state.activity.every((entry) => entry.day === day(3))).toBe(true);
+    expect(state.activity.every((entry) => entry.text.startsWith('Day 1 · '))).toBe(true);
+    expect(state.tree.rings).toBe(1);
+    expect(state.streak.current).toBe(ahead.streak.current);
+    expect(checkInvariants(state)).toEqual([]);
   });
 
   it('plants on the real day when the clock was corrected during onboarding', () => {

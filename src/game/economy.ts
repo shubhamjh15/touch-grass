@@ -103,6 +103,8 @@ export const FUTURE_GUARD_MS = 5 * 60 * 1000;
 export const SUSPECT_JUMP_DAYS = 21;
 /** No trip moves the local date back further than this; anything more is a corrected clock. */
 export const BACKWARD_TOLERANCE_DAYS = 2;
+/** A device date before this app existed is wrong: nothing is ever moved onto such a day. */
+export const CLOCK_FLOOR_DAY = '2026-01-01';
 
 // ── Limits the spec states in prose ─────────────────────────────────────────
 /** An identical log inside this window is a double tap and is ignored. */

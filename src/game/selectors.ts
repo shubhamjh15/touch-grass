@@ -17,6 +17,7 @@ import {
 import { DAILY_QUEST_BY_ID, WEEKLY_QUEST_BY_ID, type QuestDef } from '@/data/quests';
 import {
   addDays,
+  dayKey,
   diffDays,
   hourOfDay,
   msUntilTomorrow,
@@ -1099,6 +1100,8 @@ export function noticeText(notice: Notice, treeName: string): string {
       return `${pluralize(Number(data.logs ?? 0), 'action')} came along from the earlier version. The old starting numbers were placeholders, so they stayed behind.`;
     case 'woke-up':
       return `${treeName} is waking up.`;
+    case 'clock-corrected':
+      return "Your device's date was running ahead, so that day's ring and logs have moved to today.";
   }
 }
 
@@ -1224,16 +1227,32 @@ export interface ClockStatus {
   skewed: boolean;
   /** The clock jumped weeks ahead: nothing is closed until the next action confirms the day. */
   unconfirmed: boolean;
+  /**
+   * The later day the calendar is holding while the device's date reads earlier: new logs
+   * join it and no new ring can be drawn until the device reaches it. `null` otherwise.
+   */
+  heldDay: DayKey | null;
   /** The next local midnight, as epoch milliseconds. */
   nextMidnight: number;
 }
 
+/** See `ClockStatus.heldDay`. */
+function heldDayOf(game: Pick<GameState, 'clock'>, now: number): DayKey | null {
+  return game.clock.today > dayKey(now) ? game.clock.today : null;
+}
+
 export const selectClock: GameSelector<ClockStatus> = createGameSelector(
-  (game, now) => [effectiveDay(game, now), isClockSkewed(game, now), isClockSuspect(game, now)],
+  (game, now) => [
+    effectiveDay(game, now),
+    isClockSkewed(game, now),
+    isClockSuspect(game, now),
+    heldDayOf(game, now),
+  ],
   (game, now) => ({
     today: effectiveDay(game, now),
     skewed: isClockSkewed(game, now),
     unconfirmed: isClockSuspect(game, now),
+    heldDay: heldDayOf(game, now),
     nextMidnight: now + msUntilTomorrow(now),
   }),
 );

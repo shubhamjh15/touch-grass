@@ -14,6 +14,7 @@ import {
   weekKey,
   type DayKey,
 } from '@/lib/dates';
+import { bringDayHome } from './clockRepair';
 import { grantGp, grantXp, queueNotice, writeActivity, type Ctx } from './ctx';
 import {
   BACKWARD_TOLERANCE_DAYS,
@@ -79,6 +80,8 @@ function rewindToCorrectedClock(ctx: Ctx, today: DayKey): boolean {
     return true;
   }
   if (diffDays(today, s.clock.today) <= BACKWARD_TOLERANCE_DAYS) return false;
+  // One day lived under the clock that ran ahead comes home with it: see clockRepair.
+  if (bringDayHome(ctx, today)) return true;
   if (today < s.profile.plantedDay) return false;
   // Anything recorded after the device's day means the two clocks cannot be told apart.
   for (const day of Object.keys(s.days)) if (day > today) return false;
