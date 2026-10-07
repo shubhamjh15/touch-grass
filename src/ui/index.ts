@@ -110,6 +110,7 @@ export { DropdownMenu, type DropdownMenuProps, type MenuItem } from './DropdownM
 export { Toaster } from './Toaster';
 export { ToastCard, type ToastCardProps, type ToastTone } from './ToastCard';
 export { dismissToast, toast, type ToastOptions } from './toast';
+export { toastLater } from './toastLater';
 
 // Data display
 export { Meter, type MeterProps, type MeterTone } from './Meter';
@@ -142,9 +143,8 @@ export { Callout, type CalloutProps } from './Callout';
 export {
   ConfirmDialog,
   Prose,
-  SkipLink,
   StreamCaret,
   type ConfirmDialogProps,
   type ProseProps,
-  type SkipLinkProps,
 } from './misc';
+export { SkipLink, type SkipLinkProps } from './SkipLink';
