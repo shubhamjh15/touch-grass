@@ -8,6 +8,7 @@ import { WorldBridge } from '../bridge/WorldBridge';
 import { Feedback } from '../feedback/Feedback';
 import { Guard } from '../Guard';
 import { Main } from '../Main';
+import { ServiceWorker } from '../pwa/ServiceWorker';
 import { RouteEffects } from '../RouteEffects';
 import { routeInfo } from '../routes';
 import { ShellProviders } from '../ShellProviders';
@@ -39,6 +40,7 @@ export function RootLayout({ children }: { children: ReactNode }) {
       <WorldBridge />
       <RouteEffects />
       <Feedback />
+      <ServiceWorker />
       <div className="relative z-10">
         <Guard>
           <RootFrame>{children}</RootFrame>

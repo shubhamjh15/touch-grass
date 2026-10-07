@@ -69,4 +69,12 @@ export default defineConfig([
       globals: { ...globals.node, ...globals.browser },
     },
   },
+  {
+    // The offline service worker is plain JavaScript that runs in a worker scope.
+    files: ['public/sw.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: globals.serviceworker,
+    },
+  },
 ]);
