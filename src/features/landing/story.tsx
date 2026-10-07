@@ -4,17 +4,15 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import type { MouseEvent, ReactNode, RefObject } from 'react';
 import { ROUTES } from '@/app/routes';
-import { ACTION_BY_ID } from '@/data/catalogue';
-import { estimateKg } from '@/game';
 import { cn } from '@/lib/cn';
 import { formatDecimal, formatNumber } from '@/lib/format';
 import { prefersReducedMotion } from '@/lib/hooks';
 import { Approx, Button, Card, Lettering, Panel, StickerPill, Tag } from '@/ui';
 import { HERO, PROBLEM, TIMELAPSE, TIMELAPSE_CAPTIONS } from './copy';
+import { estimateFact } from './facts';
 import { AllDoomSpot, InvisibleSpot, NoFeedbackSpot } from './illustrations';
 import {
   DEMO_ANCHOR,
-  DEMO_CONTEXT,
   FIRST_STICKER_ATTR,
   TIMELAPSE_FRAMES,
   timelapseLabel,
@@ -88,8 +86,7 @@ const PROBLEM_KM = 4;
 
 /** "Nobody can feel 0.8 kg": the figure is a real 4 km of not driving, from the factor table. */
 function invisibleKg(): string {
-  const action = ACTION_BY_ID.get('walk-cycle-instead-of-car');
-  const estimate = action ? estimateKg(action, PROBLEM_KM, DEMO_CONTEXT) : null;
+  const estimate = estimateFact('walk-cycle-instead-of-car', PROBLEM_KM);
   return estimate ? `${formatDecimal(estimate.kg, 1)} kg` : 'a kilogram';
 }
 

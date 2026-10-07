@@ -3,7 +3,7 @@
  * The landing page links to action anchors and quotes two counts; importing those from the
  * content barrel shipped every lesson and dataset to a first-time visitor.
  */
-import { EVIDENCE_META } from './catalogue';
+import { EVIDENCE_META } from './catalogue/factors';
 
 export const FACTORS_VERSION = EVIDENCE_META.factorsVersion;
 

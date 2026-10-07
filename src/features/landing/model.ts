@@ -5,16 +5,18 @@
  * first year.
  *
  * Nothing here is saved, and nothing here invents a number: kilograms come from the same
- * factor table the app logs with, stage names and thresholds from the engine's growth
+ * factor table the app logs with (through `facts.ts`, which a test holds to it), stage names and thresholds from the engine's growth
  * curve, and the time-lapse's day counts from the product spec's typical-pace table.
  */
 import { ROUTES } from '@/app/routes';
-import { ACTION_BY_ID, DEFAULT_REGION, SOURCES, type ActionDef } from '@/data/catalogue';
 import { FACTORS_VERSION, actionAnchor } from '@/data/pointers';
-import { GROWTH_TABLE, STAGES, estimateKg, growthOf, type KgContext, type StageName } from '@/game';
+import { GROWTH_TABLE, STAGES, growthOf, type StageName } from '@/game';
 import { formatCo2Estimate, formatNumber, pluralize } from '@/lib/format';
 import { clamp01, lerp, smoothstep } from '@/lib/math';
 import type { CategoryId, EstimateSource } from '@/ui';
+import { estimateFact, type EstimateFact } from './facts';
+
+export { DEMO_CONTEXT } from './facts';
 
 // --- The demo ------------------------------------------------------------------------------
 
@@ -60,12 +62,6 @@ export const DEMO_ANCHOR = 'try-it';
 /** Marks the first demo sticker, which "Try it first" focuses. */
 export const FIRST_STICKER_ATTR = 'data-demo-first';
 
-/**
- * A visitor has told us nothing yet, so the demo uses what the app itself assumes before
- * onboarding: the world-average grid and car, and a gas-heated shower.
- */
-export const DEMO_CONTEXT: KgContext = { region: DEFAULT_REGION, heat: 'unknown' };
-
 export interface DemoEstimate {
   kg: number;
   /** Two significant figures with a fitting unit: "1.5 kg", "100 g". */
@@ -76,7 +72,7 @@ export interface DemoEstimate {
   source: EstimateSource;
 }
 
-function quantityText(action: ActionDef, qty: number): string {
+function quantityText(action: EstimateFact, qty: number): string {
   // "km" is a symbol and never takes a plural; "meal" and "minute" are words and do.
   return action.unit.length <= 3
     ? `${formatNumber(qty)} ${action.unit}`
@@ -85,13 +81,11 @@ function quantityText(action: ActionDef, qty: number): string {
 
 /** The estimate the real log sheet would show for this sticker, or `null` if the catalogue lost it. */
 export function demoEstimate(demo: DemoAction): DemoEstimate | null {
-  const action = ACTION_BY_ID.get(demo.actionId);
-  if (!action) return null;
-  const estimate = estimateKg(action, demo.qty, DEMO_CONTEXT);
+  // A visitor has told us nothing yet: the figures assume what the app itself assumes before
+  // onboarding (DEMO_CONTEXT): the world-average grid and car, and unknown water heating.
+  const estimate = estimateFact(demo.actionId, demo.qty);
   if (!estimate) return null;
-
-  const firstSource = action.sources.map((key) => SOURCES[key]).find(Boolean);
-  const regional = action.factor !== null && action.factor.regionalisation !== 'none';
+  const action = estimate;
   const text = formatCo2Estimate(estimate.kg);
   return {
     kg: estimate.kg,
@@ -101,13 +95,13 @@ export function demoEstimate(demo: DemoAction): DemoEstimate | null {
       code: `Factors ${FACTORS_VERSION}`,
       kind: 'factor',
       formula: `${quantityText(action, demo.qty)} × ${formatCo2Estimate(estimate.perUnit)} per ${action.unit} = ${text}`,
-      comparedWith: regional
+      comparedWith: action.regional
         ? `Compared with ${action.counterfactual}. The demo uses world-average assumptions; your own numbers follow your region.`
         : `Compared with ${action.counterfactual}.`,
       range: `${formatCo2Estimate(estimate.low)} to ${formatCo2Estimate(estimate.high)}`,
-      sourceLabel: firstSource ? (firstSource.publisher ?? firstSource.title) : 'Our factor table',
-      year: firstSource?.year,
-      href: `${ROUTES.methodology}#${actionAnchor(action.id)}`,
+      sourceLabel: estimate.sourceLabel ?? 'Our factor table',
+      year: estimate.sourceYear ?? undefined,
+      href: `${ROUTES.methodology}#${actionAnchor(action.actionId)}`,
     },
   };
 }

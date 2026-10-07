@@ -4,10 +4,8 @@ import { ArrowRight, Check, Minus, Plus } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ROUTES } from '@/app/routes';
-import { ACTIONS, ACTION_BY_ID, CATEGORIES, SOURCES } from '@/data/catalogue';
 import { actionAnchor } from '@/data/pointers';
-import { DAILY_QUEST_BY_ID } from '@/data/quests';
-import { DAILY_GOAL, estimateKg } from '@/game';
+import { DAILY_GOAL } from '@/game';
 import { cn } from '@/lib/cn';
 import { formatCo2Estimate, formatNumber } from '@/lib/format';
 import {
@@ -32,8 +30,9 @@ import {
   type EstimateSource,
 } from '@/ui';
 import { FAQ, FINAL, HONEST, HOW, KIND, PRIVATE } from './copy';
+import { ACTION_COUNT, CATEGORY_COUNT, QUEST_FACTS, estimateFact } from './facts';
 import { MiniTree } from './illustrations';
-import { DEMO_ACTIONS, DEMO_CONTEXT, demoEstimate } from './model';
+import { DEMO_ACTIONS, demoEstimate } from './model';
 import { Reveal, SectionHead, WithUnit } from './parts';
 
 /** The column every section below the story shares. */
@@ -57,12 +56,12 @@ export function Band({
 // --- How it works ------------------------------------------------------------------------------
 
 const BIKE = DEMO_ACTIONS.find((action) => action.id === 'biked-5-km') ?? DEMO_ACTIONS[0];
-const SAMPLE_QUEST = DAILY_QUEST_BY_ID.get('d_five_k');
+const SAMPLE_QUEST = QUEST_FACTS.fiveK;
 
 function howBody(body: string): string {
   return body
-    .replace('{actions}', formatNumber(ACTIONS.length))
-    .replace('{categories}', formatNumber(CATEGORIES.length));
+    .replace('{actions}', formatNumber(ACTION_COUNT))
+    .replace('{categories}', formatNumber(CATEGORY_COUNT));
 }
 
 /** The two picks of a log, drawn still: which action, and how much of it. */
@@ -93,7 +92,7 @@ function LogMini() {
 
 function SeeMini() {
   const estimate = BIKE ? demoEstimate(BIKE) : null;
-  const action = BIKE ? ACTION_BY_ID.get(BIKE.actionId) : undefined;
+  const action = BIKE ? estimateFact(BIKE.actionId, BIKE.qty) : null;
   if (!BIKE || !estimate || !action) return null;
   return (
     <Receipt
@@ -119,19 +118,17 @@ function SeeMini() {
 function KeepGoingMini() {
   return (
     <div className="grid gap-3">
-      {SAMPLE_QUEST ? (
-        <TearStub
-          title={SAMPLE_QUEST.title}
-          description={SAMPLE_QUEST.copy}
-          category={isCategoryId(SAMPLE_QUEST.pool) ? SAMPLE_QUEST.pool : undefined}
-          kind="daily"
-          progress={{ value: 2, max: 5 }}
-          reward={`+${formatNumber(SAMPLE_QUEST.xp)} XP`}
-          state="active"
-          timeLeft={HOW.sampleLabel}
-          surface="mat"
-        />
-      ) : null}
+      <TearStub
+        title={SAMPLE_QUEST.title}
+        description={SAMPLE_QUEST.copy}
+        category={isCategoryId(SAMPLE_QUEST.pool) ? SAMPLE_QUEST.pool : undefined}
+        kind="daily"
+        progress={{ value: 2, max: 5 }}
+        reward={`+${formatNumber(SAMPLE_QUEST.xp)} XP`}
+        state="active"
+        timeLeft={HOW.sampleLabel}
+        surface="mat"
+      />
       <div className="flex items-center gap-4">
         <RingProgress value={DAILY_GOAL - 1} max={DAILY_GOAL} size={64} label={HOW.ringLabel}>
           {DAILY_GOAL - 1}/{DAILY_GOAL}
@@ -200,10 +197,9 @@ function factorExample(): {
   value: string;
   source: EstimateSource;
 } | null {
-  const action = ACTION_BY_ID.get(FACTOR_ACTION_ID);
-  const estimate = action ? estimateKg(action, 1, DEMO_CONTEXT) : null;
-  if (!action || !estimate) return null;
-  const source = action.sources.map((key) => SOURCES[key]).find(Boolean);
+  const estimate = estimateFact(FACTOR_ACTION_ID, 1);
+  if (!estimate) return null;
+  const action = estimate;
   const value = formatCo2Estimate(estimate.kg);
   return {
     title: HONEST.rowTitle,
@@ -215,9 +211,9 @@ function factorExample(): {
       formula: `1 ${action.unit} × ${value} per ${action.unit} = ${value}`,
       comparedWith: `Compared with ${action.counterfactual}. World-average car; the app uses your region's.`,
       range: `${formatCo2Estimate(estimate.low)} to ${formatCo2Estimate(estimate.high)}`,
-      sourceLabel: source ? (source.publisher ?? source.title) : 'Our factor table',
-      year: source?.year,
-      href: `${ROUTES.methodology}#${actionAnchor(action.id)}`,
+      sourceLabel: estimate.sourceLabel ?? 'Our factor table',
+      year: estimate.sourceYear ?? undefined,
+      href: `${ROUTES.methodology}#${actionAnchor(action.actionId)}`,
     },
   };
 }

@@ -2,9 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { ATMOSPHERIC_CO2 } from '@/data/datasets/co2Atmosphere';
-import { MYTHS } from '@/data/myths';
 import { LESSON_COUNT } from '@/data/pointers';
-import { DAILY_QUEST_BY_ID } from '@/data/quests';
 import { BREAK_DURATIONS_MIN, XP_BREAK_SHORT } from '@/game';
 import { cn } from '@/lib/cn';
 import { formatDecimal, formatNumber } from '@/lib/format';
@@ -22,16 +20,16 @@ import {
   type Hue,
 } from '@/ui';
 import { TOUR } from './copy';
+import { MYTH_COUNT, MYTH_FACT, QUEST_FACTS } from './facts';
 import { Band } from './lower';
 import { Reveal, SectionHead, WithUnit } from './parts';
 
 // --- Quests: a real daily quest whose stub tears off (on this page only) -----------------------
 
-const QUEST = DAILY_QUEST_BY_ID.get('d_plant_plate');
+const QUEST = QUEST_FACTS.plantPlate;
 
 function QuestMini() {
   const [claimed, setClaimed] = useState(false);
-  if (!QUEST) return null;
   return (
     <TearStub
       title={QUEST.title}
@@ -53,12 +51,11 @@ function QuestMini() {
 
 // --- Learn: one real myth card, both faces ------------------------------------------------------
 
-const MYTH = MYTHS.find((myth) => myth.id === 'recycling-best') ?? MYTHS[0];
+const MYTH = MYTH_FACT;
 
 function MythMini() {
   const [flipped, setFlipped] = useState(false);
-  if (!MYTH) return null;
-  const source = MYTH.sources[0];
+  const source = MYTH.source;
   return (
     <div className="rounded-md border-3 border-ink bg-blue-tint p-3.5">
       <div className="flex items-center justify-between gap-2">
@@ -83,11 +80,9 @@ function MythMini() {
         <p className="text-body-sm text-ink-2">
           <WithUnit text={MYTH.explanation} />
         </p>
-        {source ? (
-          <p className="mt-2 type-slug leading-[1.5] text-ink-3">
-            Source: {source.publisher}, {source.year}
-          </p>
-        ) : null}
+        <p className="mt-2 type-slug leading-[1.5] text-ink-3">
+          Source: {source.publisher}, {source.year}
+        </p>
       </div>
     </div>
   );
@@ -247,7 +242,7 @@ const CARDS: readonly TourCard[] = [
 function cardLine(line: string): string {
   return line
     .replace('{lessons}', formatNumber(LESSON_COUNT))
-    .replace('{myths}', formatNumber(MYTHS.length));
+    .replace('{myths}', formatNumber(MYTH_COUNT));
 }
 
 /**
