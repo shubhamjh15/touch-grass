@@ -9,7 +9,7 @@ export interface SwitchProps {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   /** Always visible; the whole row is the target. */
-  label: string;
+  label: ReactNode;
   description?: ReactNode;
   disabled?: boolean;
   /** Hide the label visually when a neighbouring ListRow already shows it. */

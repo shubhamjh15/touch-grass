@@ -65,7 +65,7 @@ export { BadgeMedal, type BadgeMedalProps, type BadgeSize, type BadgeState } fro
 export { Kbd } from './Kbd';
 export { Avatar, type AvatarProps, type AvatarSize } from './Avatar';
 export { Approx, type ApproxProps } from './Approx';
-export { Co2e, type Co2eProps } from './Co2e';
+export { Co2e, Co2Text, type Co2eProps } from './Co2e';
 export { ColorBar, type ColorBarProps } from './ColorBar';
 export {
   CloudGlyph,
