@@ -170,6 +170,7 @@ function createActions(
   seed: () => number,
   bus: GameEventBus,
   sandbox: { isOn: () => boolean; leave: () => void },
+  unreadable: { held: () => RecoveryEntry | null; decided: () => boolean },
 ) {
   /** The single path of every mutation: one transaction, one atomic set, one event batch. */
   function run<T>(operation: (ctx: Ctx) => T, extraEvents: readonly GameEvent[] = []): T {
@@ -361,9 +362,17 @@ function createActions(
       const parsed = parseImport(text);
       if (!parsed.ok) return parsed;
       const settled = transact(parsed.state, now, () => undefined);
+      // The user has chosen what replaces an unreadable save: it no longer blocks the write.
+      const released = unreadable.decided();
+      const runtime = store.getState().runtime;
       store.setState({
         game: settled.state,
-        runtime: { ...store.getState().runtime, now, recovery: null },
+        runtime: {
+          ...runtime,
+          now,
+          recovery: null,
+          saveFailed: released ? false : runtime.saveFailed,
+        },
       });
       if (parsed.coach !== null && parsed.coach !== undefined) {
         try {
@@ -387,6 +396,7 @@ function createActions(
         return;
       }
       clearAllAppStorage(kv);
+      unreadable.decided();
       const now = clock.now();
       store.setState({
         game: createInitialState(now),
@@ -412,11 +422,15 @@ function createActions(
       }
     },
     /** Saves that could not be read, for "Download the raw save". */
-    recoveryEntries: (): RecoveryEntry[] => readRecovery(kv),
+    recoveryEntries(): RecoveryEntry[] {
+      const held = unreadable.held();
+      const kept = readRecovery(kv);
+      return held ? [held, ...kept.filter((entry) => entry.raw !== held.raw)] : kept;
+    },
     /** "Start fresh" on the recovery screen: drops the unreadable saves. */
     discardRecovery(): void {
       clearRecovery(kv);
-      patchRuntime({ recovery: null });
+      patchRuntime(unreadable.decided() ? { recovery: null, saveFailed: false } : { recovery: null });
     },
 
     // ── QA (only reachable through the DEV-only window helper) ───────────────
@@ -443,6 +457,11 @@ export function createGame(options: CreateGameOptions = {}): Game {
   let recovery: GameRuntime['recovery'] = null;
   let lastWritten: GameState | null = null;
   let saveFailed = false;
+  /**
+   * An unreadable save that could not be copied aside (no room left). It is still under the
+   * game's own key, so nothing is written there until the user has decided what to do.
+   */
+  let heldRaw: RecoveryEntry | null = null;
 
   // The sandbox. A game with a storage of its own (tests, tools) keeps its sandbox in memory
   // unless it is given a place for it; the app's game uses the tab's session storage.
@@ -474,7 +493,9 @@ export function createGame(options: CreateGameOptions = {}): Game {
       if (!loaded.ok) {
         // Never a silent wipe: the unreadable save is set aside before anything overwrites it.
         const savedAt = clock.now();
-        keepForRecovery(kv, { savedAt, reason: loaded.reason, detail: loaded.detail, raw });
+        const entry = { savedAt, reason: loaded.reason, detail: loaded.detail, raw };
+        const kept = keepForRecovery(kv, entry);
+        if (!sandboxed) heldRaw = kept ? null : entry;
         recovery = { reason: loaded.reason, detail: loaded.detail, savedAt };
         return null;
       }
@@ -485,6 +506,12 @@ export function createGame(options: CreateGameOptions = {}): Game {
       // Runtime-only updates (the clock) must not rewrite an unchanged save.
       if (value.state === lastWritten) return;
       const failedBefore = saveFailed;
+      if (heldRaw && !sandboxed) {
+        // The only copy of the unreadable save lives under this key: it is not overwritten.
+        saveFailed = true;
+        if (!failedBefore) queueMicrotask(syncRuntime);
+        return;
+      }
       try {
         kv.setItem(name, JSON.stringify({ state: value.state, version: SCHEMA_VERSION }));
         lastWritten = value.state;
@@ -629,10 +656,25 @@ export function createGame(options: CreateGameOptions = {}): Game {
     actions.tick();
   }
 
-  const actions = createActions(store, kv, clock, options.seed ?? randomSeed, bus, {
-    isOn: () => sandboxed,
-    leave: leaveSandbox,
-  });
+  const actions = createActions(
+    store,
+    kv,
+    clock,
+    options.seed ?? randomSeed,
+    bus,
+    { isOn: () => sandboxed, leave: leaveSandbox },
+    {
+      held: () => (sandboxed ? null : heldRaw),
+      decided: () => {
+        if (sandboxed) return false;
+        const released = heldRaw !== null;
+        if (released) saveFailed = false;
+        heldRaw = null;
+        recovery = null;
+        return released;
+      },
+    },
+  );
   return {
     store,
     actions,

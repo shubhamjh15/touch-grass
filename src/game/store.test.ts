@@ -244,6 +244,52 @@ describe('safe rehydration', () => {
 });
 
 describe('storage that misbehaves', () => {
+  it('does not overwrite an unreadable save it had no room to set aside', async () => {
+    const raw = '{"state": {"xp": 123, "profile": ';
+    const storage = createMemoryStorage({ [STORAGE_KEYS.game]: raw });
+    const full = new DOMException('full', 'QuotaExceededError');
+    const write = storage.setItem.bind(storage);
+    let room = false;
+    storage.setItem = (key, value) => {
+      if (key === STORAGE_KEYS.recovery && !room) throw full;
+      write(key, value);
+    };
+    const game = createGame({ storage, now: () => noon(0), events: createEventBus() });
+    expect(game.store.getState().runtime.recovery).toMatchObject({ reason: 'not-json' });
+    // The copy failed, so the save itself is the copy: it can still be downloaded.
+    expect(storage.getItem(STORAGE_KEYS.recovery)).toBeNull();
+    expect(game.actions.recoveryEntries()).toMatchObject([{ reason: 'not-json', raw }]);
+
+    expect(game.actions.onboard({ treeName: 'Fern', species: 'oak' }).ok).toBe(true);
+    await Promise.resolve();
+    expect(storage.getItem(STORAGE_KEYS.game)).toBe(raw);
+    expect(game.store.getState().runtime.saveFailed).toBe(true);
+    expect(game.actions.exportState()).toContain('"Fern"');
+
+    // "Start fresh" is the decision: from then on the new game is saved, and it stays decided.
+    room = true;
+    game.actions.discardRecovery();
+    expect(game.store.getState().runtime).toMatchObject({ recovery: null, saveFailed: false });
+    game.actions.updateProfile({ name: 'Maya' });
+    await Promise.resolve();
+    expect(saved(storage).state.profile).toMatchObject({ treeName: 'Fern', name: 'Maya' });
+    expect(game.actions.recoveryEntries()).toEqual([]);
+    expect(game.store.getState().runtime).toMatchObject({ recovery: null, saveFailed: false });
+  });
+
+  it('keeps a discarded recovery discarded when the runtime is synced again', async () => {
+    const h = harness({ [STORAGE_KEYS.game]: 'garbage' });
+    expect(h.game.store.getState().runtime.recovery).not.toBeNull();
+    h.game.actions.discardRecovery();
+    const setItem = vi.spyOn(h.storage, 'setItem').mockImplementation(() => {
+      throw new DOMException('full', 'QuotaExceededError');
+    });
+    h.game.actions.onboard({ treeName: 'Fern', species: 'oak' });
+    await Promise.resolve();
+    setItem.mockRestore();
+    expect(h.game.store.getState().runtime).toMatchObject({ recovery: null, saveFailed: true });
+  });
+
   it('keeps playing in memory when a save fails, and says so', async () => {
     const h = planted();
     const quota = new DOMException('full', 'QuotaExceededError');
