@@ -74,10 +74,12 @@ export function resolveDpr(
   deviceDpr: number,
   coarsePointer: boolean,
   scale: number,
+  sharedGpu = false,
 ): number {
   const spec = QUALITY[tier];
+  const megapixels = sharedGpu ? spec.megapixelsShared : spec.megapixels;
   const cap = Math.min(deviceDpr, coarsePointer ? spec.dprTouch : spec.dpr) * scale;
-  const budget = Math.sqrt((spec.megapixels * 1e6 * scale * scale) / Math.max(1, cssPixels));
+  const budget = Math.sqrt((megapixels * 1e6 * scale * scale) / Math.max(1, cssPixels));
   return Math.max(0.5, Math.min(cap, budget));
 }
 
@@ -87,10 +89,20 @@ const LOWER: Record<WorldQuality, WorldQuality | null> = {
   low: null,
 };
 
+/** A GPU that shares memory with the system and is bound by fill rate: anything not known to be faster. */
+export function isSharedGpu(gpu: GpuClass): boolean {
+  return gpu !== 'discrete' && gpu !== 'apple';
+}
+
 export class QualityGovernor {
   tier: WorldQuality;
-  /** Index into `GOVERNOR.dprSteps`. */
+  /** Index into the resolution steps. */
   step = 0;
+  /**
+   * True when the person chose the tier: it is protected by lowering the resolution, in
+   * more steps than `auto` uses, and never swapped for another one behind their back.
+   */
+  pinned = false;
   /** The display's frame interval as observed: the fastest steady cadence seen so far. */
   refreshMs: number = GOVERNOR.refreshMs;
   private readonly window = new Float32Array(GOVERNOR.window);
@@ -106,9 +118,13 @@ export class QualityGovernor {
     this.tier = tier;
   }
 
+  private get steps(): readonly number[] {
+    return this.pinned ? GOVERNOR.pinnedSteps : GOVERNOR.dprSteps;
+  }
+
   /** Share of the tier's DPR cap to render at. */
   get dprScale(): number {
-    return GOVERNOR.dprSteps[this.step] ?? 1;
+    return this.steps[this.step] ?? 1;
   }
 
   /** Device pixel ratio this state allows on a display that could do more. */
@@ -118,12 +134,13 @@ export class QualityGovernor {
 
   /** True once nothing is left to give: the lowest tier at the lowest resolution. */
   get exhausted(): boolean {
-    return LOWER[this.tier] === null && this.step >= GOVERNOR.dprSteps.length - 1;
+    return (this.pinned || LOWER[this.tier] === null) && this.step >= this.steps.length - 1;
   }
 
-  /** Starts over on a tier (the user changed the preference). */
-  reset(tier: WorldQuality): void {
+  /** Starts over on a tier (the user changed the preference); `pinned` when they named it. */
+  reset(tier: WorldQuality, pinned = false): void {
     this.tier = tier;
+    this.pinned = pinned;
     this.step = 0;
     this.filled = 0;
     this.strikes = 0;
@@ -184,7 +201,7 @@ export class QualityGovernor {
     this.calm = 0;
     this.history.push({ tier: this.tier, step: this.step });
 
-    if (this.step < GOVERNOR.dprSteps.length - 1) {
+    if (this.step < this.steps.length - 1) {
       this.step += 1;
     } else {
       const lower = LOWER[this.tier];

@@ -14,12 +14,16 @@ import { ToneMappingMode } from 'postprocessing';
  *     change never changes the colours;
  *   - a light vignette.
  *
+ * On a GPU that shares its memory with the system (a person may choose this tier there,
+ * `auto` never does) the occlusion pass and the multisampled buffer are left out: they
+ * are most of the cost, and the tier is then affordable at a lower resolution.
+ *
  * The composer owns the frame while it is mounted, so it is mounted only for stages that
  * paint their own sky (a clear, bare stage is drawn straight to the canvas).
  */
-export function Effects({ ao }: { ao: boolean }) {
+export function Effects({ ao, multisampling }: { ao: boolean; multisampling: number }) {
   return (
-    <EffectComposer multisampling={4} enableNormalPass={false}>
+    <EffectComposer multisampling={multisampling} enableNormalPass={false}>
       <N8AO
         enabled={ao}
         halfRes

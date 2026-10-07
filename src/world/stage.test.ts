@@ -237,6 +237,19 @@ describe('resolution', () => {
     expect(reduced).toBeCloseTo(full * 0.7, 5);
     expect(resolveDpr('low', 4000 * 3000, 1, false, 0.7)).toBe(0.5);
   });
+
+  it('gives a chosen high tier fewer pixels on a GPU that shares its memory', () => {
+    const css = 1440 * 900;
+    const discrete = resolveDpr('high', css, 1, false, 1);
+    const shared = resolveDpr('high', css, 1, false, 1, true);
+    expect(discrete).toBe(1);
+    expect(shared).toBeLessThan(1);
+    expect((css * shared * shared) / 1e6).toBeCloseTo(QUALITY.high.megapixelsShared, 5);
+    // The tiers `auto` picks there keep their budget.
+    expect(resolveDpr('medium', css, 1, false, 1, true)).toBe(
+      resolveDpr('medium', css, 1, false, 1),
+    );
+  });
 });
 
 describe('QualityGovernor', () => {
@@ -259,6 +272,20 @@ describe('QualityGovernor', () => {
     expect(feed(governor, 26, reactsWithin - 1)).toBe(0);
     expect(feed(governor, 26, 1)).toBe(1);
     expect(reactsWithin * 16.7).toBeLessThan(2000);
+  });
+
+  it('protects a tier the person chose with resolution only, and never swaps it', () => {
+    const governor = new QualityGovernor('high');
+    governor.reset('high', true);
+    const changes = feed(governor, 33.4, reactsWithin * 20);
+    expect(changes).toBe(GOVERNOR.pinnedSteps.length - 1);
+    expect(governor.tier).toBe('high');
+    expect(governor.dprScale).toBe(GOVERNOR.pinnedSteps.at(-1));
+    expect(governor.exhausted).toBe(true);
+    // Back on `auto` the tier may give way again.
+    governor.reset('high');
+    feed(governor, 33.4, reactsWithin * 20);
+    expect(governor.tier).toBe('low');
   });
 
   it('acts on a steady rate that drops every fourth frame', () => {

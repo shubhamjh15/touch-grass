@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useWorldStore } from './store';
+import { isSharedGpu } from './quality';
 import { detectSupport, resolveQuality } from './support';
 import { startTracker } from './tracker';
 import { WorldExplore } from './WorldExplore';
@@ -102,7 +103,11 @@ export function WorldCanvas() {
             {use3d && (
               <SceneBoundary onError={fail}>
                 <Suspense fallback={null}>
-                  <WorldScene onFail={fail} adaptive={!support.software} />
+                  <WorldScene
+                    onFail={fail}
+                    adaptive={!support.software}
+                    shared={isSharedGpu(support.gpu)}
+                  />
                 </Suspense>
               </SceneBoundary>
             )}

@@ -57,8 +57,10 @@ const SAMPLES = 120;
 
 interface SceneProps {
   onFail: () => void;
-  /** Whether `auto` may lower the resolution and the tier when frames are slow. */
+  /** Whether the resolution (and, on `auto`, the tier) may be lowered when frames are slow. */
   adaptive: boolean;
+  /** The GPU shares memory with the system (integrated, mobile, unknown): tighter budgets. */
+  shared: boolean;
 }
 
 const projected = new THREE.Vector3();
@@ -89,6 +91,7 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
     let cancelled = false;
     const governor = new QualityGovernor(useWorldStore.getState().quality);
     let governed = useWorldStore.getState().preference;
+    governor.pinned = governed !== 'auto';
     let lastDrawn = -1;
     const samples = new Float32Array(SAMPLES);
     const sorted = new Float32Array(SAMPLES);
@@ -189,7 +192,7 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
       const { quality, preference, dprScale } = useWorldStore.getState();
       if (preference !== governed) {
         governed = preference;
-        governor.reset(quality);
+        governor.reset(quality, preference !== 'auto');
       }
 
       // Every visible frame is drawn: a swaying tree at half the display rate reads as
@@ -249,10 +252,11 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
             }
           }
         }
-        // `auto` steps the resolution down, then the tier, and never climbs back. It
-        // judges only a world at rest in its stage: never mid-drag (a resize of the
-        // drawing buffer under the user's finger is itself a stutter) or mid-flight.
-        if (adaptive && preference === 'auto' && !current.reducedMotion) {
+        // `auto` steps the resolution down, then the tier. A tier the person chose is
+        // protected the same way but kept: only its resolution gives. Either judges only
+        // a world at rest in its stage: never mid-drag (a resize of the drawing buffer
+        // under the user's finger is itself a stutter) or mid-flight.
+        if (adaptive && preference !== 'off' && !current.reducedMotion) {
           if (current.interacting || !current.locked) governor.pause();
           else if (sinceDrawn > 0 && governor.sample(sinceDrawn)) {
             setQuality(governor.tier);
@@ -378,7 +382,9 @@ function World(props: SceneProps) {
           color="#fff6c9"
         />
       )}
-      {tier.post && sky && <Effects ao={tier.ao} />}
+      {tier.post && sky && (
+        <Effects ao={tier.ao && !props.shared} multisampling={props.shared ? 0 : 4} />
+      )}
       <Loop {...props} frame={frame} />
     </>
   );
@@ -438,7 +444,8 @@ export default function WorldScene(props: SceneProps) {
 
   const tier = QUALITY[quality];
   // In steps of a twentieth, so a stage that resizes by a few pixels keeps its buffer scale.
-  const dpr = Math.round(resolveDpr(quality, pixels, deviceDpr, coarse, dprScale) * 20) / 20;
+  const dpr =
+    Math.round(resolveDpr(quality, pixels, deviceDpr, coarse, dprScale, props.shared) * 20) / 20;
   return (
     <div ref={box} className="absolute inset-0">
       <Canvas

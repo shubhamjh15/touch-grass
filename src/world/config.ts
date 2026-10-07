@@ -114,6 +114,12 @@ export interface QualityTier {
    * stage until it fits. Integrated GPUs are bound by fill rate, not by the ratio.
    */
   megapixels: number;
+  /**
+   * The same budget on a GPU that shares its memory with the system (integrated, mobile,
+   * unrecognised). `auto` never puts such a chip on the high tier, but a person can: its
+   * passes then cost several times the medium tier's per pixel, so it draws fewer of them.
+   */
+  megapixelsShared: number;
   /** Side of the sun's shadow map in texels; 0 = no shadow pass, a soft blob under the crown. */
   shadowMap: number;
   /** The shadow map is redrawn every this many frames while nothing but the wind moves. */
@@ -145,6 +151,7 @@ export const QUALITY: Record<WorldQuality, QualityTier> = {
     dpr: 1,
     dprTouch: 1.5,
     megapixels: 1.1,
+    megapixelsShared: 1.1,
     shadowMap: 0,
     shadowEvery: 1,
     antialias: true,
@@ -164,6 +171,7 @@ export const QUALITY: Record<WorldQuality, QualityTier> = {
     dpr: 1.5,
     dprTouch: 2,
     megapixels: 1.5,
+    megapixelsShared: 1.5,
     shadowMap: 1024,
     shadowEvery: 3,
     antialias: true,
@@ -183,6 +191,7 @@ export const QUALITY: Record<WorldQuality, QualityTier> = {
     dpr: 1.5,
     dprTouch: 2,
     megapixels: 2.6,
+    megapixelsShared: 1,
     shadowMap: 2048,
     shadowEvery: 2,
     antialias: true,
@@ -531,6 +540,11 @@ export const ORBIT = {
 export const GOVERNOR = {
   /** Shares of the tier's DPR cap that are tried before the tier is dropped. */
   dprSteps: [1, 0.85, 0.7],
+  /**
+   * The same for a tier the person chose themselves: it is never dropped for them, so the
+   * resolution may go further down before the governor has nothing left to give.
+   */
+  pinnedSteps: [1, 0.85, 0.7, 0.6, 0.5],
   /** Frames judged together: half a second at 60 Hz. */
   window: 30,
   /** A frame is late when it takes this many display intervals. */
