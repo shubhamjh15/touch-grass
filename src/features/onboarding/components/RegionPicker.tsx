@@ -67,7 +67,7 @@ export function RegionList({ value, onChange, label, className }: RegionListProp
   );
 
   return (
-    <div className={cn('flex min-w-0 flex-col gap-2.5', className)}>
+    <div className={cn('flex min-w-0 shrink-0 flex-col gap-2.5', className)}>
       <SearchInput
         value={query}
         onValueChange={setQuery}
@@ -78,7 +78,7 @@ export function RegionList({ value, onChange, label, className }: RegionListProp
       />
       <Panel
         variant="well"
-        className="max-h-64 overflow-y-auto overscroll-contain p-1.5 lg:max-h-72"
+        className="max-h-64 shrink-0 overflow-y-auto overscroll-contain p-1.5 lg:max-h-72"
       >
         {shown.length === 0 ? (
           <p className="px-2.5 py-4 text-body-sm text-ink-2">

@@ -1,6 +1,6 @@
 import type { BaselineQuestionId, BaselineSegment } from '@/data/catalogue';
-import { parseDayKey, type DayKey } from '@/lib/dates';
-import { formatNumber, pluralize } from '@/lib/format';
+import type { DayKey } from '@/lib/dates';
+import { formatNumber, formatStampDate, pluralize } from '@/lib/format';
 import type { Species } from '@/world';
 
 /** Words of the first-run flow, in one place so the voice stays consistent (design bible, section 9). */
@@ -90,9 +90,7 @@ export function milesHint(kmLabel: string): string | null {
 
 /** "06 OCT 2026": the stamp's date, from a local day key. */
 export function labelDate(day: DayKey): string {
-  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    .format(parseDayKey(day))
-    .toUpperCase();
+  return formatStampDate(day);
 }
 
 /** The three promises of the first screen (product spec 11.3). */
