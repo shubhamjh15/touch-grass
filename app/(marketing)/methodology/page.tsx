@@ -3,6 +3,7 @@ import MethodologyPage from '@/features/legal/MethodologyPage';
 
 export const metadata: Metadata = {
   title: 'Methodology',
+  alternates: { canonical: '/methodology' },
   description: 'How Touch Grass estimates the CO2e each action avoids, with ranges and sources.',
 };
 

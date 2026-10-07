@@ -5,14 +5,27 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { RootLayout } from '@/app/layouts/RootLayout';
 import { BRAND } from '@/lib/brand';
+import { siteUrl } from '@/lib/siteUrl';
+
+/** The share card is a capture of the real landing page (`scripts/og-image.mjs`). */
+const SHARE_CARD = '/og-card.png';
+const SHARE_CARD_ALT = `${BRAND.name}: a small floating island with a young tree, and the words ${BRAND.tagline}`;
 
 export const metadata: Metadata = {
+  metadataBase: siteUrl(),
   title: {
     default: `${BRAND.name} — ${BRAND.tagline}`,
     template: `%s · ${BRAND.name}`,
   },
   description: BRAND.description,
   applicationName: BRAND.name,
+  openGraph: {
+    type: 'website',
+    siteName: BRAND.name,
+    locale: 'en_US',
+    images: [{ url: SHARE_CARD, width: 1200, height: 630, alt: SHARE_CARD_ALT }],
+  },
+  twitter: { card: 'summary_large_image', images: [{ url: SHARE_CARD, alt: SHARE_CARD_ALT }] },
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
