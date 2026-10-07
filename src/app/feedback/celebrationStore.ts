@@ -10,6 +10,8 @@ interface CelebrationState {
   enqueue: (celebrations: readonly Celebration[]) => void;
   /** The current celebration has finished or was dismissed. */
   advance: () => void;
+  /** An undo took XP back: a level the user no longer holds is not celebrated. */
+  dropLevelsAbove: (level: number) => void;
   clear: () => void;
 }
 
@@ -18,5 +20,12 @@ export const useCelebrationStore = create<CelebrationState>()((set) => ({
   enqueue: (celebrations) =>
     set((state) => ({ queue: [...state.queue, ...celebrations].slice(0, MAX_QUEUE) })),
   advance: () => set((state) => ({ queue: state.queue.slice(1) })),
+  dropLevelsAbove: (level) =>
+    set((state) => {
+      const queue = state.queue.filter(
+        (entry) => entry.kind !== 'level-up' || entry.level <= level,
+      );
+      return queue.length === state.queue.length ? state : { queue };
+    }),
   clear: () => set({ queue: [] }),
 }));

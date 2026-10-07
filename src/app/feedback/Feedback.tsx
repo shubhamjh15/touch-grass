@@ -13,7 +13,15 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { gameActions, useGameEvents, useProfile, useSettings, worldPulsesFor } from '@/game';
+import {
+  gameActions,
+  getGameState,
+  levelOf,
+  useGameEvents,
+  useProfile,
+  useSettings,
+  worldPulsesFor,
+} from '@/game';
 import { formatCo2Parts } from '@/lib/format';
 import { useReducedMotion } from '@/lib/hooks';
 import { play } from '@/lib/sfx';
@@ -113,7 +121,11 @@ export function Feedback() {
 
   const carryOut = (plan: FeedbackPlan) => {
     for (const id of plan.dismiss) dismissToast(id);
-    for (const spec of plan.toasts) {
+    // The newest toast sits in front of the stack: the receipt goes last, so its Undo is never
+    // hidden behind "Flowers arrived" on a first log.
+    const isReceipt = (spec: ToastSpec) => Number(spec.action?.kind === 'undo-log');
+    const ordered = [...plan.toasts].sort((a, b) => isReceipt(a) - isReceipt(b));
+    for (const spec of ordered) {
       toast({
         id: spec.id,
         title: spec.title,
@@ -144,6 +156,10 @@ export function Feedback() {
       useCelebrationStore.getState().clear();
       dismissToast();
       return;
+    }
+    if (events.some((event) => event.type === 'action-undone')) {
+      // "Back to how it was" must not be followed by a level-up the undo just took back.
+      useCelebrationStore.getState().dropLevelsAbove(levelOf(getGameState().xp));
     }
     const calm = reducedMotion || celebrations === 'subtle';
     carryOut(planFeedback(events, { treeName, calm }));
