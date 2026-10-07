@@ -10,7 +10,7 @@ import type { GameState } from '../../src/game/types';
 export type FixtureName =
   'fresh' | 'day1' | 'day12' | 'day45' | 'day200' | 'thirsty' | 'dormant' | 'power-user';
 
-export const ORIGIN = 'http://localhost:4173';
+export const ORIGIN = `http://localhost:${process.env.PW_PORT ?? 4173}`;
 export const GAME_KEY = 'touchgrass:game';
 export const COACH_KEY = 'touchgrass:coach';
 export const UI_KEY = 'touchgrass:ui';

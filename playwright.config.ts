@@ -10,7 +10,9 @@ const launchOptions = {
   args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
 };
 
-const PORT = 4173;
+const PORT = Number(process.env.PW_PORT ?? 4173);
+// PW_DIST lets a second run build into its own folder while another engineer's server is up.
+const DIST = process.env.PW_DIST ?? '.next-e2e';
 
 // Set PW_SKIP_BUILD=1 to serve the build that is already in .next-e2e (iterating on specs).
 const skipBuild = process.env.PW_SKIP_BUILD === '1';
@@ -31,6 +33,9 @@ export default defineConfig({
     // (which store local day keys) mean the same thing on every machine.
     timezoneId: 'Asia/Kolkata',
     locale: 'en-US',
+    // The offline worker would answer some requests itself and hide them from page.route; only
+    // e2e/offline.spec.ts turns it on.
+    serviceWorkers: 'block',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -39,12 +44,12 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['Pixel 7'], channel, launchOptions } },
   ],
   webServer: {
-    command: skipBuild ? 'npm run preview' : 'npm run build && npm run preview',
+    command: skipBuild ? 'npx next start -p ' + PORT : 'npm run build && npx next start -p ' + PORT,
     url: `http://localhost:${PORT}/privacy`,
     // Its own output folder, so the suite can run while the dev server is up. No AI key: the
     // coach must answer through the offline coach, which is the path under test.
     env: {
-      NEXT_DIST_DIR: '.next-e2e',
+      NEXT_DIST_DIR: DIST,
       AI_API_KEY: '',
       AI_PROVIDER: '',
       GROQ_API_KEY: '',
