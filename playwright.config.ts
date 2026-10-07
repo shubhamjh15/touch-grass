@@ -42,6 +42,15 @@ export default defineConfig({
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], channel, launchOptions } },
     { name: 'mobile', use: { ...devices['Pixel 7'], channel, launchOptions } },
+    // The other two engines, on request: PW_BROWSERS=all npx playwright test --project=firefox
+    // (needs `npx playwright install firefox webkit` once; CI installs Chromium only).
+    ...(process.env.PW_BROWSERS === 'all'
+      ? [
+          { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+          { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+          { name: 'webkit-phone', use: { ...devices['iPhone 14'] } },
+        ]
+      : []),
   ],
   webServer: {
     command: skipBuild ? 'npx next start -p ' + PORT : 'npm run build && npx next start -p ' + PORT,

@@ -68,9 +68,10 @@ test.describe('with WebGL', () => {
   test('moving between pages keeps the one scene and one context', async ({ page }) => {
     await visit(page, '/today');
     await sceneReady(page);
+    // On a phone the Log tab is the green sticker, whose spoken name is "Log an action".
     await page
       .getByRole('navigation', { name: 'Main' })
-      .getByRole('link', { name: 'Log', exact: true })
+      .getByRole('link', { name: /^Log( an action)?$/ })
       .filter({ visible: true })
       .first()
       .click();
