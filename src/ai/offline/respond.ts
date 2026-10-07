@@ -4,7 +4,7 @@
  * never changes when the user asks twice. Personalised from `CoachContext`,
  * with "log this" chips only for actions the context actually offers.
  */
-import { formatCo2, pluralize } from '@/lib/format';
+import { formatCo2Estimate, pluralize } from '@/lib/format';
 import { hashString } from '@/lib/rng';
 import {
   EVIDENCE_CATEGORY_TO_PRODUCT,
@@ -218,7 +218,7 @@ const explainNumbers: Reply = (context) => {
   const totals = context.totals;
   const sofar =
     totals?.kgTotal !== undefined && totals.kgTotal > 0
-      ? ` So far that adds up to ≈ ${formatCo2(totals.kgTotal)} avoided${totals.actionsTotal ? ` across ${pluralize(totals.actionsTotal, 'action')}` : ''}.`
+      ? ` So far that adds up to ≈ ${formatCo2Estimate(totals.kgTotal)} avoided${totals.actionsTotal ? ` across ${pluralize(totals.actionsTotal, 'action')}` : ''}.`
       : '';
   return `Every figure is an estimate: your action compared with the typical alternative, using published emission factors. That's why you see ≈. Treat totals as the right size, not the right decimal.${sofar} The methodology page lists every source.`;
 };

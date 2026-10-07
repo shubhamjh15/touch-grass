@@ -4,7 +4,7 @@ import { CloudRain, Flame } from 'lucide-react';
 import { useEffect } from 'react';
 import { useHud, useLevelInfo, useStreak, type Hud as HudModel } from '@/game';
 import { cn } from '@/lib/cn';
-import { formatCo2Parts, formatNumber, pluralize } from '@/lib/format';
+import { formatCo2EstimateParts, formatNumber, pluralize } from '@/lib/format';
 import {
   HonestyMark,
   NumberTicker,
@@ -117,7 +117,7 @@ export function Hud({ className }: { className?: string }) {
   const level = useLevelInfo();
   const { justEarned, streakFlash } = useHudFlashes();
   const levelSpan = level.nextLevelXp - level.levelStartXp;
-  const kg = formatCo2Parts(hud.kg);
+  const kg = formatCo2EstimateParts(hud.kg);
 
   return (
     <div
@@ -193,7 +193,7 @@ export function Hud({ className }: { className?: string }) {
         >
           <NumberTicker
             value={hud.kg}
-            format={(value) => formatCo2Parts(value).value}
+            format={(value) => formatCo2EstimateParts(value).value}
             className="type-figure text-display-xs"
           />
           <span className="type-slug text-ink-3" aria-hidden="true">

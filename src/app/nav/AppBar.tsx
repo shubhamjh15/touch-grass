@@ -3,7 +3,7 @@
 import { Flame } from 'lucide-react';
 import { gameActions, useHud, useLevelInfo, useProfile, useSettings } from '@/game';
 import { cn } from '@/lib/cn';
-import { formatCo2Parts, formatNumber, pluralize } from '@/lib/format';
+import { formatCo2EstimateParts, formatNumber, pluralize } from '@/lib/format';
 import { play } from '@/lib/sfx';
 import {
   Approx,
@@ -115,7 +115,7 @@ function HudSheet({
   const level = useLevelInfo();
   const settings = useSettings();
   const { justEarned } = useHudFlashes();
-  const kg = formatCo2Parts(hud.kg);
+  const kg = formatCo2EstimateParts(hud.kg);
   const levelSpan = level.nextLevelXp - level.levelStartXp;
 
   return (

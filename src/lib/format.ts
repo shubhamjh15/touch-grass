@@ -87,6 +87,16 @@ export function formatCo2Estimate(kg: number): string {
   return formatCo2(Math.round(kg / magnitude) * magnitude);
 }
 
+/**
+ * `formatCo2Estimate` split into number and unit. Every place that shows a running total
+ * uses this, so the top bar and Impact print the same figure ("550 kg", never "554 kg").
+ */
+export function formatCo2EstimateParts(kg: number): { value: string; unit: string } {
+  const text = formatCo2Estimate(kg);
+  const split = text.lastIndexOf(' ');
+  return { value: text.slice(0, split), unit: text.slice(split + 1) };
+}
+
 /** "1 day", "3 days". Pass `plural` for irregular nouns. */
 export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
   return `${formatNumber(count)} ${count === 1 ? singular : plural}`;
