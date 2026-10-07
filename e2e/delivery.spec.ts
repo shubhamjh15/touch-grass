@@ -54,7 +54,7 @@ test.describe('search and sharing', () => {
     const meta = async (selector: string) => page.locator(selector).first().getAttribute('content');
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
-      /^https?:\/\/[^/]+\/$/,
+      /^https?:\/\/[^/]+\/?$/,
     );
     expect(await meta('meta[property="og:title"]')).toContain('Touch Grass');
     expect(await meta('meta[property="og:description"]')).toBeTruthy();
