@@ -28,10 +28,13 @@ export function SectionHeading({
 }: SectionHeadingProps) {
   return (
     <div
-      className={cn('mt-5 mb-2.5 flex items-baseline justify-between gap-3', className)}
+      className={cn(
+        'mt-5 mb-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1',
+        className,
+      )}
       {...rest}
     >
-      <Heading className="min-w-0 text-h3">{title}</Heading>
+      <Heading className="max-w-full text-h3 text-balance">{title}</Heading>
       {action ? (
         <UiLink
           href={action.href}
@@ -41,7 +44,7 @@ export function SectionHeading({
           <ChevronRight size={12} strokeWidth={2.5} aria-hidden="true" />
         </UiLink>
       ) : meta ? (
-        <span className="shrink-0 type-slug text-ink-3">{meta}</span>
+        <span className="max-w-full type-slug text-ink-3">{meta}</span>
       ) : null}
     </div>
   );

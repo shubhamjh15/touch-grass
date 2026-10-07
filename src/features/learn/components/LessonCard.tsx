@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
-import { useId } from 'react';
+import { Fragment, useId } from 'react';
 import { ROUTES } from '@/app/routes';
 import { cn } from '@/lib/cn';
 import { Card, Stamp, Tag } from '@/ui';
@@ -46,6 +46,9 @@ export function LessonCard({ row, recommended }: { row: LessonRow; recommended: 
   const { lesson } = row;
   const topic = TOPIC_BY_ID[lesson.category];
   const TopicIcon = topic.icon;
+  // A passed card carries a wide stamp beside the slug, so on a phone the slug breaks between its two
+  // facts instead of leaving a dangling dot.
+  const slugParts = lessonSlug(row.number, lesson.readingMinutes).split(' · ');
 
   return (
     <Card
@@ -66,7 +69,21 @@ export function LessonCard({ row, recommended }: { row: LessonRow; recommended: 
         </span>
         <span className="min-w-0 flex-1 pt-1">
           <span className="block type-slug leading-[1.4] text-ink-3">
-            {lessonSlug(row.number, lesson.readingMinutes)}
+            {slugParts.map((part, index) => (
+              <Fragment key={part}>
+                {index > 0 ? (
+                  row.status === 'passed' ? (
+                    <>
+                      <span className="max-sm:hidden"> · </span>
+                      <br className="sm:hidden" />
+                    </>
+                  ) : (
+                    ' · '
+                  )
+                ) : null}
+                <span className="whitespace-nowrap">{part}</span>
+              </Fragment>
+            ))}
           </span>
         </span>
         <LessonState row={row} />

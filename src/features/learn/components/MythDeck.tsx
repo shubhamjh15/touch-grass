@@ -81,7 +81,7 @@ export function MythDeck({ flippedEver }: { flippedEver: readonly number[] }) {
 
       <ul
         aria-label={LEARN_COPY.mythListLabel}
-        className="scroll-row gap-3 [--row-pad:10px] @2xl:m-0 @2xl:grid @2xl:grid-cols-3 @2xl:gap-4 @2xl:overflow-visible @2xl:p-0 @4xl:grid-cols-4 @6xl:grid-cols-5 @6xl:gap-5"
+        className="scroll-row gap-3 [--row-pad:10px] max-lg:@max-2xl:-mx-(--gutter) max-lg:@max-2xl:[scroll-padding-inline:var(--gutter)] max-lg:@max-2xl:px-(--gutter) @2xl:m-0 @2xl:grid @2xl:grid-cols-3 @2xl:gap-4 @2xl:overflow-visible @2xl:p-0 @4xl:grid-cols-4 @6xl:grid-cols-5 @6xl:gap-5"
       >
         {deck.map((card) => {
           const state = cards[card.number] ?? FACE_DOWN;
