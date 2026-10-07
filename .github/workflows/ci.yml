@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'redesign/**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Type-check, lint, format, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx eslint .
+      - run: npx prettier --check .
+      - run: npx vitest run
+
+  build:
+    name: Production build and end-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # The suite serves this build from .next-e2e (see playwright.config.ts), so it is built once, here.
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_DIST_DIR: .next-e2e
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Build size
+        run: node scripts/measure-build.mjs .next-e2e
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end tests
+        run: npx playwright test
+        env:
+          PW_SKIP_BUILD: '1'
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Keep the traces of failures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results
+          retention-days: 7
