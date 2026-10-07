@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { PageHeader, PageStack } from '@/app/shell';
 import { useProfile } from '@/game';
 import { Segmented } from '@/ui';
@@ -30,9 +30,20 @@ export default function ImpactPage() {
     },
     [params, router],
   );
+  // "See the planet" is a button inside the half that is about to be replaced, so focus would be
+  // left on nothing. Once the planet half is up it goes to the page heading, as on any navigation.
+  const refocus = useRef(false);
   const seePlanet = useCallback(() => {
+    refocus.current = true;
     router.push(viewHref('planet', params.toString()));
   }, [params, router]);
+  useEffect(() => {
+    if (!refocus.current || view !== 'planet') return;
+    refocus.current = false;
+    const heading = document.querySelector<HTMLElement>('#main h1, main h1');
+    heading?.setAttribute('tabindex', '-1');
+    heading?.focus({ preventScroll: true });
+  }, [view]);
 
   return (
     <>
