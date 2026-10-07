@@ -1,5 +1,8 @@
+// By file, not through `@/app/shell`: that barrel also carries the app's header and, with
+// it, the grove's stage, which a reading page never shows.
+import { PageHeading } from '@/app/page/PageHeading';
+import { PageSection, PageStack } from '@/app/page/PageSection';
 import { ROUTES } from '@/app/routes';
-import { PageHeader, PageSection, PageStack } from '@/app/shell';
 import { GRID } from '@/data/catalogue';
 import {
   CANNOT_CLAIM,
@@ -115,12 +118,11 @@ export default function MethodologyPage() {
   return (
     <ReadingFrame contents={CONTENTS}>
       <HashOpener />
-      <PageHeader
+      <PageHeading
         slug={`FACTORS ${FACTORS_VERSION} · ${FACTORS_DATE}`}
         title={METHODOLOGY_COPY.title}
         lead={METHODOLOGY_COPY.lead}
         fill="yellow"
-        grove={false}
       />
       <PageStack>
         <div className="grid gap-4">

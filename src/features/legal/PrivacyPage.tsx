@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
+// By file, not through `@/app/shell`: that barrel also carries the app's header and, with
+// it, the grove's stage, which a reading page never shows.
+import { PageHeading } from '@/app/page/PageHeading';
+import { PageSection, PageStack } from '@/app/page/PageSection';
 import { ROUTES } from '@/app/routes';
-import { PageHeader, PageSection, PageStack } from '@/app/shell';
 import {
   PRIVACY_DELETE,
   PRIVACY_EXPORT,
@@ -76,13 +79,7 @@ export default function PrivacyPage() {
 
   return (
     <ReadingFrame contents={PRIVACY_COPY.contents}>
-      <PageHeader
-        slug="PRIVACY"
-        title={PRIVACY_COPY.title}
-        lead={PRIVACY_COPY.lead}
-        fill="pink"
-        grove={false}
-      />
+      <PageHeading slug="PRIVACY" title={PRIVACY_COPY.title} lead={PRIVACY_COPY.lead} fill="pink" />
       <PageStack>
         <Summary />
 
