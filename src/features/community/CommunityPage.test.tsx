@@ -365,7 +365,8 @@ describe('the share card', () => {
       await screen.findByRole('img', { name: /Share card preview: Fern/ }),
     ).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: 'Streak' })).toBeChecked();
-    expect(screen.getByRole('switch', { name: /≈ kg CO2e avoided/ })).toBeChecked();
+    // The unit is drawn with a real subscript, so its name is read in three parts.
+    expect(screen.getByRole('switch', { name: /kg CO\s*2\s*e avoided/ })).toBeChecked();
     expect(screen.getByRole('switch', { name: /This week’s rings/ })).toBeChecked();
     expect(screen.getByRole('switch', { name: /My name/ })).not.toBeChecked();
   });

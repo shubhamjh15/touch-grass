@@ -12,7 +12,7 @@ import {
   useTreeStatus,
 } from '@/game';
 import { useReducedMotion } from '@/lib/hooks';
-import { Button, Card, Segmented, Skeleton, Switch, TiltCard } from '@/ui';
+import { Approx, Button, Card, Co2e, Segmented, Skeleton, Switch, TiltCard } from '@/ui';
 import { COMMUNITY_COPY } from '../copy';
 import {
   buildLayout,
@@ -167,7 +167,7 @@ export function ShareStudio() {
 
   return (
     <div className="grid grid-cols-1 items-start gap-6 @3xl:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] @3xl:gap-8">
-      <div className="mx-auto grid w-full max-w-72 grid-cols-1 gap-3 @3xl:mx-0 @3xl:max-w-none">
+      <div className="mx-auto grid w-full max-w-60 grid-cols-1 gap-3 @3xl:mx-0 @3xl:max-w-none">
         <TiltCard disabled={reduced} className="w-full">
           <div
             className="relative w-full overflow-hidden rounded-md border-3 border-ink bg-paper shadow-3"
@@ -203,11 +203,15 @@ export function ShareStudio() {
           fullWidth
         />
 
-        <fieldset className="grid grid-cols-1 gap-1">
+        <fieldset className="order-3 grid grid-cols-1 gap-1 @3xl:order-2">
           <legend className="mb-1 text-label text-ink">{COPY.showLabel}</legend>
           <Switch label={COPY.streak} checked={options.streak} onCheckedChange={toggle('streak')} />
           <Switch
-            label={COPY.kg}
+            label={
+              <>
+                <Approx weight="display" /> kg <Co2e /> avoided
+              </>
+            }
             description={COPY.kgHint}
             checked={options.kg}
             onCheckedChange={toggle('kg')}
@@ -221,27 +225,29 @@ export function ShareStudio() {
           />
         </fieldset>
 
-        <div className="flex flex-wrap gap-3 border-t-[1.5px] border-ink pt-4">
-          <Button
-            variant="primary"
-            icon={canShare ? Share2 : Download}
-            onClick={doExport}
-            loading={busy}
-            disabledReason={layout ? undefined : COPY.previewLoading}
-          >
-            {busy ? COPY.exporting : canShare ? COPY.exportShare : COPY.exportDownload}
-          </Button>
-          <Button variant="neutral" icon={Copy} onClick={copyCaption}>
-            {COPY.copyCaption}
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 gap-1">
-          <p className="text-caption text-ink-3">
-            {COPY.captionLabel}: <span className="text-ink-2">{caption}</span>
-          </p>
-          <p role="status" aria-live="polite" className="min-h-5 text-body-sm text-ink-2">
-            {outcome?.text ?? captionNote ?? ''}
-          </p>
+        <div className="order-2 grid grid-cols-1 gap-3 @3xl:order-3 @3xl:border-t-[1.5px] @3xl:border-ink @3xl:pt-4">
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="primary"
+              icon={canShare ? Share2 : Download}
+              onClick={doExport}
+              loading={busy}
+              disabledReason={layout ? undefined : COPY.previewLoading}
+            >
+              {busy ? COPY.exporting : canShare ? COPY.exportShare : COPY.exportDownload}
+            </Button>
+            <Button variant="neutral" icon={Copy} onClick={copyCaption}>
+              {COPY.copyCaption}
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 gap-1">
+            <p className="text-caption text-ink-3">
+              {COPY.captionLabel}: <span className="text-ink-2">{caption}</span>
+            </p>
+            <p role="status" aria-live="polite" className="min-h-5 text-body-sm text-ink-2">
+              {outcome?.text ?? captionNote ?? ''}
+            </p>
+          </div>
         </div>
       </Card>
     </div>
