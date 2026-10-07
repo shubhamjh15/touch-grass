@@ -65,6 +65,8 @@ test.describe('export', () => {
     await page.getByRole('button', { name: 'Export JSON' }).click();
     const file = await download;
     expect(file.suggestedFilename()).toMatch(/^touch-grass-\d{4}-\d{2}-\d{2}\.json$/);
+    // Checked at once: the note fades after a few seconds, sooner than a busy machine reads a file.
+    await expect(page.getByText(/^Saved touch-grass-.*\.json\.$/).first()).toBeVisible();
 
     const path = await file.path();
     const envelope = JSON.parse(readFileSync(path, 'utf8')) as {
@@ -74,7 +76,6 @@ test.describe('export', () => {
     expect(envelope.app).toBe('touchgrass');
     expect(envelope.state.logs).toHaveLength(saved.logs.length);
     expect(envelope.state.profile.treeName).toBe(saved.profile.treeName);
-    await expect(page.getByText(/^Saved touch-grass-.*\.json\.$/).first()).toBeVisible();
   });
 
   test('CSV has a header and one row per log', async ({ page }) => {
