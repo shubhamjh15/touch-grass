@@ -29,6 +29,7 @@ import { allContentItems } from './contentItems';
 import { DATASETS } from './datasets';
 import { CONTENT_SOURCES } from './lessons/sources';
 import type { SourceRef } from './lessons/types';
+import { FACTORS_VERSION, actionAnchor } from './pointers';
 
 export type MethodologyBlock =
   | { kind: 'p'; text: string }
@@ -61,7 +62,7 @@ export interface WordingRules {
   templates: Readonly<Record<string, string>>;
 }
 
-export const FACTORS_VERSION = EVIDENCE_META.factorsVersion;
+export { FACTORS_VERSION, actionAnchor };
 export const FACTORS_DATE = EVIDENCE_META.generated;
 
 const worldGrid = GRID_BY_ID.get(EVIDENCE_META.defaultRegion);
@@ -425,7 +426,6 @@ export interface ActionSourceRow {
   anchor: string;
 }
 
-export const actionAnchor = (actionId: string) => `action-${actionId}`;
 export const sourceAnchor = (key: string) => `source-${key}`;
 
 const CONFIDENCE_LABEL: Readonly<Record<Confidence, string>> = Object.fromEntries(

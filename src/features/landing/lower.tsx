@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ROUTES } from '@/app/routes';
 import { ACTIONS, ACTION_BY_ID, CATEGORIES, SOURCES } from '@/data/catalogue';
-import { actionAnchor } from '@/data/content';
+import { actionAnchor } from '@/data/pointers';
 import { DAILY_QUEST_BY_ID } from '@/data/quests';
 import { DAILY_GOAL, estimateKg } from '@/game';
 import { cn } from '@/lib/cn';

@@ -10,7 +10,7 @@
  */
 import { ROUTES } from '@/app/routes';
 import { ACTION_BY_ID, DEFAULT_REGION, SOURCES, type ActionDef } from '@/data/catalogue';
-import { FACTORS_VERSION, actionAnchor } from '@/data/content';
+import { FACTORS_VERSION, actionAnchor } from '@/data/pointers';
 import { GROWTH_TABLE, STAGES, estimateKg, growthOf, type KgContext, type StageName } from '@/game';
 import { formatCo2Estimate, formatNumber, pluralize } from '@/lib/format';
 import { clamp01, lerp, smoothstep } from '@/lib/math';

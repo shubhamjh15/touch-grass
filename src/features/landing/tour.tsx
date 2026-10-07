@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { ATMOSPHERIC_CO2, LESSONS, MYTHS } from '@/data/content';
+import { ATMOSPHERIC_CO2 } from '@/data/datasets/co2Atmosphere';
+import { MYTHS } from '@/data/myths';
+import { LESSON_COUNT } from '@/data/pointers';
 import { DAILY_QUEST_BY_ID } from '@/data/quests';
 import { BREAK_DURATIONS_MIN, XP_BREAK_SHORT } from '@/game';
 import { cn } from '@/lib/cn';
@@ -244,7 +246,7 @@ const CARDS: readonly TourCard[] = [
 
 function cardLine(line: string): string {
   return line
-    .replace('{lessons}', formatNumber(LESSONS.length))
+    .replace('{lessons}', formatNumber(LESSON_COUNT))
     .replace('{myths}', formatNumber(MYTHS.length));
 }
 
