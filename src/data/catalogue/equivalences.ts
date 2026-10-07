@@ -96,7 +96,8 @@ export const EQUIVALENCES: readonly (EquivalenceDef & { id: EquivalenceId })[] =
   },
   {
     id: 'world-average-person-day',
-    label: "days of the average person's CO2 emissions",
+    // Read after "the CO2 from": the label must not say "CO2 emissions" a second time.
+    label: "days of the average person's fossil-fuel use",
     kgCO2ePerUnit: 12.96,
     kWhPerUnit: null,
     gridScaled: false,
