@@ -1,7 +1,7 @@
 import { Info } from 'lucide-react';
 import type { MethodologyBlock, PrivacyBlock } from '@/data/content';
 import { cn } from '@/lib/cn';
-import { Prose } from '@/ui';
+import { Co2Text, Prose } from '@/ui';
 
 /**
  * Renders the content modules' blocks (paragraph, list, formula, note) as running text.
@@ -20,12 +20,18 @@ export function Blocks({
         const key = `${block.kind}-${index}`;
         switch (block.kind) {
           case 'p':
-            return <p key={key}>{block.text}</p>;
+            return (
+              <p key={key}>
+                <Co2Text text={block.text} />
+              </p>
+            );
           case 'list':
             return (
               <ul key={key}>
                 {block.items.map((item) => (
-                  <li key={item}>{item}</li>
+                  <li key={item}>
+                    <Co2Text text={item} />
+                  </li>
                 ))}
               </ul>
             );
@@ -35,7 +41,7 @@ export function Blocks({
                 key={key}
                 className="not-prose my-4 rounded-ctl border-2 border-ink bg-paper px-3.5 py-3 font-mono text-data font-medium break-words"
               >
-                {block.text}
+                <Co2Text text={block.text} />
               </p>
             );
           case 'note':
@@ -45,7 +51,9 @@ export function Blocks({
                 className="not-prose my-4 flex items-start gap-3 rounded-ctl border-3 border-ink bg-yellow-tint px-3.5 py-3 text-body-sm font-medium"
               >
                 <Info size={18} strokeWidth={2.5} aria-hidden="true" className="mt-0.5 shrink-0" />
-                <p>{block.text}</p>
+                <p>
+                  <Co2Text text={block.text} />
+                </p>
               </aside>
             );
         }
