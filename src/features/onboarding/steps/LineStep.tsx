@@ -14,6 +14,11 @@ export function LineStep({ flow }: { flow: OnboardingFlow }) {
   const answered = answeredCount(draft);
   const total = QUIZ_QUESTION_IDS.length;
   const complete = answered === total;
+  // The same rule the draft applies when the quiz opens: no region yet, so it asks first.
+  const asksRegion =
+    draft.quiz === 'undecided' || draft.quiz === 'skipped'
+      ? !draft.regionSet
+      : draft.quizAsksRegion;
 
   const take = () => {
     change({ type: 'quiz-start' });
@@ -31,7 +36,7 @@ export function LineStep({ flow }: { flow: OnboardingFlow }) {
     ? COPY.line.reviewLine
     : answered > 0
       ? `${pluralize(answered, 'answer')} kept. ${pluralize(total - answered, 'question')} to go.`
-      : COPY.line.takeLine;
+      : COPY.line.takeLine(total + (asksRegion ? 1 : 0));
 
   return (
     <StepFrame slug={COPY.line.slug} title={COPY.line.title} lead={COPY.line.lead} onSubmit={take}>

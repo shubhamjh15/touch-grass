@@ -145,7 +145,9 @@ export const COPY = {
     title: 'Know where you start?',
     lead: 'A quick quiz gives you a rough yearly footprint to measure your progress against. It is optional and never graded.',
     take: 'Take the 60-second quiz',
-    takeLine: 'Six questions. Tap an answer and it moves on.',
+    // The quiz opens with "Where's home?" when no region was picked: its counter then reads "1 / 7".
+    takeLine: (screens: number) =>
+      `${screens === 7 ? 'Seven' : screens === 6 ? 'Six' : screens} questions. Tap an answer and it moves on.`,
     resume: 'Carry on with the quiz',
     review: 'See your result',
     reviewLine: 'Your answers are kept.',
