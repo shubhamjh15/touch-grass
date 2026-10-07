@@ -84,7 +84,7 @@ export const TIMELAPSE = {
 export const TIMELAPSE_CAPTIONS: Record<TimelapseFrameId, { title: string; body: string }> = {
   seed: {
     title: 'You plant it.',
-    body: 'A seed, a name and a species. Planting takes a minute or two, and there is nothing to sign up for.',
+    body: 'A seed, a name and a species. Planting takes about a minute, and there is nothing to sign up for.',
   },
   sprout: {
     title: 'Same day: it sprouts.',
@@ -279,7 +279,7 @@ export const FINAL = {
   freshLines: ['Grow one', 'of your own.'],
   body: 'The demo goes back in the drawer when you leave. Yours stays, and grows a ring every day you show up.',
   action: 'Plant your tree',
-  aside: 'About two minutes. No account, no email.',
+  aside: 'About a minute. No account, no email.',
 } as const;
 
 export const SPECIES_LABEL = { oak: 'Oak', cherry: 'Cherry', pine: 'Pine' } as const;
