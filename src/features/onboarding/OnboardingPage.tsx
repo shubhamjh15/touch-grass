@@ -2,6 +2,7 @@
 
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { RecoveryNote } from '@/app/runtime/RecoveryNote';
 import { usePageTitle } from '@/app/shell';
 import { ColorBar, IconButton, Panel, TapeNote } from '@/ui';
 import { Ceremony } from './Ceremony';
@@ -148,6 +149,7 @@ export default function OnboardingPage() {
           <Stepper screen={screen} />
         </div>
         <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col lg:my-auto lg:flex-none lg:py-10">
+          <RecoveryNote className="mb-7" />
           {flow.persisted ? null : (
             <TapeNote tone="yellow" tape="pink" rotate={-1} className="mb-7" role="status">
               {COPY.storage}

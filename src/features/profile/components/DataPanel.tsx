@@ -2,6 +2,7 @@
 
 import { Download, FileSpreadsheet, FileUp, Smartphone, Trash2 } from 'lucide-react';
 import { useRef, useState, type ChangeEvent } from 'react';
+import { RecoveryNote } from '@/app/runtime/RecoveryNote';
 import { gameActions, useGameRuntime, useGameState, type ImportResult } from '@/game';
 import { Button, Card, Checkbox, ConfirmDialog, Ledger, ListRow, Textarea, toast } from '@/ui';
 import { COPY } from '../copy';
@@ -284,6 +285,7 @@ export function DataPanel() {
   const data = useDataExport();
   return (
     <div className="grid gap-8">
+      <RecoveryNote />
       <ExportBlock data={data} />
       <ImportBlock />
       <DeviceBlock />
