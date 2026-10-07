@@ -137,7 +137,10 @@ void main() {
   float d = length(gl_PointCoord - 0.5) * 2.0;
   float core = smoothstep(0.35, 0.0, d);
   float halo = smoothstep(1.0, 0.0, d);
-  gl_FragColor = vec4(vec3(1.0, 0.9, 0.38) * (halo * halo * 0.5 + core * 1.8) * vGlow, 1.0);
+  float glow = (halo * halo * 0.5 + core * 1.8) * vGlow;
+  // Light that is added to what is behind it. The alpha is the glow too, so on a stage
+  // without a sky a firefly is a soft dot on the page and never an opaque square.
+  gl_FragColor = vec4(vec3(1.0, 0.9, 0.38) * glow, min(1.0, glow));
 }
 `;
 
@@ -269,7 +272,11 @@ export function Life() {
         uScale: { value: 600 },
       },
       transparent: true,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.CustomBlending,
+      blendSrc: THREE.OneFactor,
+      blendDst: THREE.OneFactor,
+      blendSrcAlpha: THREE.OneFactor,
+      blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
       depthWrite: false,
     });
     return { geometry, shader };

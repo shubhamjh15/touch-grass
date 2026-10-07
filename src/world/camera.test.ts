@@ -84,6 +84,20 @@ describe('viewFor', () => {
     expect(wide.span).toBeCloseTo(2 * wide.distance * tan, 9);
   });
 
+  it('shows the whole island and the whole tree on a stage without a sky', () => {
+    const tan = Math.tan((FOV * Math.PI) / 360);
+    for (const aspect of [0.8, 1, 1.5]) {
+      for (const growth of [0, 0.03, 0.14, 0.36, 0.66, 1]) {
+        const view = viewFor(input('companion', growth, { aspect, whole: true }), blank());
+        const { treeTop } = treeAt(growth);
+        // The lawn (radius 3) fits the width with air to spare, the rock underside the height.
+        expect(3.1 / (view.distance * tan * aspect), `${aspect} at ${growth}`).toBeLessThan(0.95);
+        expect(treeShare(view, treeTop), `${aspect} at ${growth}`).toBeLessThan(0.98);
+        expect(treeShare(view, -2), `${aspect} at ${growth}`).toBeGreaterThan(0.02);
+      }
+    }
+  });
+
   it('eases the frame with growth', () => {
     expect(frameShare(0)).toBe(0);
     expect(frameShare(1)).toBe(1);

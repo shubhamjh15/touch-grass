@@ -73,6 +73,22 @@ export const VIEW: Record<StageMode, ModeView> = {
   },
 };
 
+/**
+ * A stage with no sky behind it shows the world as a cut-out sticker on the page: the
+ * whole island with its rock underside and the whole tree, at every age, so the picture's
+ * edge is the island's own outline and never the edge of the box. Seen from a little
+ * higher, so the lawn and what stands on it still read at thumbnail size.
+ */
+export const STICKER_VIEW: ModeView = {
+  pitch: deg(19),
+  youngHalf: 3.12,
+  elderHalf: 3.4,
+  youngBelow: 2.05,
+  elderBelow: 2.2,
+  headroom: 0.3,
+  minTop: 0.9,
+};
+
 export interface ViewInput {
   mode: StageMode;
   /** Width over height of the stage. */
@@ -93,6 +109,8 @@ export interface ViewInput {
    * a bleed stage): the crown is kept below it.
    */
   chrome?: number;
+  /** The stage has no sky: frame the whole island as a cut-out (`STICKER_VIEW`). */
+  whole?: boolean;
 }
 
 export interface View {
@@ -111,7 +129,8 @@ export function frameShare(growth: number): number {
 }
 
 export function viewFor(input: ViewInput, out: View): View {
-  const view = VIEW[input.mode];
+  const whole = input.whole === true;
+  const view = whole ? STICKER_VIEW : VIEW[input.mode];
   const share = frameShare(input.growth);
   const half = Math.max(lerp(view.youngHalf, view.elderHalf, share), input.treeHalfWidth + 0.35);
   const top = Math.max(input.treeTop + view.headroom, view.minTop);
@@ -134,7 +153,8 @@ export function viewFor(input: ViewInput, out: View): View {
   // Standing on the bottom edge: the lowest framed point sits just above the stage's edge.
   const grounded = -below + (span / 2) * 0.97;
   out.targetX = input.treeX;
-  out.targetY = lerp(centred, Math.max(centred, grounded), clamp01(input.anchor));
+  // A cut-out floats in the middle of its box: there is no ground line to stand it on.
+  out.targetY = whole ? centred : lerp(centred, Math.max(centred, grounded), clamp01(input.anchor));
   out.targetZ = input.treeZ * 0.4;
   out.distance = distance;
   out.pitch = view.pitch;

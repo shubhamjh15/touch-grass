@@ -227,6 +227,8 @@ export function CameraRig({ frame }: { frame: RefObject<WorldFrame | null> }) {
           : live.mode === 'hero' || live.mode === 'hub'
             ? CAMERA.bleedChrome / Math.max(1, three.size.height)
             : 0,
+        // Without a sky the picture has no edge of its own: the island is shown whole.
+        whole: !live.explore && !useScene.getState().sky,
       },
       wanted,
     );

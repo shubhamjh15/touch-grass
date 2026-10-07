@@ -95,6 +95,14 @@ const rest = (): Spring => ({ x: 0, v: 0 });
 const inViewport = (box: DOMRect): boolean =>
   box.bottom > 0 && box.right > 0 && box.top < window.innerHeight && box.left < window.innerWidth;
 
+/** The soft edge of a stage without a sky: both axes fade out over the last tenth. */
+const FEATHER =
+  'linear-gradient(to right, transparent, black 10%, black 90%, transparent), linear-gradient(to bottom, transparent, black 8%, black 92%, transparent)';
+const MASK_COMPOSITE = [
+  ['mask-composite', 'intersect'],
+  ['-webkit-mask-composite', 'source-in'],
+] as const;
+
 /** Steps per hour in which the page-wide sky tokens follow the clock. */
 const ROOT_SKY_STEPS = 12;
 
@@ -127,7 +135,7 @@ export function startTracker(layers: TrackerLayers): () => void {
   let cachedSnapshot: WorldSnapshot | null = null;
   let cachedPreview: Partial<WorldSnapshot> | null = null;
   let merged: WorldSnapshot = useWorldStore.getState().snapshot;
-  const written = { transform: '', opacity: '', skyOpacity: '' };
+  const written = { transform: '', opacity: '', skyOpacity: '', mask: '' };
 
   const frame: WorldFrame = {
     time: 0,
@@ -274,6 +282,20 @@ export function startTracker(layers: TrackerLayers): () => void {
       shown.anchor = wantsAnchor + (from.anchor - wantsAnchor) * blend.x;
       shown.sky = wantsSky + (from.sky - wantsSky) * blend.x;
       frame.mode = options.mode;
+      // Without a sky the layer is a cut-out on the page: whatever strays to the edge of
+      // its box (a bird, a burst of leaves) fades out there instead of being sliced off.
+      const mask = options.sky ? '' : FEATHER;
+      if (mask !== written.mask) {
+        written.mask = mask;
+        for (const name of ['mask-image', '-webkit-mask-image']) {
+          if (mask) layer.style.setProperty(name, mask);
+          else layer.style.removeProperty(name);
+        }
+        for (const [name, value] of MASK_COMPOSITE) {
+          if (mask) layer.style.setProperty(name, value);
+          else layer.style.removeProperty(name);
+        }
+      }
       frame.flying = offset.x.x !== 0 || offset.y.x !== 0 || offset.s.x !== 0;
       if (dip < 1) dip = Math.min(1, dip + (dt * 1000) / MOTION.crossFadeMs);
       presence = Math.min(1, presence + dt * 14 + (dt === 0 ? 0.05 : 0));
