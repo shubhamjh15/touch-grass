@@ -110,12 +110,14 @@ function Tour() {
         aria-label="Quick tour"
         aria-live="polite"
         featured
-        className="fixed inset-x-3 bottom-[calc(var(--tabbar-h)+var(--safe-b)+52px)] z-(--z-scrim) grid max-lg:grid-cols-[minmax(0,1fr)_auto] max-lg:items-center max-lg:gap-x-3 max-lg:gap-y-0.5 max-lg:p-3 lg:gap-2 lg:inset-x-auto lg:right-10 lg:bottom-28 lg:w-[380px]"
+        className="fixed inset-x-3 bottom-[calc(var(--tabbar-h)+var(--safe-b)+52px)] z-(--z-scrim) grid max-lg:grid-cols-[minmax(0,1fr)_auto] max-lg:items-center max-lg:gap-x-3 max-lg:gap-y-0.5 max-lg:p-3 lg:inset-x-auto lg:right-10 lg:bottom-28 lg:w-[380px] lg:gap-2"
       >
         <p className="type-slug text-ink-3 max-lg:col-start-1 max-lg:row-start-1">
           Quick tour · {step + 1} of {COACH_MARKS.length}
         </p>
-        <h2 className="text-body font-bold text-ink max-lg:col-start-1 max-lg:row-start-2 lg:text-h4">{mark.title}</h2>
+        <h2 className="text-body font-bold text-ink max-lg:col-start-1 max-lg:row-start-2 lg:text-h4">
+          {mark.title}
+        </h2>
         <p className="text-caption text-ink-2 max-lg:col-start-1 max-lg:row-start-3 lg:text-body-sm">
           <span className="lg:hidden">{mark.short}</span>
           <span className="max-lg:hidden">{mark.body(tree.name)}</span>

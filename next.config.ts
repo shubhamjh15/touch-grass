@@ -46,6 +46,8 @@ const nextConfig: NextConfig = {
   // it at its own output folder: NEXT_DIST_DIR=.next-check next build
   distDir: process.env.NEXT_DIST_DIR || '.next',
   poweredByHeader: false,
+  // Off for users. `NEXT_SOURCE_MAPS=1` on a check build lets us see which module landed in which chunk.
+  productionBrowserSourceMaps: process.env.NEXT_SOURCE_MAPS === '1',
   experimental: {
     // The on-disk dev cache grew past 1.5 GB during heavy editing and then failed to restore,
     // which aborts the dev server. A cold compile is slower to start but cannot do that.
