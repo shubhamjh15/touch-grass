@@ -9,7 +9,7 @@ import { anchorsFor } from '../anchors';
 import { hideAllCallouts, writeCallouts, type CalloutFrame } from '../callouts';
 import { FOV } from '../camera';
 import { ISLAND, QUALITY } from '../config';
-import { LANDMARKS } from '../contract';
+import { LANDMARKS, type WorldQuality } from '../contract';
 import { QualityGovernor, resolveDpr } from '../quality';
 import {
   getWorldStats,
@@ -156,15 +156,32 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
       if (state.size === previous.size && state.viewport.dpr === previous.viewport.dpr) return;
       if (lost || !compiled || rendered === 0 || !frame.current?.render) return;
       gl.info.reset();
-      gl.render(scene, camera);
+      // While the composer owns the frame (the high tier) a bare render would be one
+      // frame without tone mapping, bloom and occlusion: a flash of another kind. The
+      // same frame is drawn again through the pipeline instead, at the time it had.
+      if (state.internal.priority > 0) advance(frame.current.time);
+      else gl.render(scene, camera);
     });
 
     registerCapturer((options) =>
       lost || cancelled ? Promise.resolve(null) : captureScene(gl, scene, options),
     );
     // What the measuring script (scripts/world-perf.mjs) reads; development only.
-    const probe = globalThis as { __touchgrassWorld?: { stats: typeof getWorldStats } };
-    if (IS_DEV) probe.__touchgrassWorld = { stats: getWorldStats };
+    // `govern` asks for a tier or a resolution step exactly where the governor would
+    // change them (inside a frame, after it is drawn): how a change is proven invisible.
+    type Forced = { tier?: WorldQuality; dprScale?: number };
+    const probe = globalThis as {
+      __touchgrassWorld?: { stats: typeof getWorldStats; govern: (next: Forced) => void };
+    };
+    let forced: Forced | null = null;
+    if (IS_DEV) {
+      probe.__touchgrassWorld = {
+        stats: getWorldStats,
+        govern: (next) => {
+          forced = next;
+        },
+      };
+    }
 
     const stop = onWorldFrame((current) => {
       frame.current = current;
@@ -241,6 +258,12 @@ function Loop({ onFail, adaptive, frame }: SceneProps & { frame: RefObject<World
             setQuality(governor.tier);
             setDprScale(governor.dprScale);
           }
+        }
+        if (forced) {
+          const next: Forced = forced;
+          forced = null;
+          if (next.tier) setQuality(next.tier);
+          if (next.dprScale) setDprScale(next.dprScale);
         }
       }
 
